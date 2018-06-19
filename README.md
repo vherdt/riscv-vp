@@ -1,7 +1,13 @@
-1) Build the RISC-V GNU Toolchain:
-==================================
+RISC-V based Virtual Prototype
+==============================
 
-(Cross-)Compiling the software examples requires the RISC-V GNU toolchain to be available in PATH. It can be build as follows:
+The RISC-V based Virtual Prototype (VP) integrates a RISC-V RV32IM core, a PLIC-based interrupt controller and an essential set of peripherals together with SW debug capabilities. The VP is designed as extensible and configurable platform with a generic bus system and implemented in standard-compliant SystemC and TLM-2.0. For more information please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. In the following we provide build instructions and how to compile and run software on the VP.
+
+
+1) Build the RISC-V GNU Toolchain:
+----------------------------------
+
+(Cross-)Compiling the software examples, in order to run them on the VP, requires the RISC-V GNU toolchain to be available in PATH. It can be build as follows:
 
 ```bash
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -15,7 +21,7 @@ make
 
 
 2) Build this RISC-V Virtual Prototype:
-=======================================
+---------------------------------------
 
 i) in *vp/dependencies* folder (will download and compile SystemC):
  
@@ -35,7 +41,7 @@ make
 
  	
 3) Compile and run some SW:
-===========================
+---------------------------
 	
 In *sw*:
 
