@@ -1,7 +1,7 @@
 1) Build the RISC-V GNU Toolchain:
 ==================================
 
-(Cross-)Compiling the software examples requires the gnu risc-v toolchain to be available in PATH. It can be build as follows:
+(Cross-)Compiling the software examples requires the RISC-V GNU toolchain to be available in PATH. It can be build as follows:
 
 ```bash
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -41,7 +41,7 @@ In *sw*:
 
 ```bash
 cd simple-sensor    					# can be replaced with different example
-make									# (requires risc-v gnu toolchain in PATH)
+make									# (requires RISC-V GNU toolchain in PATH)
 ../../vp/build/lib/riscv-vp main		# shows final simulation time as well as register and pc contents
 ```
 
