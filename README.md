@@ -7,7 +7,13 @@ The RISC-V based Virtual Prototype (VP) integrates a RISC-V RV32IM core, a PLIC-
 1) Build the RISC-V GNU Toolchain:
 ----------------------------------
 
-(Cross-)Compiling the software examples, in order to run them on the VP, requires the RISC-V GNU toolchain to be available in PATH. It can be build as follows:
+(Cross-)Compiling the software examples, in order to run them on the VP, requires the RISC-V GNU toolchain to be available in PATH. Several standard packages are required to build the toolchain. On Ubuntu the required packages can be installed as follows:
+
+```bash
+sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev
+```
+
+For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain. With the packages installed, the toolchain can be build as follows:
 
 ```bash
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -24,13 +30,13 @@ make
 ---------------------------------------
 
 i) in *vp/dependencies* folder (will download and compile SystemC):
- 
+
 ```bash
 ./build_systemc_232.sh
 ```
- 
- 	
-ii) in *vp* folder:
+
+
+ii) in *vp* folder (requires the *boost* C++ library):
  
 ```bash
 mkdir build
@@ -39,16 +45,16 @@ cmake ..
 make
 ```
 
- 	
-3) Compile and run some SW:
----------------------------
-	
+
+3) Compile and run some Software:
+---------------------------------
+
 In *sw*:
 
 ```bash
-cd simple-sensor    					# can be replaced with different example
-make									# (requires RISC-V GNU toolchain in PATH)
-../../vp/build/lib/riscv-vp main		# shows final simulation time as well as register and pc contents
+cd simple-sensor                        # can be replaced with different example
+make                                    # (requires RISC-V GNU toolchain in PATH)
+../../vp/build/lib/riscv-vp main        # shows final simulation time as well as register and pc contents
 ```
 
 Add the *riscv-vp* executable to PATH to simplify execution of SW examples.
