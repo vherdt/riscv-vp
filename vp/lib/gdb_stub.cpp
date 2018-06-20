@@ -285,6 +285,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             send_packet(conn, stream.str());
         } else if (boost::starts_with(msg, "m")) {
             memory_access_t m = parse_memory_access(msg);
+            //NOTE: reading from a memory mapped device is currently not supported (can implement a *debug-read* method on the bus or similar)
             assert ((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size)); //NOTE: out of bound memory access
             std::string ans = memory.read_memory(m.start, m.nbytes);
             send_packet(conn, ans);
@@ -305,11 +306,11 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             send_packet(conn, "vCont;cs");
         } else if (msg == "c") {
             core.run();
-            if (core.status == CoreExecStatus::HitBreakpoint) {
+            if (core.status == CoreExecStatus::Terminated) {
+                send_packet(conn, "S03");
+            } else if (core.status == CoreExecStatus::HitBreakpoint) {
                 send_packet(conn, "S05");
                 core.status = CoreExecStatus::Runnable;
-            } else if (core.status == CoreExecStatus::Terminated) {
-                send_packet(conn, "S03");
             } else {
                 assert (false && "invalid core status (apparently still marked as runnable)");
             }

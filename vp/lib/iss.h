@@ -1379,7 +1379,7 @@ struct ISS : public sc_core::sc_module,
         regs.show();
         std::cout << "pc = " << pc << std::endl;
         std::cout << "num-instr = " << csrs.instret_root->reg << std::endl;
-        std::cout << "max-heap (bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
+        std::cout << "max-heap (c-lib malloc, bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
     }
 };
 
