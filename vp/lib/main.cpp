@@ -10,6 +10,7 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "basic_timer.h"
+#include "ethernet.h"
 #include "dma.h"
 #include "gdb_stub.h"
 
@@ -34,6 +35,8 @@ struct Options {
     addr_t clint_end_addr     = 0x0200ffff;
     addr_t term_start_addr    = 0x20000000;
     addr_t term_end_addr      = term_start_addr + 16;
+    addr_t ethernet_start_addr= 0x30000000;
+    addr_t ethernet_end_addr  = ethernet_start_addr + 1024;
     addr_t plic_start_addr    = 0x40000000;
     addr_t plic_end_addr      = 0x40001000;
     addr_t sensor_start_addr  = 0x50000000;
@@ -116,7 +119,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,7> bus("SimpleBus");
+    SimpleBus<2,8> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -125,6 +128,7 @@ int sc_main(int argc, char **argv) {
     SimpleSensor2 sensor2("SimpleSensor2", 5);
     BasicTimer timer("BasicTimer", 3);
     SimpleDMA dma("SimpleDMA", 4);
+    EthernetDevice ethernet("EthernetDevice", 7, mem.data);
 
 
     direct_memory_interface dmi({mem.data, opt.mem_start_addr, mem.size});
@@ -161,6 +165,7 @@ int sc_main(int argc, char **argv) {
     bus.isocks[4].bind(clint.tsock);
     bus.isocks[5].bind(dma.tsock);
     bus.isocks[6].bind(sensor2.tsock);
+    bus.isocks[7].bind(ethernet.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
@@ -169,6 +174,7 @@ int sc_main(int argc, char **argv) {
     dma.plic = &plic;
     timer.plic = &plic;
     sensor2.plic = &plic;
+    ethernet.plic = &plic;
 
 
     if (opt.use_debug_runner) {
