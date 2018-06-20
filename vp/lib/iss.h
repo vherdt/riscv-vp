@@ -531,8 +531,6 @@ struct ISS : public sc_core::sc_module,
     sc_core::sc_time cycle_time;
     std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
-    bool in_trap_handler = false;
-
     enum {
         REG_MIN = INT32_MIN,
     };
@@ -1300,8 +1298,6 @@ struct ISS : public sc_core::sc_module,
         // NOTE: need to adapt when support for privilege levels beside M-mode is added
         csrs.mstatus->mie = csrs.mstatus->mpie;
         csrs.mstatus->mpie = 1;
-
-        in_trap_handler = false;
     }
 
     bool has_pending_enabled_interrupts() {
@@ -1312,7 +1308,6 @@ struct ISS : public sc_core::sc_module,
 
     void switch_to_trap_handler() {
         assert (csrs.mstatus->mie);
-        assert (!in_trap_handler);  // NOTE: only allow non-nested interrupts right now
         //std::cout << "[sim] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
 
         csrs.mcause->interrupt = 1;
@@ -1334,7 +1329,6 @@ struct ISS : public sc_core::sc_module,
 
         // perform context switch to trap handler
         pc = csrs.mtvec->get_base_address();
-        in_trap_handler = true;
     }
 
 
