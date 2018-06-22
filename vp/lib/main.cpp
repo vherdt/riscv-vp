@@ -150,6 +150,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[4] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
     bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
+    bus.ports[7] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region

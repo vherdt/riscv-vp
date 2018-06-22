@@ -304,14 +304,18 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
         } else if (msg == "vCont?") {
             send_packet(conn, "vCont;cs");
         } else if (msg == "c") {
-            core.run();
-            if (core.status == CoreExecStatus::HitBreakpoint) {
-                send_packet(conn, "S05");
-                core.status = CoreExecStatus::Runnable;
-            } else if (core.status == CoreExecStatus::Terminated) {
-                send_packet(conn, "S03");
-            } else {
-                assert (false && "invalid core status (apparently still marked as runnable)");
+            try {
+                core.run();
+                if (core.status == CoreExecStatus::HitBreakpoint) {
+                    send_packet(conn, "S05");
+                    core.status = CoreExecStatus::Runnable;
+                } else if (core.status == CoreExecStatus::Terminated) {
+                    send_packet(conn, "S03");
+                } else {
+                    assert (false && "invalid core status (apparently still marked as runnable)");
+                }
+            } catch (std::exception &e) {
+                send_packet(conn, "S04");
             }
         } else if (msg == "s") {
             core.run_step();
