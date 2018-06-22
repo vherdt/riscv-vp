@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+#include <ios>
+#include <iomanip>
 
 #include <systemc>
 
@@ -11,6 +13,11 @@
 
 #include "irq_if.h"
 #include "tlm_map.h"
+
+
+struct raw_ethernet_frame {
+
+};
 
 
 struct EthernetDevice : public sc_core::sc_module {
@@ -34,8 +41,20 @@ struct EthernetDevice : public sc_core::sc_module {
 
     vp::map::LocalRouter router;
 
+    int send_sockfd = 0;
+    int recv_sockfd = 0;
+
     enum {
-        STATUS_REG_ADDR = 0x04,
+        MTU_SIZE = 1500,
+        FRAME_SIZE = 1514,
+    };
+
+    uint8_t recv_payload_buf[MTU_SIZE];
+    uint8_t recv_frame_buf[FRAME_SIZE];
+    bool has_frame;
+
+    enum {
+        STATUS_REG_ADDR = 0x00,
         RECEIVE_SIZE_REG_ADDR = 0x04,
         RECEIVE_DST_REG_ADDR = 0x08,
         SEND_SRC_REG_ADDR = 0x0c,
@@ -59,24 +78,35 @@ struct EthernetDevice : public sc_core::sc_module {
                  {SEND_SRC_REG_ADDR, &send_src},
                  {SEND_SIZE_REG_ADDR, &send_size},
          }).register_handler(this, &EthernetDevice::register_access_callback);
+
+        init_raw_sockets();
     }
+
+    void init_raw_sockets();
+
+    void send_raw_frame();
+    void try_recv_raw_frame();
 
     void register_access_callback(const vp::map::register_access_t &r) {
         assert (mem);
+
+        if (r.read && r.vptr == &receive_size) {
+            assert (has_frame);
+        }
 
         r.fn();
 
         if (r.write && r.vptr == &status) {
             if (r.nv == RECV_OPERATION) {
-
-            } else if (r.nv == SEND_OPERATION) {
-                char buf[send_size];
-                memcpy(buf, &mem[send_src], send_size);
-                std::cout << "send_size: " << send_size << std::endl;
-                for (int i=0; i<send_size; ++i) {
-                    std::cout << buf[i];
+                std::cout << "[ethernet] recv operation" << std::endl;
+                assert (has_frame);
+                for (int i=0; i<receive_size; ++i) {
+                    auto k = receive_dst + i;
+                    mem[k - 0x80000000] = recv_frame_buf[i];
                 }
-                std::cout << std::endl;
+                has_frame = false;
+            } else if (r.nv == SEND_OPERATION) {
+                send_raw_frame();
             } else {
                 throw std::runtime_error("unsupported operation");
             }
@@ -93,9 +123,12 @@ struct EthernetDevice : public sc_core::sc_module {
             sc_core::wait(run_event);  // 10000 times per second by default
 
             // check if data is available on the socket, if yes store it in an internal buffer
+            if (!has_frame) {
+                try_recv_raw_frame();
 
-
-            plic->gateway_incoming_interrupt(irq_number);
+                if (has_frame)
+                    plic->gateway_incoming_interrupt(irq_number);
+            }
         }
     }
 };
