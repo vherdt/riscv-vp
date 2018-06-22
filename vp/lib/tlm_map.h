@@ -53,7 +53,7 @@ namespace vp { namespace map {
     };
 
 
-    void execute_memory_access(tlm::tlm_generic_payload &trans, uint8_t *local_memory) {
+    inline void execute_memory_access(tlm::tlm_generic_payload &trans, uint8_t *local_memory) {
         if (trans.get_command() == tlm::TLM_WRITE_COMMAND) {
             memcpy(&local_memory[trans.get_address()], trans.get_data_ptr(), trans.get_data_length());
         } else if (trans.get_command() == tlm::TLM_READ_COMMAND) {
