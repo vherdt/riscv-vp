@@ -51,25 +51,27 @@ void EthernetDevice::init_raw_sockets() {
 
 
 void EthernetDevice::try_recv_raw_frame() {
-    std::cout << "[ethernet] try recv raw frame" << std::endl;
+    //std::cout << "[ethernet] try recv raw frame" << std::endl;
 
     struct sockaddr_ll src_addr;
     socklen_t addrlen;
 
-    ssize_t ans = recvfrom(recv_sockfd, recv_payload_buf, MTU_SIZE, MSG_DONTWAIT, (struct sockaddr *)&src_addr, &addrlen);
-    assert (ans <= MTU_SIZE);
+    ssize_t ans = recvfrom(recv_sockfd, recv_frame_buf, FRAME_SIZE, MSG_DONTWAIT, (struct sockaddr *)&src_addr, &addrlen);
+    assert (ans <= FRAME_SIZE);
     if (ans == 0) {
-        std::cout << "[ethernet] recv socket received zero bytes ... connection closed?" << std::endl;
+        //std::cout << "[ethernet] recv socket received zero bytes ... connection closed?" << std::endl;
     } else if (ans == -1) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            std::cout << "[ethernet] recv socket no data available -> skip" << std::endl;
+            ; //std::cout << "[ethernet] recv socket no data available -> skip" << std::endl;
         else
             throw std::runtime_error("recvfrom failed");
     } else {
-        std::cout << "[ethernet] recv socket " << ans << " bytes received" << std::endl;
+        //std::cout << "[ethernet] recv socket " << ans << " bytes received" << std::endl;
         has_frame = true;
-        dump_ethernet_frame(recv_payload_buf, ans);
+        //dump_ethernet_frame(recv_frame_buf, ans);
+        receive_size = ans;
 
+        /*
         assert (ETH_ALEN == 6);
         // dst MAC addr (own)
         recv_frame_buf[0] = ucMACAddress[0];
@@ -90,14 +92,15 @@ void EthernetDevice::try_recv_raw_frame() {
 
         std::cout << "[ethernet] receive complete frame " << receive_size << " bytes, now active" << std::endl;
         dump_ethernet_frame(recv_frame_buf, receive_size);
+         */
     }
 }
 
 
 void EthernetDevice::send_raw_frame() {
-    std::cout << "[ethernet] send operation" << std::endl;
-    std::cout << "[ethernet] send source " << send_src << std::endl;
-    std::cout << "[ethernet] send size " << send_size << std::endl;
+    //std::cout << "[ethernet] send operation" << std::endl;
+    //std::cout << "[ethernet] send source " << send_src << std::endl;
+    //std::cout << "[ethernet] send size " << send_size << std::endl;
 
     // 6 bytes DST MAC Address (ff:ff:ff:ff:ff:ff means broadcast)
     // 6 bytes SRC MAC Address
@@ -109,13 +112,14 @@ void EthernetDevice::send_raw_frame() {
         auto k = send_src + i;
         sendbuf[i] = mem[k - 0x80000000];
     }
-    dump_ethernet_frame(sendbuf, send_size);
+    //dump_ethernet_frame(sendbuf, send_size);
 
 
     struct sockaddr_ll socket_address;
 
     socket_address.sll_ifindex = get_interface_index(IF_NAME, send_sockfd);
     /* Address length*/
+    assert (ETH_ALEN == 6);
     socket_address.sll_halen = ETH_ALEN;
     /* Destination MAC */
     /*
