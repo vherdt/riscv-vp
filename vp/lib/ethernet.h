@@ -7,6 +7,8 @@
 #include <ios>
 #include <iomanip>
 
+#include <unistd.h>
+
 #include <systemc>
 
 #include <tlm_utils/simple_target_socket.h>
@@ -98,7 +100,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
         if (r.write && r.vptr == &status) {
             if (r.nv == RECV_OPERATION) {
-                std::cout << "[ethernet] recv operation" << std::endl;
+                //std::cout << "[ethernet] recv operation" << std::endl;
                 assert (has_frame);
                 for (int i=0; i<receive_size; ++i) {
                     auto k = receive_dst + i;
@@ -107,6 +109,12 @@ struct EthernetDevice : public sc_core::sc_module {
                 has_frame = false;
             } else if (r.nv == SEND_OPERATION) {
                 send_raw_frame();
+                /*
+                for (int i=0; i<10; ++i) {
+                    usleep(1000000);
+                    send_raw_frame();
+                }
+                 */
             } else {
                 throw std::runtime_error("unsupported operation");
             }
@@ -119,7 +127,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
     void run() {
         while (true) {
-            run_event.notify(sc_core::sc_time(100, sc_core::SC_US));
+            run_event.notify(sc_core::sc_time(10000, sc_core::SC_US));
             sc_core::wait(run_event);  // 10000 times per second by default
 
             // check if data is available on the socket, if yes store it in an internal buffer
