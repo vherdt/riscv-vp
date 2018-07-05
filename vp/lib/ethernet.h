@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <ios>
 #include <iomanip>
+#include <list>
 
 #include <unistd.h>
 
@@ -17,11 +18,10 @@
 #include "tlm_map.h"
 
 
-struct raw_ethernet_frame {
-
-};
-
-
+/*TODO: also provide an UDP wrapper instead of a raw ethernet device only
+ * The UDP wrapper will unpack the payload from FreeRTOS and send to the network.
+ * NOTE: Not sure this will work. In particular if TCP/IP connections are involved ...
+ */
 struct EthernetDevice : public sc_core::sc_module {
     tlm_utils::simple_target_socket<EthernetDevice> tsock;
 
@@ -51,9 +51,9 @@ struct EthernetDevice : public sc_core::sc_module {
         FRAME_SIZE = 1514,
     };
 
-    uint8_t recv_payload_buf[MTU_SIZE];
     uint8_t recv_frame_buf[FRAME_SIZE];
     bool has_frame;
+    std::list<std::array<uint8_t, 60>> arp_responses;
 
     enum {
         STATUS_REG_ADDR = 0x00,
@@ -87,7 +87,7 @@ struct EthernetDevice : public sc_core::sc_module {
     void init_raw_sockets();
 
     void send_raw_frame();
-    void try_recv_raw_frame();
+    bool try_recv_raw_frame();
 
     void register_access_callback(const vp::map::register_access_t &r) {
         assert (mem);
@@ -100,7 +100,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
         if (r.write && r.vptr == &status) {
             if (r.nv == RECV_OPERATION) {
-                //std::cout << "[ethernet] recv operation" << std::endl;
+                std::cout << "[ethernet] recv operation" << std::endl;
                 assert (has_frame);
                 for (int i=0; i<receive_size; ++i) {
                     auto k = receive_dst + i;
@@ -132,7 +132,16 @@ struct EthernetDevice : public sc_core::sc_module {
 
             // check if data is available on the socket, if yes store it in an internal buffer
             if (!has_frame) {
-                try_recv_raw_frame();
+                if (!arp_responses.empty()) {
+                    receive_size = 60;
+                    memcpy(recv_frame_buf, arp_responses.front().data(), receive_size);
+                    arp_responses.pop_front();
+                    has_frame = true;
+                    std::cout << "[ethernet] prepare injected arp response" << std::endl;
+                } else {
+                    while (!try_recv_raw_frame())
+                        ;
+                }
 
                 if (has_frame)
                     plic->gateway_incoming_interrupt(irq_number);
