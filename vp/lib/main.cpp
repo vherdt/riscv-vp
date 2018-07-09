@@ -3,6 +3,7 @@
 
 #include "iss.h"
 #include "memory.h"
+#include "mram.h"
 #include "elf_loader.h"
 #include "plic.h"
 #include "clint.h"
@@ -21,15 +22,19 @@ struct Options {
     typedef unsigned int addr_t;
 
     Options &check_and_post_process() {
-        mem_end_addr = mem_start_addr + mem_size;
+        mem_end_addr = mem_start_addr + mem_size - 1;
+    	assert(mem_end_addr < clint_start_addr && "RAM too big, would overlap memory");
+        mram_end_addr = mram_start_addr + mram_size - 1;
+        assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
         return *this;
     }
 
     std::string input_program;
+    std::string mram_image;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
     addr_t mem_start_addr     = 0x00000000;
-    addr_t mem_end_addr       = mem_start_addr + mem_size;
+    addr_t mem_end_addr       = mem_start_addr + mem_size - 1;
     addr_t clint_start_addr   = 0x02000000;
     addr_t clint_end_addr     = 0x0200ffff;
     addr_t term_start_addr    = 0x20000000;
@@ -40,8 +45,12 @@ struct Options {
     addr_t sensor_end_addr    = 0x50001000;
     addr_t sensor2_start_addr = 0x50002000;
     addr_t sensor2_end_addr   = 0x50004000;
+    addr_t mram_start_addr    = 0x60000000;
+    addr_t mram_size		  = 0x00001000;
+    addr_t mram_end_addr      = mram_start_addr + mram_size - 1;
     addr_t dma_start_addr     = 0x70000000;
     addr_t dma_end_addr       = 0x70001000;
+
 
     bool use_debug_runner = false;
     bool use_instr_dmi = false;
@@ -77,6 +86,8 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
                 ("use-dmi", po::bool_switch(), "use instr and data dmi")
                 ("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
+                ("mram-image", po::value<std::string>(&opt.mram_image)->default_value("mram-image.bin"), "MRAM image file for persistency")
+                ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
                 ;
 
         po::positional_options_description pos;
@@ -116,7 +127,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,7> bus("SimpleBus");
+    SimpleBus<2,8> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -124,6 +135,7 @@ int sc_main(int argc, char **argv) {
     SimpleSensor sensor("SimpleSensor", 2);
     SimpleSensor2 sensor2("SimpleSensor2", 5);
     BasicTimer timer("BasicTimer", 3);
+    SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
 
 
@@ -146,6 +158,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[4] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
     bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
+    bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region
@@ -161,6 +174,7 @@ int sc_main(int argc, char **argv) {
     bus.isocks[4].bind(clint.tsock);
     bus.isocks[5].bind(dma.tsock);
     bus.isocks[6].bind(sensor2.tsock);
+    bus.isocks[7].bind(mram.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;

@@ -1,0 +1,9 @@
+.settings/
+main
+systemc-2.3.2.tar.gz
+.cproject
+.project
+build/
+*.bin
+systemc-2.3.2/
+vp/dependencies/
