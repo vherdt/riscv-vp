@@ -42,6 +42,19 @@ std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
     return stream.str();
 }
 
+std::string debug_memory_mapping::zero_memory(int nbytes) {
+    assert (nbytes > 0);
+
+    uint32_t read_size = boost::lexical_cast<uint32_t>(nbytes);
+
+    std::stringstream stream;
+    stream << std::setfill('0') << std::hex;
+    for (uint32_t i=0; i<read_size; ++i) {
+        stream << std::setw(2) << 0;
+    }
+    return stream.str();
+}
+
 
 void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
     assert (start >= 0);
@@ -285,9 +298,16 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             send_packet(conn, stream.str());
         } else if (boost::starts_with(msg, "m")) {
             memory_access_t m = parse_memory_access(msg);
-            //NOTE: reading from a memory mapped device is currently not supported (can implement a *debug-read* method on the bus or similar)
-            assert ((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size)); //NOTE: out of bound memory access
-            std::string ans = memory.read_memory(m.start, m.nbytes);
+            std::string ans;
+            if((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size))
+        	{	//NOTE: reading from a memory mapped device is currently not supported (can implement a *debug-read* method on the bus or similar)
+            	//NOTE: out of bound memory access
+            	ans = memory.zero_memory(m.nbytes);
+			}
+            else
+			{
+				ans = memory.read_memory(m.start, m.nbytes);
+			}
             send_packet(conn, ans);
         } else if (boost::starts_with(msg, "M")) {
             memory_access_t m = parse_memory_access(msg);

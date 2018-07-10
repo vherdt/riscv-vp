@@ -10,6 +10,7 @@ struct debug_memory_mapping {
     uint32_t mem_size;
 
     std::string read_memory(unsigned start, int nbytes);
+    std::string zero_memory(int nbytes);
 
     void write_memory(unsigned start, int nbytes, const std::string &data);
 };

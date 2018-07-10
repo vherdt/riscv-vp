@@ -42,7 +42,7 @@ struct SimpleBus : sc_core::sc_module {
     }
 
     unsigned decode(uint64_t addr) {
-        for (unsigned i=0; i<NR_OF_TARGETS; ++i) {
+        for (unsigned i = 0; i < NR_OF_TARGETS; ++i) {
             if (ports[i]->contains(addr))
                 return i;
         }

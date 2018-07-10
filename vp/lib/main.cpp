@@ -46,7 +46,7 @@ struct Options {
     addr_t sensor2_start_addr = 0x50002000;
     addr_t sensor2_end_addr   = 0x50004000;
     addr_t mram_start_addr    = 0x60000000;
-    addr_t mram_size		  = 0x00001000;
+    addr_t mram_size		  = 0x0FFFFFFF;
     addr_t mram_end_addr      = mram_start_addr + mram_size - 1;
     addr_t dma_start_addr     = 0x70000000;
     addr_t dma_end_addr       = 0x70001000;
