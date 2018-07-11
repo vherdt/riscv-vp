@@ -26,7 +26,7 @@ struct SimpleMRAM : public sc_core::sc_module {
         file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary);
         if (!file.is_open() || !file.good())
         {
-            cout << "Failed to open " << mFilepath << ": " << strerror(errno) << endl;
+            //cout << "Failed to open " << mFilepath << ": " << strerror(errno) << endl;
             file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary | ios_base::trunc);
         }
         truncate(mFilepath.c_str(), mSize);

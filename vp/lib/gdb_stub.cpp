@@ -115,7 +115,11 @@ std::string compute_checksum_string(const std::string &msg) {
 
 std::string DebugCoreRunner::receive_packet(int conn) {
     int nbytes = ::recv(conn, iobuf, bufsize, 0);
-    assert (nbytes >= 0);
+    if(nbytes <= 0)
+    {
+    	std::cerr << "recv error" << strerror(errno) << std::endl;
+    	return std::string("err");
+    }
     assert (nbytes <= bufsize);
 
     //std::cout << "recv: " << buffer << std::endl;
@@ -237,6 +241,9 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             break;
         } else if (msg == "+") {
             // NOTE: just ignore this message, nothing to do in this case
+        }else if (msg == "err") {
+            //error from receive packet. Ignore...
+        	std::cerr << "Received packet unknown" << std::endl;
         } else if (boost::starts_with(msg, "qSupported")) {
             send_packet(conn, "PacketSize=1024");
         } else if (msg == "vMustReplyEmpty") {
