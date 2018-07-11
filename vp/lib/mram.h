@@ -23,9 +23,14 @@ struct SimpleMRAM : public sc_core::sc_module {
         : mFilepath(filepath), mSize(size)
     {
         tsock.register_b_transport(this, &SimpleMRAM::transport);
-        truncate(mFilepath.c_str(), mSize);
         file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary);
-        assert(file.is_open() && "File could not be opened");
+        if (!file.is_open() || !file.good())
+        {
+            cout << "Failed to open " << mFilepath << ": " << strerror(errno) << endl;
+            file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary | ios_base::trunc);
+        }
+        truncate(mFilepath.c_str(), mSize);
+        assert(file.is_open() && file.good() && "File could not be opened");
     }
 
     ~SimpleMRAM()
@@ -37,6 +42,10 @@ struct SimpleMRAM : public sc_core::sc_module {
         assert (addr + num_bytes <= mSize);
         file.seekg(addr, file.beg);
         file.write(reinterpret_cast<char*>(src), num_bytes);
+        if (!file.is_open() || !file.good())
+        {
+            cout << "Failed to write " << mFilepath << ": " << strerror(errno) << endl;
+        }
     }
 
     void read_data(unsigned addr, uint8_t *dst, unsigned num_bytes) {
