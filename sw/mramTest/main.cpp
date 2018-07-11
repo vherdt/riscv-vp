@@ -6,18 +6,23 @@ static const unsigned int MRAM_SIZE = 0x0FFFFFFF;
 
 
 int main() {
+	unsigned long counter = 0;
 	char buffer[10] = {0};
 
-	memcpy(buffer, MRAM_START_ADDR, 10);
+	memcpy(&counter, MRAM_START_ADDR, sizeof(unsigned long));
+	memcpy(buffer, MRAM_START_ADDR + 10, 10);
 
 	printf("Before:\n");
-	printf("%0.*s\n", 10, buffer);
+	printf("%lu, %0.*s\n", counter, 10, buffer);
 
-	memcpy(MRAM_START_ADDR, "Kokosnuss", 10);
+	memcpy(MRAM_START_ADDR, &(++counter), sizeof(unsigned long));
+	memcpy(MRAM_START_ADDR + 10, "Kokosnuss", 10);
 
 
-	memcpy(buffer, MRAM_START_ADDR, 10);
+	memcpy(&counter, MRAM_START_ADDR, sizeof(unsigned long));
+	memcpy(buffer, MRAM_START_ADDR + 10, 10);
+
 	printf("After:\n");
-	printf("%0.*s\n", 10, buffer);
+	printf("%lu, %0.*s\n", counter, 10, buffer);
 
 }
