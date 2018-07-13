@@ -23,6 +23,11 @@ struct SimpleMRAM : public sc_core::sc_module {
         : mFilepath(filepath), mSize(size)
     {
         tsock.register_b_transport(this, &SimpleMRAM::transport);
+
+        if(filepath.size() == 0 || size == 0)
+    	{	//no file
+    		return;
+    	}
         file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary);
         if (!file.is_open() || !file.good())
         {

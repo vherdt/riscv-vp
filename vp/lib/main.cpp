@@ -4,6 +4,7 @@
 #include "iss.h"
 #include "memory.h"
 #include "mram.h"
+#include "flash.h"
 #include "elf_loader.h"
 #include "plic.h"
 #include "clint.h"
@@ -31,6 +32,7 @@ struct Options {
 
     std::string input_program;
     std::string mram_image;
+    std::string flash_device;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
     addr_t mem_start_addr     = 0x00000000;
@@ -50,6 +52,8 @@ struct Options {
     addr_t mram_end_addr      = mram_start_addr + mram_size - 1;
     addr_t dma_start_addr     = 0x70000000;
     addr_t dma_end_addr       = 0x70001000;
+    addr_t flash_start_addr   = 0x71000000;
+    addr_t flash_end_addr     = flash_start_addr + Flashcontroller::ADDR_SPACE;	//Usually 528 Byte
 
 
     bool use_debug_runner = false;
@@ -86,8 +90,9 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
                 ("use-dmi", po::bool_switch(), "use instr and data dmi")
                 ("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
-                ("mram-image", po::value<std::string>(&opt.mram_image)->default_value("mram-image.bin"), "MRAM image file for persistency")
+                ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""), "MRAM image file for persistency")
                 ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
+                ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
                 ;
 
         po::positional_options_description pos;
@@ -127,7 +132,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,8> bus("SimpleBus");
+    SimpleBus<2,9> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -137,6 +142,7 @@ int sc_main(int argc, char **argv) {
     BasicTimer timer("BasicTimer", 3);
     SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
+    Flashcontroller flashController("Flashcontroller", opt.flash_device);
 
 
     direct_memory_interface dmi({mem.data, opt.mem_start_addr, mem.size});
@@ -159,6 +165,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
     bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
+    bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region
@@ -175,6 +182,7 @@ int sc_main(int argc, char **argv) {
     bus.isocks[5].bind(dma.tsock);
     bus.isocks[6].bind(sensor2.tsock);
     bus.isocks[7].bind(mram.tsock);
+    bus.isocks[8].bind(flashController.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
