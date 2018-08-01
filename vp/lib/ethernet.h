@@ -148,6 +148,14 @@ struct EthernetDevice : public sc_core::sc_module {
             }
         }
     }
+
+    void printHex(unsigned char* buf, uint32_t len)
+    {
+        for(uint8_t i = 0; i < len; i++)
+        {
+        	printf("%s%02X", i > 0 ? ":" : "", buf[i]);
+        }
+    }
 };
 
 
