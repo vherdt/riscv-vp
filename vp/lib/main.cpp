@@ -46,7 +46,7 @@ struct Options {
     addr_t term_start_addr    = 0x20000000;
     addr_t term_end_addr      = term_start_addr + 16;
     addr_t ethernet_start_addr= 0x30000000;
-    addr_t ethernet_end_addr  = ethernet_start_addr + 1024;
+    addr_t ethernet_end_addr  = ethernet_start_addr + 1500;
     addr_t plic_start_addr    = 0x40000000;
     addr_t plic_end_addr      = 0x40001000;
     addr_t sensor_start_addr  = 0x50000000;

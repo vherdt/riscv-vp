@@ -28,7 +28,8 @@ struct arp_header {
 };
 
 static const uint8_t REAL_MAC_ADDRESS[ 6 ] = { 0x54, 0xe1, 0xad, 0x74, 0x33, 0xfd };
-static const uint8_t VIRTUAL_MAC_ADDRESS[ 6 ] = { 0x72, 0x5c, 0xb4, 0x2c, 0xac, 0x4a };
+//static const uint8_t VIRTUAL_MAC_ADDRESS[ 6 ] = { 0x72, 0x5c, 0xb4, 0x2c, 0xac, 0x4a };
+static const uint8_t VIRTUAL_MAC_ADDRESS[ 6 ] = { 0x00, 0x11, 0x11, 0x11, 0x11, 0x11 };
 static const uint8_t BROADCAST_MAC_ADDRESS[ 6 ] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 static const char *IF_NAME = "vpeth1";
@@ -50,6 +51,7 @@ int get_interface_index(const char interface_name[IFNAMSIZ], int sockfd) {
 
 
 void dump_ethernet_frame(uint8_t *buf, size_t size) {
+	return;
     std::ios_base::fmtflags f( std::cout.flags() );
     for (int i=0; i<size; ++i) {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)buf[i] << " ";
@@ -129,7 +131,7 @@ bool EthernetDevice::try_recv_raw_frame() {
 
 void EthernetDevice::send_raw_frame() {
     std::cout << "[ethernet] send operation" << std::endl;
-    std::cout << "[ethernet] send source " << send_src << std::endl;
+    std::cout << std::defaultfloat << "[ethernet] send source 0x" << std::hex << send_src << std::endl;
     std::cout << "[ethernet] send size " << send_size << std::endl;
 
     // 6 bytes DST MAC Address (ff:ff:ff:ff:ff:ff means broadcast)
@@ -137,22 +139,24 @@ void EthernetDevice::send_raw_frame() {
     // 2 bytes EtherType (0x0800 means IPv4)
     // rest is payload; it seems like a preamble (start) and CRC checksum (end) is not send by FreeRTOS-UDP
 
-    uint8_t sendbuf[send_size];
-    for (int i=0; i<send_size; ++i) {
-        auto k = send_src + i;
-        sendbuf[i] = mem[k - 0x80000000];
-    }
+    uint8_t sendbuf[send_size < 60 ? 60 : send_size];
+    memcpy(sendbuf, &mem[send_src - 0x80000000], send_size);
     if (send_size < 60) {
-        for (int i=send_size; i<60; ++i) {
-            sendbuf[i] = 0;
-        }
+    	memset(&sendbuf[send_size], 0, 60 - send_size);
         send_size = 60;
     }
     dump_ethernet_frame(sendbuf, send_size);
 
-
-
     struct ether_header *eh = (struct ether_header *)sendbuf;
+    std::cout << "destination MAC: ";
+    printHex(reinterpret_cast<unsigned char*>(&eh->ether_dhost), 6);
+    std::cout << std::endl;
+    std::cout << "source MAC     : ";
+    printHex(reinterpret_cast<unsigned char*>(&eh->ether_shost), 6);
+    std::cout << std::endl;
+    std::cout << "type           : " << std::hex << eh->ether_type  << std::endl;
+
+
     assert (memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
 
     std::cout << "[arp] ether-type=" << eh->ether_type << std::endl;
