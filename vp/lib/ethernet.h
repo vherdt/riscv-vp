@@ -100,7 +100,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
         if (r.write && r.vptr == &status) {
             if (r.nv == RECV_OPERATION) {
-                std::cout << "[ethernet] recv operation" << std::endl;
+                //std::cout << "[ethernet] recv operation" << std::endl;
                 assert (has_frame);
                 for (int i=0; i<receive_size; ++i) {
                     auto k = receive_dst + i;
@@ -109,12 +109,6 @@ struct EthernetDevice : public sc_core::sc_module {
                 has_frame = false;
             } else if (r.nv == SEND_OPERATION) {
                 send_raw_frame();
-                /*
-                for (int i=0; i<10; ++i) {
-                    usleep(1000000);
-                    send_raw_frame();
-                }
-                 */
             } else {
                 throw std::runtime_error("unsupported operation");
             }
@@ -137,7 +131,7 @@ struct EthernetDevice : public sc_core::sc_module {
                     memcpy(recv_frame_buf, arp_responses.front().data(), receive_size);
                     arp_responses.pop_front();
                     has_frame = true;
-                    std::cout << "[ethernet] prepare injected arp response" << std::endl;
+                    //std::cout << "[ethernet] prepare injected arp response" << std::endl;
                 } else {
                     while (!try_recv_raw_frame())
                         ;

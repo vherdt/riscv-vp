@@ -114,14 +114,14 @@ bool EthernetDevice::try_recv_raw_frame() {
 
         if (virtual_match || (broadcast_match && !own_packet)) {
             std::string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
-            std::cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << std::endl;
+            //std::cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << std::endl;
             has_frame = true;
             dump_ethernet_frame(recv_frame_buf, ans);
             receive_size = ans;
         } else {
-            std::cout << "[ethernet] ignore ethernet packet to different MAC address (or own broadcast)" << std::endl;
+            //std::cout << "[ethernet] ignore ethernet packet to different MAC address (or own broadcast)" << std::endl;
             //dump_mac_address(src_addr.sll_addr);
-            dump_mac_address(recv_frame_buf);
+            //dump_mac_address(recv_frame_buf);
             return false;
         }
     }
@@ -130,9 +130,9 @@ bool EthernetDevice::try_recv_raw_frame() {
 
 
 void EthernetDevice::send_raw_frame() {
-    std::cout << "[ethernet] send operation" << std::endl;
+    /*std::cout << "[ethernet] send operation" << std::endl;
     std::cout << std::defaultfloat << "[ethernet] send source 0x" << std::hex << send_src << std::endl;
-    std::cout << "[ethernet] send size " << send_size << std::endl;
+    std::cout << "[ethernet] send size " << send_size << std::endl;*/
 
     // 6 bytes DST MAC Address (ff:ff:ff:ff:ff:ff means broadcast)
     // 6 bytes SRC MAC Address
@@ -147,7 +147,10 @@ void EthernetDevice::send_raw_frame() {
     }
     dump_ethernet_frame(sendbuf, send_size);
 
+
     struct ether_header *eh = (struct ether_header *)sendbuf;
+
+    /*
     std::cout << "destination MAC: ";
     printHex(reinterpret_cast<unsigned char*>(&eh->ether_dhost), 6);
     std::cout << std::endl;
@@ -155,68 +158,10 @@ void EthernetDevice::send_raw_frame() {
     printHex(reinterpret_cast<unsigned char*>(&eh->ether_shost), 6);
     std::cout << std::endl;
     std::cout << "type           : " << std::hex << eh->ether_type  << std::endl;
+    */
 
 
     assert (memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
-
-    std::cout << "[arp] ether-type=" << eh->ether_type << std::endl;
-    if (eh->ether_type == htons(0x0806)) {
-        // ARP packet
-        std::cout << "[arp] type detected" << std::endl;
-        arp_header *arp = (arp_header *)(sendbuf + sizeof(struct ether_header));
-        if (arp->oper == htons(ARP_REQUEST)) {
-            std::cout << "[arp] request detected" << std::endl;
-            //TODO: parse the linux ARP cache, instead using a hardcoded IP here
-            uint8_t own_IP[4] = {0xC0, 0xA8, 0x00, 0x5A};
-            if (memcmp(arp->target_ip, own_IP, sizeof(own_IP)) == 0) {
-                std::cout << "[arp] IP matches" << std::endl;
-                // ARP request for host ethernet adapter -> construct result ARP and inject it back
-                std::array<uint8_t, 60> response;
-                memset(response.data(), 0, 60);
-
-                struct ether_header *r_eh = (struct ether_header *)response.data();
-                arp_header *r_arp = (arp_header *)(response.data() + sizeof(struct ether_header));
-                memcpy(r_eh->ether_dhost, eh->ether_shost, ETH_ALEN);
-                memcpy(r_eh->ether_shost, REAL_MAC_ADDRESS, ETH_ALEN);
-                r_eh->ether_type = eh->ether_type;
-                r_arp->htype = arp->htype;
-                r_arp->ptype = arp->ptype;
-                r_arp->hlen = arp->hlen;
-                r_arp->plen = arp->plen;
-                r_arp->oper = htons(ARP_RESPONSE);
-                memcpy(r_arp->sender_mac, REAL_MAC_ADDRESS, ETH_ALEN);
-                memcpy(r_arp->sender_ip, own_IP, sizeof(own_IP));
-                memcpy(r_arp->target_mac, REAL_MAC_ADDRESS, ETH_ALEN);  //TODO: use sender MAC
-                memcpy(r_arp->target_ip, own_IP, sizeof(own_IP));       //TODO: use sender IP
-
-                std::cout << "[ethernet] inject arp response" << std::endl;
-                dump_ethernet_frame(response.data(), 60);
-                arp_responses.push_back(response);
-                return;
-            }
-        }
-    }
-
-
-    /*
-     * example ARP request packet
-     *
-    72 5c b4 2c ac 4a       // DST MAC addr
-    5c 35 3b 87 27 86       // SRC MAC addr
-    08 06                   // ethernet packet type (ARP)
-    00 01                   // HTYPE
-    08 00                   // PTYPE (ethernet IP)
-    06 04                   // HLEN (size of MAC address = 6), PLEN (packet address length = 4, IP)
-    00 01                   // ARP operation, request=1, response=2
-    5c 35 3b 87 27 86       // sender MAC addr
-    c0 a8 00 01             // sender IP addr
-    00 00 00 00 00 00       // target MAC addr (requested in this case)
-    c0 a8 00 bc             // target IP
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00       // pad with 0 to fill 60 bytes (minimum packet size, not sure this is enforced/required)
-     */
-
-
-    // passthrough all other packets to the host virtual ethernet adapter
 
     struct sockaddr_ll socket_address;
 
@@ -225,18 +170,8 @@ void EthernetDevice::send_raw_frame() {
     assert (ETH_ALEN == 6);
     socket_address.sll_halen = ETH_ALEN;
     /* Destination MAC */
-    /*
-    socket_address.sll_addr[0] = sendbuf[0];
-    socket_address.sll_addr[1] = sendbuf[1];
-    socket_address.sll_addr[2] = sendbuf[2];
-    socket_address.sll_addr[3] = sendbuf[3];
-    socket_address.sll_addr[4] = sendbuf[4];
-    socket_address.sll_addr[5] = sendbuf[5];
-     */
     memcpy(socket_address.sll_addr, sendbuf, ETH_ALEN);
 
     auto ans = sendto(send_sockfd, sendbuf, send_size, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
     assert (ans == send_size);
-
-    std::cout << "[ethernet] normal send finished" << std::endl;
 }
