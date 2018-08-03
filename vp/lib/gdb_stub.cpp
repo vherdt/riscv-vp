@@ -108,7 +108,7 @@ std::string receive_packet(int conn) {
     assert (nbytes >= 0);
     assert (nbytes <= BUF_SIZE);
 
-    std::cout << "recv: " << buffer << std::endl;
+    //std::cout << "recv: " << buffer << std::endl;
 
     if (nbytes == 0) {
         return "";
@@ -143,7 +143,7 @@ std::string receive_packet(int conn) {
 
 void send_packet(int conn, const std::string &msg) {
     std::string frame = "+$" + msg + "#" + compute_checksum_string(msg);
-    std::cout << "send: " << frame << std::endl;
+    //std::cout << "send: " << frame << std::endl;
 
     constexpr unsigned BUF_SIZE = 1024;
     assert (frame.size() < BUF_SIZE);
