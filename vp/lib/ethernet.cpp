@@ -27,8 +27,6 @@ struct arp_header {
     uint8_t target_ip[4];
 };
 
-static const uint8_t REAL_MAC_ADDRESS[ 6 ] = { 0x54, 0xe1, 0xad, 0x74, 0x33, 0xfd };
-//static const uint8_t VIRTUAL_MAC_ADDRESS[ 6 ] = { 0x72, 0x5c, 0xb4, 0x2c, 0xac, 0x4a };
 static const uint8_t VIRTUAL_MAC_ADDRESS[ 6 ] = { 0x00, 0x11, 0x11, 0x11, 0x11, 0x11 };
 static const uint8_t BROADCAST_MAC_ADDRESS[ 6 ] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -69,6 +67,27 @@ void dump_mac_address(uint8_t *p) {
     std::cout.flags( f );
 }
 
+EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem)
+        : irq_number(irq_number), mem(mem) {
+    tsock.register_b_transport(this, &EthernetDevice::transport);
+    SC_THREAD(run);
+
+    //TODO: Actually read MAC address from Interface
+    memcpy(reinterpret_cast<uint8_t*>(mac), VIRTUAL_MAC_ADDRESS, 6);
+    memset(&reinterpret_cast<uint8_t*>(mac)[6], 0, 2);
+
+    router.add_register_bank({
+             {STATUS_REG_ADDR, &status},
+             {RECEIVE_SIZE_REG_ADDR, &receive_size},
+             {RECEIVE_DST_REG_ADDR, &receive_dst},
+             {SEND_SRC_REG_ADDR, &send_src},
+             {SEND_SIZE_REG_ADDR, &send_size},
+             {MAC_HIGH_REG_ADDR, &mac[0]},
+             {MAC_LOW_REG_ADDR, &mac[1]},
+     }).register_handler(this, &EthernetDevice::register_access_callback);
+
+    init_raw_sockets();
+}
 
 void EthernetDevice::init_raw_sockets() {
     send_sockfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);

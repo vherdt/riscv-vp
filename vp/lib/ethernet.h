@@ -18,10 +18,6 @@
 #include "tlm_map.h"
 
 
-/*TODO: also provide an UDP wrapper instead of a raw ethernet device only
- * The UDP wrapper will unpack the payload from FreeRTOS and send to the network.
- * NOTE: Not sure this will work. In particular if TCP/IP connections are involved ...
- */
 struct EthernetDevice : public sc_core::sc_module {
     tlm_utils::simple_target_socket<EthernetDevice> tsock;
 
@@ -38,6 +34,7 @@ struct EthernetDevice : public sc_core::sc_module {
     uint32_t receive_dst = 0;
     uint32_t send_src = 0;
     uint32_t send_size = 0;
+    uint32_t mac[2];
 
     uint8_t *mem = nullptr;
 
@@ -46,43 +43,29 @@ struct EthernetDevice : public sc_core::sc_module {
     int send_sockfd = 0;
     int recv_sockfd = 0;
 
-    enum {
-        MTU_SIZE = 1500,
-        FRAME_SIZE = 1514,
-    };
+    static const uint16_t MTU_SIZE   = 1500;
+	static const uint16_t FRAME_SIZE = 1514;
 
     uint8_t recv_frame_buf[FRAME_SIZE];
     bool has_frame;
-    std::list<std::array<uint8_t, 60>> arp_responses;
 
-    enum {
-        STATUS_REG_ADDR = 0x00,
-        RECEIVE_SIZE_REG_ADDR = 0x04,
-        RECEIVE_DST_REG_ADDR = 0x08,
-        SEND_SRC_REG_ADDR = 0x0c,
-        SEND_SIZE_REG_ADDR = 0x10,
+    static const uint16_t STATUS_REG_ADDR       = 0x00;
+	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR       + sizeof(uint32_t);
+	static const uint16_t RECEIVE_DST_REG_ADDR  = RECEIVE_SIZE_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t SEND_SRC_REG_ADDR     = RECEIVE_DST_REG_ADDR  + sizeof(uint32_t);
+	static const uint16_t SEND_SIZE_REG_ADDR    = SEND_SRC_REG_ADDR     + sizeof(uint32_t);
+	static const uint16_t MAC_HIGH_REG_ADDR     = SEND_SIZE_REG_ADDR    + sizeof(uint32_t);
+	static const uint16_t MAC_LOW_REG_ADDR      = MAC_HIGH_REG_ADDR     + sizeof(uint32_t);
 
-        RECV_OPERATION = 1,
-        SEND_OPERATION = 2,
-    };
+	enum : uint16_t
+	{
+		RECV_OPERATION = 1,
+		SEND_OPERATION = 2,
+	};
 
     SC_HAS_PROCESS(EthernetDevice);
 
-    EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem)
-            : irq_number(irq_number), mem(mem) {
-        tsock.register_b_transport(this, &EthernetDevice::transport);
-        SC_THREAD(run);
-
-        router.add_register_bank({
-                 {STATUS_REG_ADDR, &status},
-                 {RECEIVE_SIZE_REG_ADDR, &receive_size},
-                 {RECEIVE_DST_REG_ADDR, &receive_dst},
-                 {SEND_SRC_REG_ADDR, &send_src},
-                 {SEND_SIZE_REG_ADDR, &send_size},
-         }).register_handler(this, &EthernetDevice::register_access_callback);
-
-        init_raw_sockets();
-    }
+    EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem);
 
     void init_raw_sockets();
 
@@ -126,17 +109,8 @@ struct EthernetDevice : public sc_core::sc_module {
 
             // check if data is available on the socket, if yes store it in an internal buffer
             if (!has_frame) {
-                if (!arp_responses.empty()) {
-                    receive_size = 60;
-                    memcpy(recv_frame_buf, arp_responses.front().data(), receive_size);
-                    arp_responses.pop_front();
-                    has_frame = true;
-                    //std::cout << "[ethernet] prepare injected arp response" << std::endl;
-                } else {
-                    while (!try_recv_raw_frame())
-                        ;
-                }
-
+				while (!try_recv_raw_frame())
+					;
                 if (has_frame)
                     plic->gateway_incoming_interrupt(irq_number);
             }
