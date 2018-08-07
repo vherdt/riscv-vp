@@ -36,6 +36,9 @@ struct EthernetDevice : public sc_core::sc_module {
     uint32_t send_size = 0;
     uint32_t mac[2];
 
+    uint8_t* VIRTUAL_MAC_ADDRESS = reinterpret_cast<uint8_t*>(mac);
+    uint8_t BROADCAST_MAC_ADDRESS[ 6 ] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
     uint8_t *mem = nullptr;
 
     vp::map::LocalRouter router;
@@ -114,14 +117,6 @@ struct EthernetDevice : public sc_core::sc_module {
                 if (has_frame)
                     plic->gateway_incoming_interrupt(irq_number);
             }
-        }
-    }
-
-    void printHex(unsigned char* buf, uint32_t len)
-    {
-        for(uint8_t i = 0; i < len; i++)
-        {
-        	printf("%s%02X", i > 0 ? ":" : "", buf[i]);
         }
     }
 };
