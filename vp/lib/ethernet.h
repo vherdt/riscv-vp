@@ -45,6 +45,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
     int send_sockfd = 0;
     int recv_sockfd = 0;
+    int interfaceIdx = 0;
 
     static const uint16_t MTU_SIZE   = 1500;
 	static const uint16_t FRAME_SIZE = 1514;

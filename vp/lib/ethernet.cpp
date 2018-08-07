@@ -64,7 +64,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     for (int i=0; i<size; ++i) {
         cout << hex << setw(2) << setfill('0') << (int)buf[i] << " ";
     }
-    cout << endl;
+    cout  << endl;
     cout.flags( f );
 
     struct ether_header *eh = (struct ether_header *)buf;
@@ -158,64 +158,32 @@ void EthernetDevice::init_raw_sockets() {
     recv_sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     SYS_CHECK(recv_sockfd, "recv socket");
 
-    // Send-Socket
+	struct ifreq ifopts;
 
-	struct ifreq ifopts;	/* set promiscuous mode */
-	//struct ifreq if_idx;
-	struct ifreq if_mac;
-
-	/* Get the index of the interface to send on
-	memset(&if_idx, 0, sizeof(struct ifreq));
-	strncpy(if_idx.ifr_name, IF_NAME, IFNAMSIZ-1);
-	if (ioctl(send_sockfd, SIOCGIFINDEX, &if_idx) < 0)
-	    perror("SIOCGIFINDEX");
-	*/
 	/* Get the MAC address of the interface to send on */
-	memset(&if_mac, 0, sizeof(struct ifreq));
-	strncpy(if_mac.ifr_name, IF_NAME, IFNAMSIZ-1);
-	if (ioctl(send_sockfd, SIOCGIFHWADDR, &if_mac) < 0)
+	memset(&ifopts, 0, sizeof(struct ifreq));
+	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
+	if (ioctl(send_sockfd, SIOCGIFHWADDR, &ifopts) < 0)
 	{
 		perror("SIOCGIFHWADDR");
 	}
 
 	//Save own MAC in register
-	memcpy(VIRTUAL_MAC_ADDRESS, if_mac.ifr_hwaddr.sa_data, 6);
+	memcpy(VIRTUAL_MAC_ADDRESS, ifopts.ifr_hwaddr.sa_data, 6);
 
-	//Enable IP Header Include to signal we are building own IP Headers
-	/*
-	int on = 1;
-	if(setsockopt(send_sockfd, SOCK_RAW, IP_HDRINCL, &on, sizeof(on)) < 0)
-	{
-		perror("setSockOpt RAW");
-		cout << strerror(errno) << endl;
-		exit(EXIT_FAILURE);
-	}
-	*/
-	/*
+	/* Get the index of the interface to send on */
 	memset(&ifopts, 0, sizeof(struct ifreq));
 	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
-	if(ioctl(send_sockfd, SIOCGIFFLAGS, &ifopts) < 0)
+	if (ioctl(send_sockfd, SIOCGIFINDEX, &ifopts) < 0)
 	{
-		perror("get SIOCGIFFLAGS");
-		exit(EXIT_FAILURE);
+		perror("SIOCGIFINDEX");
 	}
-	ifopts.ifr_flags |= IFF_UP | IFF_RUNNING;
-	if(ioctl(send_sockfd, SIOCGIFFLAGS, &ifopts) < 0)
-	{
-		perror("set SIOCGIFFLAGS");
-		exit(EXIT_FAILURE);
-	}
-	ioctl(send_sockfd, SIOCGIFFLAGS, &ifopts);
-	if ( (ifopts.ifr_flags & IFF_UP) == 0) {
-	    cout << "Interface is down: "<< strerror(errno) << " ";
-	    printHex(reinterpret_cast<uint8_t*>(&ifopts.ifr_flags), sizeof(short int));
-	    cout << endl;
-	    perror("SIOCGIFFLAGS");
-	    exit(EXIT_FAILURE);
-	}
-	*/
+	//save Index
+	interfaceIdx = ifopts.ifr_ifindex;
+	cout << "Interface index: " << interfaceIdx << endl;
 
 	// Receive-Socket
+	memset(&ifopts, 0, sizeof(struct ifreq));
 
 	/* Set interface to promiscuous mode */
 	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
@@ -239,8 +207,6 @@ void EthernetDevice::init_raw_sockets() {
 
 
 bool EthernetDevice::try_recv_raw_frame() {
-    //cout << "[ethernet] try recv raw frame" << endl;
-
     socklen_t addrlen;
 
     ssize_t ans = recv(recv_sockfd, recv_frame_buf, FRAME_SIZE, MSG_DONTWAIT);
@@ -266,7 +232,10 @@ bool EthernetDevice::try_recv_raw_frame() {
             //cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
             has_frame = true;
             receive_size = ans;
-            dump_ethernet_frame(recv_frame_buf, ans);
+            if(virtual_match)
+            {
+            	dump_ethernet_frame(recv_frame_buf, ans);
+            }
         } else {
             //cout << "[ethernet] ignore ethernet packet to different MAC address (or own broadcast)" << endl;
             //dump_mac_address(src_addr.sll_addr);
@@ -276,7 +245,6 @@ bool EthernetDevice::try_recv_raw_frame() {
     }
     return true;
 }
-
 
 void EthernetDevice::send_raw_frame() {
     uint8_t sendbuf[send_size < 60 ? 60 : send_size];
@@ -291,9 +259,17 @@ void EthernetDevice::send_raw_frame() {
 
     assert (memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
 
-    ssize_t ans = write(send_sockfd, sendbuf, send_size);
+    struct sockaddr_ll socket_idx;
+    memset(&socket_idx, 0, sizeof(sockaddr_ll));
+    socket_idx.sll_ifindex = interfaceIdx;
+
+    ssize_t ans = sendto(send_sockfd, sendbuf, send_size, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
     if(ans != send_size)
     {
+    	if(errno == ENXIO)
+    	{
+    		cout << "ENXIO ";
+    	}
     	cout << strerror(errno) << endl;
     }
     assert (ans == send_size);
