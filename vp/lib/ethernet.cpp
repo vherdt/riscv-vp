@@ -22,8 +22,8 @@
 using namespace std;
 
 //static const char IF_NAME[] = "lo";
-static const char IF_NAME[] = "vpeth1";
-//static const char IF_NAME[] = "enp0s31f6";
+//static const char IF_NAME[] = "vpeth1";
+static const char IF_NAME[] = "enp0s31f6";
 
 #define SYS_CHECK(arg,msg)  \
     if ((arg) < 0) {      \
@@ -58,14 +58,8 @@ void printDec(const unsigned char* buf, const uint32_t len)
 
 
 void dump_ethernet_frame(uint8_t *buf, size_t size) {
-    ios_base::fmtflags f( cout.flags() );
-    for (int i=0; i<size; ++i) {
-        cout << hex << setw(2) << setfill('0') << (int)buf[i] << " ";
-    }
-    cout  << endl;
-    cout.flags( f );
-
-    struct ether_header *eh = (struct ether_header *)buf;
+	uint8_t* readbuf = buf;
+    struct ether_header *eh = (struct ether_header *)readbuf;
     cout << "destination MAC: ";
     printHex(reinterpret_cast<unsigned char*>(&eh->ether_dhost), 6);
     cout << endl;
@@ -74,7 +68,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     cout << endl;
     cout << "type           : " << ntohs(eh->ether_type)  << endl;
 
-    buf += sizeof(struct ethhdr);
+    readbuf += sizeof(struct ethhdr);
     switch(ntohs(eh->ether_type))
     {
     case ETH_P_IP:
@@ -83,7 +77,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	unsigned short iphdrlen;
     	struct in_addr source;
     	struct in_addr  dest;
-    	struct iphdr *ip = (struct iphdr*)buf;
+    	struct iphdr *ip = (struct iphdr*)readbuf;
     	memset(&source, 0, sizeof(source));
     	source.s_addr = ip->saddr;
     	memset(&dest, 0, sizeof(dest));
@@ -98,13 +92,13 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	cout << "\t|-Header Checksum : " << ntohs(ip->check) << endl;
     	cout << "\t|-Source IP : " <<  inet_ntoa(source) << endl;
     	cout << "\t|-Destination IP : " << inet_ntoa(dest) << endl;
-    	buf += ip->ihl*4;
+    	readbuf += ip->ihl*4;
     	switch(ip->protocol)
     	{
     	case IPPROTO_UDP:
     	{
     		cout << "UDP" << endl;
-    		struct udphdr *udp = (struct udphdr*)buf;
+    		struct udphdr *udp = (struct udphdr*)readbuf;
     		cout << "\t|-Source port: " << ntohs(udp->source) << endl;
     		cout << "\t|-Destination port: " << ntohs(udp->dest) << endl;
     		cout << "\t|-Length: " << ntohs(udp->len) << endl;
@@ -114,14 +108,17 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	case IPPROTO_TCP:
     		cout << "TCP" << endl;
     		cout << "\t|-Blah: " << "blah" << endl;
+    		return;	//special case
     		break;
+    	default:
+    		return;
     	}
     	break;
     }
     case ETH_P_ARP:
     {
     	cout << "ARP" << endl;
-    	struct arp_eth_header *arp = (struct arp_eth_header*) buf;
+    	struct arp_eth_header *arp = (struct arp_eth_header*) readbuf;
     	cout << "\t|-Sender MAC: ";
     		printHex((uint8_t*)&arp->sender_mac, 6);
     		cout << endl;
@@ -139,7 +136,15 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     }
     default:
     	cout << "unknown protocol" << endl;
+    	return;
     }
+
+    ios_base::fmtflags f( cout.flags() );
+    for (int i=0; i<size; ++i) {
+        cout << hex << setw(2) << setfill('0') << (int)buf[i] << " ";
+    }
+    cout  << endl;
+    cout.flags( f );
 }
 
 
@@ -166,6 +171,7 @@ void ArpCache::readKernelArpCache()
         struct in_addr inaddr;
         inet_aton(ipAddr, &inaddr);
         uint8_t mac[8];	//same width as uint64_t
+        memset(mac, 0, 8);
         assert(6 == sscanf(hwAddr, "%x:%x:%x:%x:%x:%x%*c",
             &mac[0], &mac[1], &mac[2],
             &mac[3], &mac[4], &mac[5] ) );
@@ -182,7 +188,7 @@ bool ArpCache::getHwidByIp(const uint32_t* ip, uint8_t* hwid)
 	}
 	if(cache.find(*ip) != cache.end())
 	{
-		memcpy(&cache[*ip], hwid, 6);
+		memcpy(hwid, &cache[*ip], 6);
 		cout << "ARP cache hit: ";
 		printDec(reinterpret_cast<const uint8_t*>(ip), 4);
 		cout << " is ";
@@ -194,12 +200,33 @@ bool ArpCache::getHwidByIp(const uint32_t* ip, uint8_t* hwid)
 	return false;
 }
 
+void ArpCache::addHwid(const uint32_t& ip, uint64_t& hwid)
+{
+	cout << "Add ARP Entry: ";
+	printDec(reinterpret_cast<const uint8_t*>(&ip), 4);
+	cout << " is ";
+	printHex(reinterpret_cast<const uint8_t*>(&hwid), 6);
+	cout << endl;
+	cache[ip] = hwid;
+}
+
+void ArpResponder::addDevice(uint32_t ip, uint8_t* hwid)
+{
+	uint64_t buf = 0;
+	memcpy(&buf, hwid, 6);
+	cache.addHwid(ip, buf);
+}
+
 bool ArpResponder::isArpReq(uint8_t* eth, uint16_t len)
 {
     struct ether_header *eh = (struct ether_header *)eth;
     if(ntohs(eh->ether_type) != ETH_P_ARP)
     	return false;
-    return ntohs(reinterpret_cast<struct arp_eth_header*>(eth + sizeof(ether_header))->oper) == ARPOP_REQUEST;
+    arp_eth_header *ah = reinterpret_cast<arp_eth_header*>(eth + sizeof(ether_header));
+    if(ntohs(ah->oper) != ARPOP_REQUEST)
+    	return false;
+    //possibly other requirements
+    return true;
 }
 uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
 {
@@ -209,9 +236,9 @@ uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
 	struct ether_header *responseEth = (struct ether_header *)packet;
 	struct arp_eth_header *responseArp = (struct arp_eth_header *)(packet + sizeof(ether_header));
 
-	memcpy(responseEth->ether_dhost, requestEth->ether_shost, 4);
-	memcpy(responseEth->ether_shost, requestEth->ether_dhost, 4);
-	responseEth->ether_type = ETH_P_ARP;
+	memcpy(responseEth->ether_dhost, requestEth->ether_shost, 6);
+	memcpy(responseEth->ether_shost, requestEth->ether_dhost, 6);
+	responseEth->ether_type = ntohs(ETH_P_ARP);
 
 	responseArp->htype = htons(ARPHRD_ETHER);
 	responseArp->ptype = ETH_P_IP;
@@ -313,6 +340,13 @@ void EthernetDevice::init_raw_sockets() {
 		exit(EXIT_FAILURE);
 	}
 
+	memset(&ifopts, 0, sizeof(struct ifreq));
+	ifopts.ifr_addr.sa_family = AF_INET;
+	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
+	ioctl(recv_sockfd, SIOCGIFADDR, &ifopts);
+
+	//add local IP to response for guest to host communication
+	arpResponder.addDevice(*reinterpret_cast<uint32_t*>(&ifopts.ifr_addr.sa_data[2]), VIRTUAL_MAC_ADDRESS); //lol this is unreadable
 }
 
 
@@ -338,12 +372,13 @@ bool EthernetDevice::try_recv_raw_frame() {
         bool own_packet = memcmp(recv_frame_buf+ETH_ALEN, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
 
         if (virtual_match || (broadcast_match && !own_packet)) {
-            string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
+            //string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
             //cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
             has_frame = true;
             receive_size = ans;
             if(virtual_match)
             {
+            	cout << "RECEIVED FRAME" << endl;
             	dump_ethernet_frame(recv_frame_buf, ans);
             }
         } else {
@@ -363,6 +398,8 @@ void EthernetDevice::send_raw_frame() {
     	memset(&sendbuf[send_size], 0, 60 - send_size);
         send_size = 60;
     }
+
+    cout << "SEND FRAME" << endl;
     dump_ethernet_frame(sendbuf, send_size);
 
     struct ether_header *eh = (struct ether_header *)sendbuf;
@@ -388,14 +425,7 @@ void EthernetDevice::send_raw_frame() {
     		//we cannot satisfy request
     		return;
     	}
-        memset(&socket_idx, 0, sizeof(sockaddr_ll));
-        socket_idx.sll_ifindex = interfaceIdx;
-        ans = sendto(send_sockfd, response, ArpResponder::arpPacketSize, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
-        if(ans != ArpResponder::arpPacketSize)
-        {
-        	cout << strerror(errno) << endl;
-        }
-        assert (ans == ArpResponder::arpPacketSize);
+
 	}
 
 }

@@ -42,6 +42,7 @@ class ArpCache
 	void readKernelArpCache();
 public:
 	bool getHwidByIp(const uint32_t* ip, uint8_t* hwid);
+	void addHwid(const uint32_t& ip, uint64_t& hwid);
 };
 
 class ArpResponder
@@ -52,6 +53,7 @@ private:
 	uint8_t packet[arpPacketSize];
 	ArpCache cache;
 public:
+	void addDevice(uint32_t ip, uint8_t* hwid);
 	bool isArpReq(uint8_t* eth, uint16_t len);
 	uint8_t* buildResponseFrom(uint8_t* eth);
 };
