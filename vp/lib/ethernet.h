@@ -7,7 +7,7 @@
 #include <ios>
 #include <iomanip>
 #include <list>
-
+#include <map>
 #include <unistd.h>
 
 #include <systemc>
@@ -17,6 +17,44 @@
 #include "irq_if.h"
 #include "tlm_map.h"
 
+struct arp_eth_header {
+    uint16_t htype;
+    uint16_t ptype;
+    uint8_t hlen;
+    uint8_t  plen;
+    uint16_t oper;
+    uint8_t sender_mac[6];
+    uint8_t sender_ip[4];
+    uint8_t target_mac[6];
+    uint8_t target_ip[4];
+};
+
+class ArpCache
+{
+	/* Format for fscanf() to read the 1st, 4th, and 6th space-delimited fields */
+	static const char arpLineFormat[];
+	static const char arpCachePath[];
+	static const uint16_t bufferLength = 1024;
+
+	//maps ip (4Byte) to MAC (6Byte)
+	std::map<uint32_t, uint64_t> cache;
+
+	void readKernelArpCache();
+public:
+	bool getHwidByIp(const uint32_t* ip, uint8_t* hwid);
+};
+
+class ArpResponder
+{
+public:
+	static const uint16_t arpPacketSize = 60;
+private:
+	uint8_t packet[arpPacketSize];
+	ArpCache cache;
+public:
+	bool isArpReq(uint8_t* eth, uint16_t len);
+	uint8_t* buildResponseFrom(uint8_t* eth);
+};
 
 struct EthernetDevice : public sc_core::sc_module {
     tlm_utils::simple_target_socket<EthernetDevice> tsock;
@@ -52,6 +90,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
     uint8_t recv_frame_buf[FRAME_SIZE];
     bool has_frame;
+    ArpResponder arpResponder;
 
     static const uint16_t STATUS_REG_ADDR       = 0x00;
 	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR       + sizeof(uint32_t);
@@ -121,7 +160,5 @@ struct EthernetDevice : public sc_core::sc_module {
         }
     }
 };
-
-
 
 #endif //RISCV_VP_ETHERNET_H

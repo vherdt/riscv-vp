@@ -21,18 +21,7 @@
 
 using namespace std;
 
-struct arp_header {
-    uint16_t htype;
-    uint16_t ptype;
-    uint8_t hlen;
-    uint8_t  plen;
-    uint16_t oper;
-    uint8_t sender_mac[6];
-    uint8_t sender_ip[4];
-    uint8_t target_mac[6];
-    uint8_t target_ip[4];
-};
-
+//static const char IF_NAME[] = "lo";
 static const char IF_NAME[] = "vpeth1";
 //static const char IF_NAME[] = "enp0s31f6";
 
@@ -51,13 +40,22 @@ int get_interface_index(const char interface_name[IFNAMSIZ], int sockfd) {
     return if_idx.ifr_ifindex;
 }
 
-void printHex(unsigned char* buf, uint32_t len)
+void printHex(const unsigned char* buf, const uint32_t len)
 {
     for(uint8_t i = 0; i < len; i++)
     {
     	printf("%s%02X", i > 0 ? ":" : "", buf[i]);
     }
 }
+
+void printDec(const unsigned char* buf, const uint32_t len)
+{
+    for(uint8_t i = 0; i < len; i++)
+    {
+    	printf("%s%d", i > 0 ? "." : "", buf[i]);
+    }
+}
+
 
 void dump_ethernet_frame(uint8_t *buf, size_t size) {
     ios_base::fmtflags f( cout.flags() );
@@ -116,7 +114,27 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	case IPPROTO_TCP:
     		cout << "TCP" << endl;
     		cout << "\t|-Blah: " << "blah" << endl;
+    		break;
     	}
+    	break;
+    }
+    case ETH_P_ARP:
+    {
+    	cout << "ARP" << endl;
+    	struct arp_eth_header *arp = (struct arp_eth_header*) buf;
+    	cout << "\t|-Sender MAC: ";
+    		printHex((uint8_t*)&arp->sender_mac, 6);
+    		cout << endl;
+		cout << "\t|-Sender IP: " ;
+			printDec((uint8_t*)&arp->sender_ip, 4);
+			cout << endl;
+		cout << "\t|-DEST MAC: ";
+			printHex((uint8_t*)&arp->target_mac, 6);
+			cout << endl;
+		cout << "\t|-DEST IP: " ;
+			printDec((uint8_t*)&arp->target_ip, 4);
+			cout << endl;
+		cout << "\t|-Operation: " << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID") << endl;
     	break;
     }
     default:
@@ -124,13 +142,104 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     }
 }
 
-void dump_mac_address(uint8_t *p) {
-    ios_base::fmtflags f( cout.flags() );
-    for (int i=0; i<ETH_ALEN; ++i) {
-        cout << hex << setw(2) << setfill('0') << (int)p[i] << ":";
+
+const char ArpCache::arpLineFormat[] = "%1023s %*s %*s "
+										"%1023s %*s "
+										"%1023s";
+const char ArpCache::arpCachePath[] = "/proc/net/arp";
+
+void ArpCache::readKernelArpCache()
+{
+    FILE *arpCache = fopen(arpCachePath, "r");
+    assert(arpCache && "Failed to open arpCache");
+
+    //Ignore the first line, which contains the header
+    char header[bufferLength];
+    assert(fgets(header, sizeof(header), arpCache));
+
+    char ipAddr[bufferLength], hwAddr[bufferLength], device[bufferLength];
+    int count = 0;
+    while (3 == fscanf(arpCache, arpLineFormat, ipAddr, hwAddr, device))
+    {
+        printf("%03d: Mac Address of [%s] on [%s] is \"%s\"\n",
+                count, ipAddr, device, hwAddr);
+        struct in_addr inaddr;
+        inet_aton(ipAddr, &inaddr);
+        uint8_t mac[8];	//same width as uint64_t
+        assert(6 == sscanf(hwAddr, "%x:%x:%x:%x:%x:%x%*c",
+            &mac[0], &mac[1], &mac[2],
+            &mac[3], &mac[4], &mac[5] ) );
+        cache[inaddr.s_addr] = *reinterpret_cast<uint64_t*>(mac);
+        count ++;
     }
-    cout << endl;
-    cout.flags( f );
+    fclose(arpCache);
+}
+bool ArpCache::getHwidByIp(const uint32_t* ip, uint8_t* hwid)
+{
+	if(cache.find(*ip) == cache.end())
+	{
+		readKernelArpCache();
+	}
+	if(cache.find(*ip) != cache.end())
+	{
+		memcpy(&cache[*ip], hwid, 6);
+		cout << "ARP cache hit: ";
+		printDec(reinterpret_cast<const uint8_t*>(ip), 4);
+		cout << " is ";
+		printHex(hwid, 6);
+		cout << endl;
+		return true;
+	}
+	cout << "ARP cache miss" << endl;
+	return false;
+}
+
+bool ArpResponder::isArpReq(uint8_t* eth, uint16_t len)
+{
+    struct ether_header *eh = (struct ether_header *)eth;
+    if(ntohs(eh->ether_type) != ETH_P_ARP)
+    	return false;
+    return ntohs(reinterpret_cast<struct arp_eth_header*>(eth + sizeof(ether_header))->oper) == ARPOP_REQUEST;
+}
+uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
+{
+	memset(packet, 0, arpPacketSize);
+	struct ether_header *requestEth = (struct ether_header *)eth;
+	struct arp_eth_header *requestArp = (struct arp_eth_header *)(eth + sizeof(ether_header));
+	struct ether_header *responseEth = (struct ether_header *)packet;
+	struct arp_eth_header *responseArp = (struct arp_eth_header *)(packet + sizeof(ether_header));
+
+	memcpy(responseEth->ether_dhost, requestEth->ether_shost, 4);
+	memcpy(responseEth->ether_shost, requestEth->ether_dhost, 4);
+	responseEth->ether_type = ETH_P_ARP;
+
+	responseArp->htype = htons(ARPHRD_ETHER);
+	responseArp->ptype = ETH_P_IP;
+	responseArp->hlen  = htons(6);
+	responseArp->plen  = htons(4);
+	responseArp->oper  = htons(ARPOP_REPLY);
+
+	uint8_t requestedHWID[6] = {0};
+	if(!cache.getHwidByIp(reinterpret_cast<uint32_t*>(requestArp->target_ip), requestedHWID))
+	{
+		return nullptr;
+	}
+	cout << "MAC of requested ";
+	printDec(requestArp->target_ip, 4);
+	cout << " is ";
+	printHex(requestedHWID, 6);
+	cout << endl;
+
+	memcpy(responseArp->sender_mac, requestedHWID, 6);
+	memcpy(responseArp->sender_ip, requestArp->target_ip, 4);
+
+	memcpy(responseArp->target_mac, requestArp->sender_mac, 6);
+	memcpy(responseArp->target_ip, requestArp->sender_ip, 4);
+
+	cout << "FORGED ARP RESPONSE: " << endl;
+	dump_ethernet_frame(packet, arpPacketSize);
+
+	return packet;
 }
 
 EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem)
@@ -203,6 +312,7 @@ void EthernetDevice::init_raw_sockets() {
 		perror("SO_BINDTODEVICE");
 		exit(EXIT_FAILURE);
 	}
+
 }
 
 
@@ -266,11 +376,26 @@ void EthernetDevice::send_raw_frame() {
     ssize_t ans = sendto(send_sockfd, sendbuf, send_size, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
     if(ans != send_size)
     {
-    	if(errno == ENXIO)
-    	{
-    		cout << "ENXIO ";
-    	}
     	cout << strerror(errno) << endl;
     }
     assert (ans == send_size);
+
+    if(arpResponder.isArpReq(sendbuf, send_size))
+	{
+    	uint8_t* response = arpResponder.buildResponseFrom(sendbuf);
+    	if(response == nullptr)
+    	{
+    		//we cannot satisfy request
+    		return;
+    	}
+        memset(&socket_idx, 0, sizeof(sockaddr_ll));
+        socket_idx.sll_ifindex = interfaceIdx;
+        ans = sendto(send_sockfd, response, ArpResponder::arpPacketSize, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
+        if(ans != ArpResponder::arpPacketSize)
+        {
+        	cout << strerror(errno) << endl;
+        }
+        assert (ans == ArpResponder::arpPacketSize);
+	}
+
 }
