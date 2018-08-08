@@ -425,7 +425,14 @@ void EthernetDevice::send_raw_frame() {
     		//we cannot satisfy request
     		return;
     	}
-
+        memset(&socket_idx, 0, sizeof(sockaddr_ll));
+        socket_idx.sll_ifindex = interfaceIdx;
+        ssize_t ans = sendto(send_sockfd, response, ArpResponder::arpPacketSize, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
+        if(ans != send_size)
+        {
+        	cout << strerror(errno) << endl;
+        }
+        assert (ans == send_size);
 	}
 
 }
