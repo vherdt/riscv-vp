@@ -1,9 +1,9 @@
+.cproject
+.gitignore
+.project
 .settings/
 main
-systemc-2.3.2.tar.gz
-.cproject
-.project
 build/
+vp/dependencies/systemc-dist/
 *.bin
-systemc-2.3.2/
-vp/dependencies/
+systemc-*
