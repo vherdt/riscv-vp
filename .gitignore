@@ -1,0 +1,9 @@
+.cproject
+.gitignore
+.project
+.settings/
+main
+build/
+vp/dependencies/systemc-dist/
+*.bin
+systemc-*
