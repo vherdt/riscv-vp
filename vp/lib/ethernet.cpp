@@ -16,14 +16,11 @@
 #include <net/if.h>
 #include <linux/if_ether.h>
 
-#define ARP_REQUEST 1
-#define ARP_RESPONSE 2
-
 using namespace std;
 
 //static const char IF_NAME[] = "lo";
-//static const char IF_NAME[] = "vpeth1";
-static const char IF_NAME[] = "enp0s31f6";
+static const char IF_NAME[] = "vpeth1";
+//static const char IF_NAME[] = "enp0s31f6";
 
 #define SYS_CHECK(arg,msg)  \
     if ((arg) < 0) {      \
@@ -107,9 +104,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	}
     	case IPPROTO_TCP:
     		cout << "TCP" << endl;
-    		cout << "\t|-Blah: " << "blah" << endl;
-    		return;	//special case
-    		break;
+    		//fall-through
     	default:
     		return;
     	}
@@ -316,7 +311,6 @@ void EthernetDevice::init_raw_sockets() {
 	}
 	//save Index
 	interfaceIdx = ifopts.ifr_ifindex;
-	cout << "Interface index: " << interfaceIdx << endl;
 
 	// Receive-Socket
 	memset(&ifopts, 0, sizeof(struct ifreq));
@@ -340,6 +334,7 @@ void EthernetDevice::init_raw_sockets() {
 		exit(EXIT_FAILURE);
 	}
 
+	//Todo: Get hwid&ip of all interfaces
 	memset(&ifopts, 0, sizeof(struct ifreq));
 	ifopts.ifr_addr.sa_family = AF_INET;
 	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
@@ -367,20 +362,27 @@ bool EthernetDevice::try_recv_raw_frame() {
     } else {
         assert (ETH_ALEN == 6);
 
-        bool virtual_match = memcmp(recv_frame_buf, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
-        bool broadcast_match = memcmp(recv_frame_buf, BROADCAST_MAC_ADDRESS, ETH_ALEN) == 0;
-        bool own_packet = memcmp(recv_frame_buf+ETH_ALEN, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
+        ether_header *eh = reinterpret_cast<ether_header*>(recv_frame_buf);
+        bool virtual_match = memcmp(eh->ether_dhost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
+        bool broadcast_match = memcmp(eh->ether_dhost, BROADCAST_MAC_ADDRESS, ETH_ALEN) == 0;
+        bool own_packet = memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
+
+        //Deep packet inspection... Ignore all except UDP as it may fill the Ethernet-buffer?
+        if(!ntohs(eh->ether_type) == ETH_P_IP)
+        	return false;
+
+        iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));\
+        if(!ntohs(ip->protocol) == IPPROTO_UDP)
+        	return false;
 
         if (virtual_match || (broadcast_match && !own_packet)) {
             //string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
             //cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
             has_frame = true;
             receive_size = ans;
-            if(virtual_match)
-            {
-            	cout << "RECEIVED FRAME" << endl;
-            	dump_ethernet_frame(recv_frame_buf, ans);
-            }
+			cout << "RECEIVED FRAME" << endl;
+			dump_ethernet_frame(recv_frame_buf, ans);
+			cout << endl;
         } else {
             //cout << "[ethernet] ignore ethernet packet to different MAC address (or own broadcast)" << endl;
             //dump_mac_address(src_addr.sll_addr);
