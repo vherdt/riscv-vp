@@ -1217,6 +1217,9 @@ struct ISS : public sc_core::sc_module,
                 assert (false && "unknown opcode");
         }
 
+        //NOTE: writes to zero register are supposedly allowed but must be ignored (reset it after every instruction, instead of checking *rd != zero* before every register write)
+        regs.regs[regs.zero] = 0;
+
         return op;
     }
 
@@ -1344,9 +1347,9 @@ struct ISS : public sc_core::sc_module,
     }
 
     void run_step() {
-        assert (regs.regs[0] == 0);
+        assert (regs.read(0) == 0);
 
-        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.regs[regs.sp] << std::endl;
+        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
         last_pc = pc;
         Opcode::mapping op = exec_step();
 
