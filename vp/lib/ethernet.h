@@ -70,7 +70,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
     // memory mapped configuration registers
     uint32_t status = 0;
-    uint32_t receive_size = 25;
+    uint32_t receive_size = 0;
     uint32_t receive_dst = 0;
     uint32_t send_src = 0;
     uint32_t send_size = 0;
@@ -120,21 +120,14 @@ struct EthernetDevice : public sc_core::sc_module {
     void register_access_callback(const vp::map::register_access_t &r) {
         assert (mem);
 
-        if (r.read && r.vptr == &receive_size) {
-            assert (has_frame);
-        }
-
         r.fn();
 
         if (r.write && r.vptr == &status) {
             if (r.nv == RECV_OPERATION) {
-                //std::cout << "[ethernet] recv operation" << std::endl;
                 assert (has_frame);
-                for (int i=0; i<receive_size; ++i) {
-                    auto k = receive_dst + i;
-                    mem[k - 0x80000000] = recv_frame_buf[i];
-                }
+                memcpy(&mem[receive_dst - 0x80000000], recv_frame_buf, receive_size);
                 has_frame = false;
+                receive_size = 0;
             } else if (r.nv == SEND_OPERATION) {
                 send_raw_frame();
             } else {
