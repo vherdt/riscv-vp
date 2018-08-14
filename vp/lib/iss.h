@@ -1054,22 +1054,22 @@ struct ISS : public sc_core::sc_module,
 
 
             case Opcode::MUL: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = ans & 0xFFFFFFFF;
             } break;
 
             case Opcode::MULH: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHU: {
-                int64_t ans = (uint32_t)regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHSU: {
-                int64_t ans = regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
