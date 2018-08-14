@@ -309,6 +309,38 @@ struct csr_mcause : public csr_base {
 };
 
 
+struct csr_satp : public csr_base {
+    INCLUDE_CSR_MIXIN;
+
+    union {
+        int32_t reg = 0;
+        struct {
+            unsigned mode: 1;	// WARL
+            unsigned asid: 9;   // WARL
+            unsigned ppn: 22;   // WARL
+        };
+    };
+};
+
+
+struct csr_pmpcfg : public csr_base {
+    INCLUDE_CSR_MIXIN;
+
+    union {
+        int32_t reg = 0;
+        struct {
+            unsigned UNIMPLEMENTED: 24;	// WARL
+            unsigned L0: 1;             // WARL
+            unsigned _wiri0: 2;         // WIRI
+            unsigned A0: 2;             // WARL
+            unsigned X0: 1;             // WARL
+            unsigned W0: 1;             // WARL
+            unsigned R0: 1;             // WARL
+        };
+    };
+};
+
+
 
 /*
  * Add new subclasses with specific consistency check (e.g. by adding virtual write_low, write_high functions) if necessary.
@@ -430,6 +462,13 @@ struct csr_table {
     csr_32 *mtval = 0;
     csr_mip *mip = 0;
 
+    // risc-v tests execution
+    csr_32 *mideleg = 0;
+    csr_32 *medeleg = 0;
+    csr_32 *pmpaddr0 = 0;
+    csr_pmpcfg *pmpcfg0 = 0;
+    csr_satp *satp = 0;
+
     std::map<uint32_t, csr_base*> addr_to_csr;
 
     csr_base &at(uint32_t addr) {
@@ -475,6 +514,12 @@ struct csr_table {
         mcause = _register(new csr_mcause(0x342, "mcause"));
         mtval = _register(new csr_32(0x343, "mtval"));
         mip = _register(new csr_mip(0x344, "mip"));
+
+        satp = _register(new csr_satp(0x180, "satp"));
+        medeleg = _register(new csr_32(0x302, "medeleg"));
+        mideleg = _register(new csr_32(0x303, "mideleg"));
+        pmpaddr0 = _register(new csr_32(0x3B0, "pmpaddr0"));
+        pmpcfg0 = _register(new csr_pmpcfg(0x3A0, "pmpcfg0"));
     }
 };
 
