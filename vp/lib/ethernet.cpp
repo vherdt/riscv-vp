@@ -79,16 +79,16 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	source.s_addr = ip->saddr;
     	memset(&dest, 0, sizeof(dest));
     	dest.s_addr = ip->daddr;
-    	cout << "\t|-Version : " << ip->version << endl;
-		cout << "\t|-Internet Header Length : " << ip->ihl << " DWORDS or " << ip->ihl*4 << " Bytes" << endl;
-		cout << "\t|-Type Of Service : " << (unsigned int)ip->tos << endl;
-		cout << "\t|-Total Length : " << ntohs(ip->tot_len) << " Bytes" << endl;
-		cout << "\t|-Identification : " << ntohs(ip->id) << endl;
-		cout << "\t|-Time To Live : " << (unsigned int)ip->ttl << endl;
-    	cout << "\t|-Protocol : " << (unsigned int) ip->protocol << endl;
-    	cout << "\t|-Header Checksum : " << ntohs(ip->check) << endl;
-    	cout << "\t|-Source IP : " <<  inet_ntoa(source) << endl;
-    	cout << "\t|-Destination IP : " << inet_ntoa(dest) << endl;
+    	cout << "\t|-Version               : " << ip->version << endl;
+		cout << "\t|-Internet Header Length: " << ip->ihl << " DWORDS or " << ip->ihl*4 << " Bytes" << endl;
+		cout << "\t|-Type Of Service       : " << (unsigned int)ip->tos << endl;
+		cout << "\t|-Total Length          : " << ntohs(ip->tot_len) << " Bytes" << endl;
+		cout << "\t|-Identification        : " << ntohs(ip->id) << endl;
+		cout << "\t|-Time To Live          : " << (unsigned int)ip->ttl << endl;
+    	cout << "\t|-Protocol              : " << (unsigned int) ip->protocol << endl;
+    	cout << "\t|-Header Checksum       : " << ntohs(ip->check) << endl;
+    	cout << "\t|-Source IP             : " <<  inet_ntoa(source) << endl;
+    	cout << "\t|-Destination IP        : " << inet_ntoa(dest) << endl;
     	readbuf += ip->ihl*4;
     	switch(ip->protocol)
     	{
@@ -96,10 +96,11 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	{
     		cout << "UDP" << endl;
     		struct udphdr *udp = (struct udphdr*)readbuf;
-    		cout << "\t|-Source port: " << ntohs(udp->source) << endl;
+    		cout << "\t|-Source port     : " << ntohs(udp->source) << endl;
     		cout << "\t|-Destination port: " << ntohs(udp->dest) << endl;
-    		cout << "\t|-Length: " << ntohs(udp->len) << endl;
-    		cout << "\t|-Checksum: " << ntohs(udp->check) << endl;
+    		cout << "\t|-Length          : " << ntohs(udp->len) << endl;
+    		cout << "\t|-Checksum        : " << ntohs(udp->check) << endl;
+    		return;
     		break;
     	}
     	case IPPROTO_TCP:
@@ -117,16 +118,17 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	cout << "\t|-Sender MAC: ";
     		printHex((uint8_t*)&arp->sender_mac, 6);
     		cout << endl;
-		cout << "\t|-Sender IP: " ;
+		cout << "\t|-Sender IP : " ;
 			printDec((uint8_t*)&arp->sender_ip, 4);
 			cout << endl;
-		cout << "\t|-DEST MAC: ";
+		cout << "\t|-DEST MAC  : ";
 			printHex((uint8_t*)&arp->target_mac, 6);
 			cout << endl;
-		cout << "\t|-DEST IP: " ;
+		cout << "\t|-DEST IP   : " ;
 			printDec((uint8_t*)&arp->target_ip, 4);
 			cout << endl;
-		cout << "\t|-Operation: " << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID") << endl;
+		cout << "\t|-Operation : " << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID") << endl;
+		return;
     	break;
     }
     default:
@@ -367,28 +369,39 @@ bool EthernetDevice::try_recv_raw_frame() {
         bool broadcast_match = memcmp(eh->ether_dhost, BROADCAST_MAC_ADDRESS, ETH_ALEN) == 0;
         bool own_packet = memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
 
-        //Deep packet inspection... Ignore all except UDP as it may fill the Ethernet-buffer?
-        if(!ntohs(eh->ether_type) == ETH_P_IP)
+        if (!virtual_match && !(broadcast_match && !own_packet))
+        {
         	return false;
-
-        iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));\
-        if(!ntohs(ip->protocol) == IPPROTO_UDP)
-        	return false;
-
-        if (virtual_match || (broadcast_match && !own_packet)) {
-            //string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
-            //cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
-            has_frame = true;
-            receive_size = ans;
-			cout << "RECEIVED FRAME" << endl;
-			dump_ethernet_frame(recv_frame_buf, ans);
-			cout << endl;
-        } else {
-            //cout << "[ethernet] ignore ethernet packet to different MAC address (or own broadcast)" << endl;
-            //dump_mac_address(src_addr.sll_addr);
-            //dump_mac_address(recv_frame_buf);
-            return false;
         }
+
+		//Deep packet inspection... Ignore all except UDP as it may fill the Ethernet-buffer?
+		if(ntohs(eh->ether_type) != ETH_P_IP)
+		{	//not IP
+			//cout << "dumped non-IP packet" << endl;
+			return false;
+		}
+
+		iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));
+		if(ip->protocol != IPPROTO_UDP)
+		{	//not UDP
+			//cout << "dumped non-UDP packet" << endl;
+			//return false;
+		}
+
+		udphdr *udp = reinterpret_cast<udphdr*>(recv_frame_buf + sizeof(ether_header) + sizeof(iphdr));
+		if(ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68)
+		{	//not DHCP
+			//cout << "dumped non-DHCP packet" << endl;
+			//return false;
+		}
+
+
+		//string recv_mode(virtual_match ? "(direct)" : "(broadcast)");
+		//cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
+		has_frame = true;
+		receive_size = ans;
+		cout << "RECEIVED FRAME <---<---<---<---<---" << endl;
+		dump_ethernet_frame(recv_frame_buf, ans);
     }
     return true;
 }
@@ -401,7 +414,7 @@ void EthernetDevice::send_raw_frame() {
         send_size = 60;
     }
 
-    cout << "SEND FRAME" << endl;
+    cout << "SEND FRAME --->--->--->--->--->--->" << endl;
     dump_ethernet_frame(sendbuf, send_size);
 
     struct ether_header *eh = (struct ether_header *)sendbuf;
