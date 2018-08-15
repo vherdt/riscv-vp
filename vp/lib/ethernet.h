@@ -65,9 +65,6 @@ struct EthernetDevice : public sc_core::sc_module {
     uint32_t irq_number = 0;
     sc_core::sc_event run_event;
 
-    // memory mapped data frame
-    std::array<uint8_t, 64> data_frame;
-
     // memory mapped configuration registers
     uint32_t status = 0;
     uint32_t receive_size = 0;
@@ -113,6 +110,7 @@ struct EthernetDevice : public sc_core::sc_module {
     EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem);
 
     void init_raw_sockets();
+    void add_all_if_ips();
 
     void send_raw_frame();
     bool try_recv_raw_frame();

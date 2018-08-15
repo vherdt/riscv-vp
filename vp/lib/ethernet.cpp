@@ -11,10 +11,11 @@
 
 #include <linux/if_packet.h>
 //#include <netpacket/packet.h>
-#include <sys/ioctl.h>
-
 #include <net/if.h>
 #include <linux/if_ether.h>
+#include <sys/ioctl.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 using namespace std;
 
@@ -27,15 +28,6 @@ static const char IF_NAME[] = "vpeth1";
         perror(msg);        \
         throw runtime_error("error");   \
     }
-
-// see: https://stackoverflow.com/questions/21411851/how-to-send-data-over-a-raw-ethernet-socket-using-sendto-without-using-sockaddr
-int get_interface_index(const char interface_name[IFNAMSIZ], int sockfd) {
-    struct ifreq if_idx;
-    memset(&if_idx, 0, sizeof(struct ifreq));
-    strncpy(if_idx.ifr_name, interface_name, IFNAMSIZ-1);
-    SYS_CHECK (ioctl(sockfd, SIOCGIFINDEX, &if_idx), "ioctl.SIOCGIFINDEX");
-    return if_idx.ifr_ifindex;
-}
 
 void printHex(const unsigned char* buf, const uint32_t len)
 {
@@ -336,16 +328,57 @@ void EthernetDevice::init_raw_sockets() {
 		exit(EXIT_FAILURE);
 	}
 
-	//Todo: Get hwid&ip of all interfaces
-	memset(&ifopts, 0, sizeof(struct ifreq));
-	ifopts.ifr_addr.sa_family = AF_INET;
-	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ-1);
-	ioctl(recv_sockfd, SIOCGIFADDR, &ifopts);
-
-	//add local IP to response for guest to host communication
-	arpResponder.addDevice(*reinterpret_cast<uint32_t*>(&ifopts.ifr_addr.sa_data[2]), VIRTUAL_MAC_ADDRESS); //lol this is unreadable
+	add_all_if_ips();
 }
 
+void EthernetDevice::add_all_if_ips()
+{
+   struct ifaddrs *ifaddr, *ifa;
+
+   int family, s, n;
+   char host[NI_MAXHOST];
+
+   if (getifaddrs(&ifaddr) == -1) {
+	   perror("getifaddrs");
+	   exit(EXIT_FAILURE);
+   }
+
+   /* Walk through linked list, maintaining head pointer so we
+	  can free list later */
+
+	for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+		if (ifa->ifa_addr == NULL)
+		{
+			continue;
+		}
+		if(ifa->ifa_addr->sa_family != AF_INET)
+		{
+			continue;
+		}
+		s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
+			   host, NI_MAXHOST,
+			   NULL, 0, NI_NUMERICHOST);
+		if (s != 0) {
+		   printf("getnameinfo() failed: %s\n", gai_strerror(s));
+		   exit(EXIT_FAILURE);
+		}
+
+		//printf("\t\t%s has address: <%s>\n",ifa->ifa_name, host);
+		in_addr_t addr = inet_addr(host);
+
+		struct ifreq ifopts;
+		/* Get the MAC address of the interface to send on */
+		memset(&ifopts, 0, sizeof(struct ifreq));
+		strncpy(ifopts.ifr_name, ifa->ifa_name, strlen(ifa->ifa_name));
+		if (ioctl(send_sockfd, SIOCGIFHWADDR, &ifopts) < 0)
+		{
+			perror("SIOCGIFHWADDR");
+		}
+		//add local IP to response for guest to host communication
+		arpResponder.addDevice(addr, reinterpret_cast<uint8_t*>(ifopts.ifr_hwaddr.sa_data));
+	}
+	freeifaddrs(ifaddr);
+}
 
 bool EthernetDevice::try_recv_raw_frame() {
     socklen_t addrlen;
@@ -378,7 +411,7 @@ bool EthernetDevice::try_recv_raw_frame() {
 		if(ntohs(eh->ether_type) != ETH_P_IP)
 		{	//not IP
 			//cout << "dumped non-IP packet" << endl;
-			return false;
+			//return false;
 		}
 
 		iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));
