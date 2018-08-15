@@ -16,7 +16,9 @@
 #include "gdb_stub.h"
 
 #include <iostream>
+#include <iomanip>
 #include <boost/program_options.hpp>
+#include <boost/io/ios_state.hpp>
 
 
 struct Options {
@@ -33,6 +35,7 @@ struct Options {
     std::string input_program;
     std::string mram_image;
     std::string flash_device;
+    std::string test_signature;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
     addr_t mem_start_addr     = 0x00000000;
@@ -93,6 +96,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""), "MRAM image file for persistency")
                 ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
                 ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
+                ("signature", po::value<std::string>(&opt.test_signature)->default_value(""), "output filename for the test execution signature")
                 ;
 
         po::positional_options_description pos;
@@ -203,7 +207,35 @@ int sc_main(int argc, char **argv) {
 
     sc_core::sc_start();
 
+
     core.show();
+
+    if (opt.test_signature != "") {
+        auto begin_sig = loader.get_begin_signature_address();
+        auto end_sig = loader.get_end_signature_address();
+
+        {
+            boost::io::ios_flags_saver ifs(cout);
+            std::cout << std::hex;
+            std::cout << "begin_signature: " << begin_sig << std::endl;
+            std::cout << "end_signature: " << end_sig << std::endl;
+            std::cout << "signature output file: " << opt.test_signature << std::endl;
+        }
+
+        assert (end_sig > begin_sig);
+        assert (begin_sig >= opt.mem_start_addr);
+
+        auto begin = begin_sig - opt.mem_start_addr;
+        auto end = end_sig - opt.mem_start_addr;
+
+        ofstream sigfile(opt.test_signature, ios::out);
+
+        auto n = begin;
+        while (n < end) {
+            sigfile << std::hex << std::setw(2) << std::setfill('0') << (unsigned)mem.data[n];
+            ++n;
+        }
+    }
 
 	return 0;
 }
