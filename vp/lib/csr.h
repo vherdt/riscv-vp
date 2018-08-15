@@ -51,7 +51,7 @@ struct csr_base {
 
     int32_t read(PrivilegeLevel access_level=PrivilegeLevel::Machine) {
         ensure (level <= access_level);
-        unchecked_read();
+        return unchecked_read();
     }
 
     void write(int32_t val, PrivilegeLevel access_level=PrivilegeLevel::Machine) {
