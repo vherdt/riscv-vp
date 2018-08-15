@@ -87,8 +87,10 @@ struct EthernetDevice : public sc_core::sc_module {
     static const uint16_t MTU_SIZE   = 1500;
 	static const uint16_t FRAME_SIZE = 1514;
 
-    uint8_t recv_frame_buf[FRAME_SIZE];
+	uint8_t recv_frame_buf[FRAME_SIZE];
+	uint8_t inject_frame_buf[FRAME_SIZE];
     bool has_frame;
+    uint16_t injectBufSize;
     ArpResponder arpResponder;
 
     static const uint16_t STATUS_REG_ADDR       = 0x00;
@@ -113,6 +115,7 @@ struct EthernetDevice : public sc_core::sc_module {
     void add_all_if_ips();
 
     void send_raw_frame();
+    void inject_recv_frame(uint8_t* frame, uint16_t length);
     bool try_recv_raw_frame();
 
     void register_access_callback(const vp::map::register_access_t &r) {

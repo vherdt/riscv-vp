@@ -230,7 +230,7 @@ uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
 	responseEth->ether_type = ntohs(ETH_P_ARP);
 
 	responseArp->htype = htons(ARPHRD_ETHER);
-	responseArp->ptype = ETH_P_IP;
+	responseArp->ptype = htons(ETH_P_IP);
 	responseArp->hlen  = htons(6);
 	responseArp->plen  = htons(4);
 	responseArp->oper  = htons(ARPOP_REPLY);
@@ -252,8 +252,8 @@ uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
 	memcpy(responseArp->target_mac, requestArp->sender_mac, 6);
 	memcpy(responseArp->target_ip, requestArp->sender_ip, 4);
 
-	cout << "FORGED ARP RESPONSE: " << endl;
-	dump_ethernet_frame(packet, arpPacketSize);
+	//cout << "FORGED ARP RESPONSE: " << endl;
+	//dump_ethernet_frame(packet, arpPacketSize);
 
 	return packet;
 }
@@ -380,7 +380,63 @@ void EthernetDevice::add_all_if_ips()
 	freeifaddrs(ifaddr);
 }
 
+void EthernetDevice::send_raw_frame() {
+    uint8_t sendbuf[send_size < 60 ? 60 : send_size];
+    memcpy(sendbuf, &mem[send_src - 0x80000000], send_size);
+    if (send_size < 60) {
+    	memset(&sendbuf[send_size], 0, 60 - send_size);
+        send_size = 60;
+    }
+
+    cout << "\nSEND FRAME --->--->--->--->--->--->" << endl;
+    dump_ethernet_frame(sendbuf, send_size);
+
+    struct ether_header *eh = (struct ether_header *)sendbuf;
+
+    assert (memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
+
+    struct sockaddr_ll socket_idx;
+    memset(&socket_idx, 0, sizeof(sockaddr_ll));
+    socket_idx.sll_ifindex = interfaceIdx;
+
+    ssize_t ans = sendto(send_sockfd, sendbuf, send_size, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
+    if(ans != send_size)
+    {
+    	cout << strerror(errno) << endl;
+    }
+    assert (ans == send_size);
+
+    if(arpResponder.isArpReq(sendbuf, send_size))
+	{
+    	uint8_t* response = arpResponder.buildResponseFrom(sendbuf);
+    	if(response == nullptr)
+    	{
+    		//we cannot satisfy request
+    		return;
+    	}
+    	inject_recv_frame(response, ArpResponder::arpPacketSize);
+	}
+}
+
+void EthernetDevice::inject_recv_frame(uint8_t* frame, uint16_t length)
+{
+	assert(injectBufSize == 0 && "Inject buffer already in use");
+	memcpy(inject_frame_buf, frame, length);
+	injectBufSize = length;
+}
+
 bool EthernetDevice::try_recv_raw_frame() {
+	if(injectBufSize != 0)
+	{	//injection buffer waiting
+		has_frame = true;
+		memcpy(recv_frame_buf, inject_frame_buf, injectBufSize);
+		receive_size = injectBufSize;
+		injectBufSize = 0;
+		cout << "\nINJECTED FRAME <>--<>--<>--<>--<>--<>" << endl;
+		dump_ethernet_frame(recv_frame_buf, receive_size);
+		return true;
+	}
+
     socklen_t addrlen;
 
     ssize_t ans = recv(recv_sockfd, recv_frame_buf, FRAME_SIZE, MSG_DONTWAIT);
@@ -411,21 +467,21 @@ bool EthernetDevice::try_recv_raw_frame() {
 		if(ntohs(eh->ether_type) != ETH_P_IP)
 		{	//not IP
 			//cout << "dumped non-IP packet" << endl;
-			//return false;
+			return false;
 		}
 
 		iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));
 		if(ip->protocol != IPPROTO_UDP)
 		{	//not UDP
 			//cout << "dumped non-UDP packet" << endl;
-			//return false;
+			return false;
 		}
 
 		udphdr *udp = reinterpret_cast<udphdr*>(recv_frame_buf + sizeof(ether_header) + sizeof(iphdr));
 		if(ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68)
 		{	//not DHCP
 			//cout << "dumped non-DHCP packet" << endl;
-			//return false;
+			return false;
 		}
 
 
@@ -433,54 +489,10 @@ bool EthernetDevice::try_recv_raw_frame() {
 		//cout << "[ethernet] recv socket " << ans << " bytes received " << recv_mode << endl;
 		has_frame = true;
 		receive_size = ans;
-		cout << "RECEIVED FRAME <---<---<---<---<---" << endl;
+		cout << "\nRECEIVED FRAME <---<---<---<---<---" << endl;
 		dump_ethernet_frame(recv_frame_buf, ans);
     }
     return true;
 }
 
-void EthernetDevice::send_raw_frame() {
-    uint8_t sendbuf[send_size < 60 ? 60 : send_size];
-    memcpy(sendbuf, &mem[send_src - 0x80000000], send_size);
-    if (send_size < 60) {
-    	memset(&sendbuf[send_size], 0, 60 - send_size);
-        send_size = 60;
-    }
 
-    cout << "SEND FRAME --->--->--->--->--->--->" << endl;
-    dump_ethernet_frame(sendbuf, send_size);
-
-    struct ether_header *eh = (struct ether_header *)sendbuf;
-
-    assert (memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
-
-    struct sockaddr_ll socket_idx;
-    memset(&socket_idx, 0, sizeof(sockaddr_ll));
-    socket_idx.sll_ifindex = interfaceIdx;
-
-    ssize_t ans = sendto(send_sockfd, sendbuf, send_size, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
-    if(ans != send_size)
-    {
-    	cout << strerror(errno) << endl;
-    }
-    assert (ans == send_size);
-
-    if(arpResponder.isArpReq(sendbuf, send_size))
-	{
-    	uint8_t* response = arpResponder.buildResponseFrom(sendbuf);
-    	if(response == nullptr)
-    	{
-    		//we cannot satisfy request
-    		return;
-    	}
-        memset(&socket_idx, 0, sizeof(sockaddr_ll));
-        socket_idx.sll_ifindex = interfaceIdx;
-        ssize_t ans = sendto(send_sockfd, response, ArpResponder::arpPacketSize, 0, (struct sockaddr*)&socket_idx, sizeof(sockaddr_ll));
-        if(ans != send_size)
-        {
-        	cout << strerror(errno) << endl;
-        }
-        assert (ans == send_size);
-	}
-
-}
