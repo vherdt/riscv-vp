@@ -161,7 +161,7 @@ void ArpCache::readKernelArpCache()
         inet_aton(ipAddr, &inaddr);
         uint8_t mac[8];	//same width as uint64_t
         memset(mac, 0, 8);
-        assert(6 == sscanf(hwAddr, "%x:%x:%x:%x:%x:%x%*c",
+        assert(6 == sscanf(hwAddr, "%hhu:%hhu:%hhu:%hhu:%hhu:%hhu%*c",
             &mac[0], &mac[1], &mac[2],
             &mac[3], &mac[4], &mac[5] ) );
         cache[inaddr.s_addr] = *reinterpret_cast<uint64_t*>(mac);
