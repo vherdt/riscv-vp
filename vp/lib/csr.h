@@ -47,8 +47,6 @@ struct csr_base {
     virtual int32_t unchecked_read() = 0;
     virtual void unchecked_write(int32_t val) = 0;
 
-    virtual void init() {}
-
     int32_t read(PrivilegeLevel access_level=PrivilegeLevel::Machine) {
         ensure (level <= access_level);
         return unchecked_read();
@@ -75,8 +73,6 @@ struct csr_base {
                 (mode & Supervisor) ? PrivilegeLevel::Supervisor :
                 (mode & Machine) ? PrivilegeLevel::Machine : PrivilegeLevel::Reserved;
         ensure (level != PrivilegeLevel::Reserved && "invalid privilege level");
-
-        init();
     }
 
     AccessMode _get_access_mode() {
@@ -132,6 +128,11 @@ struct csr_32 : public csr_base {
 struct csr_misa : public csr_base {
     INCLUDE_CSR_MIXIN;
 
+    csr_misa(uint32_t addr, const char *name)
+        :csr_base(addr, name) {
+        init();
+    }
+
     union {
         int32_t reg = 0;
         struct {
@@ -141,7 +142,7 @@ struct csr_misa : public csr_base {
         };
     };
 
-    virtual void init() override {
+    void init() {
         extensions = 1 | (1 << 8) | (1 << 12);
         wiri = 0;
         mxl = 1;

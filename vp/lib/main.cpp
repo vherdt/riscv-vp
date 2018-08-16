@@ -222,7 +222,7 @@ int sc_main(int argc, char **argv) {
             std::cout << "signature output file: " << opt.test_signature << std::endl;
         }
 
-        assert (end_sig > begin_sig);
+        assert (end_sig >= begin_sig);
         assert (begin_sig >= opt.mem_start_addr);
 
         auto begin = begin_sig - opt.mem_start_addr;
