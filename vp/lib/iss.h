@@ -874,12 +874,10 @@ struct ISS : public sc_core::sc_module,
                 break;
 
             case Opcode::LUI:
-                assert (instr.rd() != RegFile::zero);
                 regs[instr.rd()] = instr.U_imm();
                 break;
 
             case Opcode::AUIPC:
-                assert (instr.rd() != RegFile::zero);
                 regs[instr.rd()] = last_pc + instr.U_imm();
                 break;
 
