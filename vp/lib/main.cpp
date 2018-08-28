@@ -191,7 +191,6 @@ int sc_main(int argc, char **argv) {
     bus.isocks[4].bind(clint.tsock);
     bus.isocks[5].bind(dma.tsock);
     bus.isocks[6].bind(sensor2.tsock);
-    bus.isocks[7].bind(ethernet.tsock);
     bus.isocks[7].bind(mram.tsock);
     bus.isocks[8].bind(flashController.tsock);
     bus.isocks[9].bind(ethernet.tsock);
