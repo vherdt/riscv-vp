@@ -20,8 +20,8 @@
 using namespace std;
 
 //static const char IF_NAME[] = "lo";
-static const char IF_NAME[] = "vpeth1";
-//static const char IF_NAME[] = "enp0s31f6";
+//static const char IF_NAME[] = "vpeth1";
+ static const char IF_NAME[] = "enp0s31f6";
 
 #define SYS_CHECK(arg,msg)  \
     if ((arg) < 0) {      \
@@ -47,6 +47,7 @@ void printDec(const unsigned char* buf, const uint32_t len)
 
 
 void dump_ethernet_frame(uint8_t *buf, size_t size) {
+	return;
 	uint8_t* readbuf = buf;
     struct ether_header *eh = (struct ether_header *)readbuf;
     cout << "destination MAC: ";
@@ -240,11 +241,11 @@ uint8_t* ArpResponder::buildResponseFrom(uint8_t* eth)
 	{
 		return nullptr;
 	}
-	cout << "MAC of requested ";
-	printDec(requestArp->target_ip, 4);
-	cout << " is ";
-	printHex(requestedHWID, 6);
-	cout << endl;
+	//cout << "MAC of requested ";
+	//printDec(requestArp->target_ip, 4);
+	//cout << " is ";
+	//printHex(requestedHWID, 6);
+	//cout << endl;
 
 	memcpy(responseArp->sender_mac, requestedHWID, 6);
 	memcpy(responseArp->sender_ip, requestArp->target_ip, 4);
