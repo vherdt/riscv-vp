@@ -3,6 +3,8 @@
 
 #include "iss.h"
 #include "memory.h"
+#include "mram.h"
+#include "flash.h"
 #include "elf_loader.h"
 #include "plic.h"
 #include "clint.h"
@@ -15,22 +17,30 @@
 #include "gdb_stub.h"
 
 #include <iostream>
+#include <iomanip>
 #include <boost/program_options.hpp>
+#include <boost/io/ios_state.hpp>
 
 
 struct Options {
     typedef unsigned int addr_t;
 
     Options &check_and_post_process() {
-        mem_end_addr = mem_start_addr + mem_size;
+        mem_end_addr = mem_start_addr + mem_size - 1;
+    	assert(((mem_end_addr < clint_start_addr) || (mem_start_addr > flash_end_addr)) && "RAM too big, would overlap memory");
+        mram_end_addr = mram_start_addr + mram_size - 1;
+        assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
         return *this;
     }
 
     std::string input_program;
+    std::string mram_image;
+    std::string flash_device;
+    std::string test_signature;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
     addr_t mem_start_addr     = 0x00000000;
-    addr_t mem_end_addr       = mem_start_addr + mem_size;
+    addr_t mem_end_addr       = mem_start_addr + mem_size - 1;
     addr_t clint_start_addr   = 0x02000000;
     addr_t clint_end_addr     = 0x0200ffff;
     addr_t term_start_addr    = 0x20000000;
@@ -43,8 +53,14 @@ struct Options {
     addr_t sensor_end_addr    = 0x50001000;
     addr_t sensor2_start_addr = 0x50002000;
     addr_t sensor2_end_addr   = 0x50004000;
+    addr_t mram_start_addr    = 0x60000000;
+    addr_t mram_size		  = 0x10000000;
+    addr_t mram_end_addr      = mram_start_addr + mram_size - 1;
     addr_t dma_start_addr     = 0x70000000;
     addr_t dma_end_addr       = 0x70001000;
+    addr_t flash_start_addr   = 0x71000000;
+    addr_t flash_end_addr     = flash_start_addr + Flashcontroller::ADDR_SPACE;	//Usually 528 Byte
+
 
     bool use_debug_runner = false;
     bool use_instr_dmi = false;
@@ -80,6 +96,10 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
                 ("use-dmi", po::bool_switch(), "use instr and data dmi")
                 ("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
+                ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""), "MRAM image file for persistency")
+                ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
+                ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
+                ("signature", po::value<std::string>(&opt.test_signature)->default_value(""), "output filename for the test execution signature")
                 ;
 
         po::positional_options_description pos;
@@ -119,7 +139,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,8> bus("SimpleBus");
+    SimpleBus<2,10> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -127,7 +147,9 @@ int sc_main(int argc, char **argv) {
     SimpleSensor sensor("SimpleSensor", 2);
     SimpleSensor2 sensor2("SimpleSensor2", 5);
     BasicTimer timer("BasicTimer", 3);
+    SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
+    Flashcontroller flashController("Flashcontroller", opt.flash_device);
     EthernetDevice ethernet("EthernetDevice", 7, mem.data);
 
 
@@ -151,6 +173,9 @@ int sc_main(int argc, char **argv) {
     bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
     bus.ports[7] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
+    bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
+    bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
+    bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region
@@ -167,6 +192,9 @@ int sc_main(int argc, char **argv) {
     bus.isocks[5].bind(dma.tsock);
     bus.isocks[6].bind(sensor2.tsock);
     bus.isocks[7].bind(ethernet.tsock);
+    bus.isocks[7].bind(mram.tsock);
+    bus.isocks[8].bind(flashController.tsock);
+    bus.isocks[9].bind(ethernet.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
@@ -188,7 +216,35 @@ int sc_main(int argc, char **argv) {
 
     sc_core::sc_start();
 
+
     core.show();
+
+    if (opt.test_signature != "") {
+        auto begin_sig = loader.get_begin_signature_address();
+        auto end_sig = loader.get_end_signature_address();
+
+        {
+            boost::io::ios_flags_saver ifs(cout);
+            std::cout << std::hex;
+            std::cout << "begin_signature: " << begin_sig << std::endl;
+            std::cout << "end_signature: " << end_sig << std::endl;
+            std::cout << "signature output file: " << opt.test_signature << std::endl;
+        }
+
+        assert (end_sig > begin_sig);
+        assert (begin_sig >= opt.mem_start_addr);
+
+        auto begin = begin_sig - opt.mem_start_addr;
+        auto end = end_sig - opt.mem_start_addr;
+
+        ofstream sigfile(opt.test_signature, ios::out);
+
+        auto n = begin;
+        while (n < end) {
+            sigfile << std::hex << std::setw(2) << std::setfill('0') << (unsigned)mem.data[n];
+            ++n;
+        }
+    }
 
 	return 0;
 }

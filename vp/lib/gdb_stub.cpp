@@ -49,6 +49,19 @@ std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
     return stream.str();
 }
 
+std::string debug_memory_mapping::zero_memory(int nbytes) {
+    assert (nbytes > 0);
+
+    uint32_t read_size = boost::lexical_cast<uint32_t>(nbytes);
+
+    std::stringstream stream;
+    stream << std::setfill('0') << std::hex;
+    for (uint32_t i=0; i<read_size; ++i) {
+        stream << std::setw(2) << 0;
+    }
+    return stream.str();
+}
+
 
 void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
     assert (start >= 0);
@@ -107,32 +120,33 @@ std::string compute_checksum_string(const std::string &msg) {
 }
 
 
-std::string receive_packet(int conn) {
-    constexpr unsigned BUF_SIZE = 1024;
-    char buffer[BUF_SIZE] = { 0 };
-
-    int nbytes = ::recv(conn, buffer, BUF_SIZE, 0);
-    assert (nbytes >= 0);
-    assert (nbytes <= BUF_SIZE);
+std::string DebugCoreRunner::receive_packet(int conn) {
+    int nbytes = ::recv(conn, iobuf, bufsize, 0);
+    if(nbytes <= 0)
+    {
+    	std::cerr << "recv error" << strerror(errno) << std::endl;
+    	return std::string("err");
+    }
+    assert (nbytes <= bufsize);
 
     //std::cout << "recv: " << buffer << std::endl;
 
     if (nbytes == 0) {
         return "";
     } else if (nbytes == 1) {
-        assert (buffer[0] == '+');
+        assert (iobuf[0] == '+');
         return std::string("+");
     } else {
         //1) find $
         //2) find #
         //3) assert that two chars follow #
 
-        char *start = strchr(buffer, '$');
-        char *end   = strchr(buffer, '#');
+        char *start = strchr(iobuf, '$');
+        char *end   = strchr(iobuf, '#');
 
         assert (start && end);
         assert (start < end);
-        assert (end < (buffer + BUF_SIZE));
+        assert (end < (iobuf + bufsize));
         assert (strnlen(end, 3) == 3);
 
         std::string message(start+1, end-(start+1));
@@ -148,17 +162,15 @@ std::string receive_packet(int conn) {
 }
 
 
-void send_packet(int conn, const std::string &msg) {
+void DebugCoreRunner::send_packet(int conn, const std::string &msg) {
     std::string frame = "+$" + msg + "#" + compute_checksum_string(msg);
     //std::cout << "send: " << frame << std::endl;
 
-    constexpr unsigned BUF_SIZE = 1024;
-    assert (frame.size() < BUF_SIZE);
-    char buffer[BUF_SIZE];
+    assert (frame.size() < bufsize);
 
-    memcpy(buffer, frame.c_str(), frame.size());
+    memcpy(iobuf, frame.c_str(), frame.size());
 
-    int nbytes = ::send(conn, buffer, frame.size(), 0);
+    int nbytes = ::send(conn, iobuf, frame.size(), 0);
     assert (nbytes == frame.size());
 }
 
@@ -236,6 +248,9 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             break;
         } else if (msg == "+") {
             // NOTE: just ignore this message, nothing to do in this case
+        }else if (msg == "err") {
+            //error from receive packet. Ignore...
+        	std::cerr << "Received packet unknown" << std::endl;
         } else if (boost::starts_with(msg, "qSupported")) {
             send_packet(conn, "PacketSize=1024");
         } else if (msg == "vMustReplyEmpty") {
@@ -292,8 +307,16 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             send_packet(conn, stream.str());
         } else if (boost::starts_with(msg, "m")) {
             memory_access_t m = parse_memory_access(msg);
-            assert ((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size)); //NOTE: out of bound memory access
-            std::string ans = memory.read_memory(m.start, m.nbytes);
+            std::string ans;
+        	//NOTE: reading from a memory mapped device is currently not supported (can implement a *debug-read* method on the bus or similar)
+            if((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size))
+            {
+            	ans = memory.read_memory(m.start, m.nbytes);
+			}
+            else
+			{	//NOTE: out of bound memory access
+            	ans = memory.zero_memory(m.nbytes);
+			}
             send_packet(conn, ans);
         } else if (boost::starts_with(msg, "M")) {
             memory_access_t m = parse_memory_access(msg);
@@ -338,7 +361,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
         } else if (boost::starts_with(msg, "Z0")) {
             // set SW breakpoint: ‘Z0,addr,kind[;cond_list…][;cmds:persist,cmd_list…]’
             breakpoint_t s = parse_breakpoint(msg);
-            std::cout << "set breakpoint: " << s.addr << std::endl;
+            //std::cout << "set breakpoint: " << s.addr << std::endl;
             core.breakpoints.insert(s.addr);
             send_packet(conn, "OK");
         } else if (boost::starts_with(msg, "z0")) {

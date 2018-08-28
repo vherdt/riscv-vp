@@ -213,8 +213,18 @@ int SyscallHandler::execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2, ul
             shall_exit = true;
             return 0;
 
-        case SYS_error:
-            throw std::runtime_error("SYS_error");
+        case SYS_host_error:
+            throw std::runtime_error("SYS_host_error");
+
+        case SYS_host_test_pass:
+            std::cout << "TEST_PASS" << std::endl;
+            shall_exit = true;
+            return 0;
+
+        case SYS_host_test_fail:
+            std::cout << "TEST_FAIL (testnum = " << _a0 << ")" << std::endl;
+            shall_exit = true;
+            return 0;
     }
 
     throw std::runtime_error("unsupported syscall '" + std::to_string(n) + "'");

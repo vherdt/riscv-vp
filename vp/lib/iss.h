@@ -1054,22 +1054,22 @@ struct ISS : public sc_core::sc_module,
 
 
             case Opcode::MUL: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = ans & 0xFFFFFFFF;
             } break;
 
             case Opcode::MULH: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHU: {
-                int64_t ans = (uint32_t)regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHSU: {
-                int64_t ans = regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
@@ -1217,6 +1217,9 @@ struct ISS : public sc_core::sc_module,
                 assert (false && "unknown opcode");
         }
 
+        //NOTE: writes to zero register are supposedly allowed but must be ignored (reset it after every instruction, instead of checking *rd != zero* before every register write)
+        regs.regs[regs.zero] = 0;
+
         return op;
     }
 
@@ -1344,9 +1347,9 @@ struct ISS : public sc_core::sc_module,
     }
 
     void run_step() {
-        assert (regs.regs[0] == 0);
+        assert (regs.read(0) == 0);
 
-        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.regs[regs.sp] << std::endl;
+        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
         last_pc = pc;
         Opcode::mapping op = exec_step();
 
@@ -1379,7 +1382,7 @@ struct ISS : public sc_core::sc_module,
         regs.show();
         std::cout << "pc = " << pc << std::endl;
         std::cout << "num-instr = " << csrs.instret_root->reg << std::endl;
-        std::cout << "max-heap (bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
+        std::cout << "max-heap (c-lib malloc, bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
     }
 };
 

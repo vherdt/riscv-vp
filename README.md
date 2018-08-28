@@ -13,6 +13,14 @@ The RISC-V based Virtual Prototype (VP) integrates a RISC-V RV32IM core, a PLIC-
 sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev
 ```
 
+On Fedora, following actions are required:
+```bash
+sudo dnf install autoconf automake curl libmpc-devel mpfr-devel gmp-devel gawk bison flex texinfo gperf libtool patchutils bc zlib-devel expat-devel cmake boost-devel
+sudo dnf groupinstall "C Development Tools and Libraries"
+#optional debuginfo
+sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzip2-libs glibc libgcc libicu libstdc++ zlib
+```
+
 For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain. With the packages installed, the toolchain can be build as follows:
 
 ```bash
