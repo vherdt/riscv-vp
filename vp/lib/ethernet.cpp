@@ -19,9 +19,10 @@
 
 using namespace std;
 
-//static const char IF_NAME[] = "lo";
-//static const char IF_NAME[] = "vpeth1";
- static const char IF_NAME[] = "enp0s31f6";
+static const char IF_NAME[] = "mvl0";
+//static const char IF_NAME[] = "tap0";
+//static const char IF_NAME[] = "macvtap0";
+//static const char IF_NAME[] = "enp0s31f6";
 
 #define SYS_CHECK(arg,msg)  \
     if ((arg) < 0) {      \
@@ -156,8 +157,8 @@ void ArpCache::readKernelArpCache()
     int count = 0;
     while (3 == fscanf(arpCache, arpLineFormat, ipAddr, hwAddr, device))
     {
-        printf("%03d: Mac Address of [%s] on [%s] is \"%s\"\n",
-                count, ipAddr, device, hwAddr);
+        //printf("%03d: Mac Address of [%s] on [%s] is \"%s\"\n",
+        //        count, ipAddr, device, hwAddr);
         struct in_addr inaddr;
         inet_aton(ipAddr, &inaddr);
         uint8_t mac[8];	//same width as uint64_t
@@ -329,7 +330,7 @@ void EthernetDevice::init_raw_sockets() {
 		exit(EXIT_FAILURE);
 	}
 
-	add_all_if_ips();
+	//add_all_if_ips();
 }
 
 void EthernetDevice::add_all_if_ips()
@@ -376,7 +377,7 @@ void EthernetDevice::add_all_if_ips()
 			perror("SIOCGIFHWADDR");
 		}
 		//add local IP to response for guest to host communication
-		arpResponder.addDevice(addr, reinterpret_cast<uint8_t*>(ifopts.ifr_hwaddr.sa_data));
+		//arpResponder.addDevice(addr, reinterpret_cast<uint8_t*>(ifopts.ifr_hwaddr.sa_data));
 	}
 	freeifaddrs(ifaddr);
 }
@@ -407,6 +408,7 @@ void EthernetDevice::send_raw_frame() {
     }
     assert (ans == send_size);
 
+    /*
     if(arpResponder.isArpReq(sendbuf, send_size))
 	{
     	uint8_t* response = arpResponder.buildResponseFrom(sendbuf);
@@ -417,6 +419,7 @@ void EthernetDevice::send_raw_frame() {
     	}
     	inject_recv_frame(response, ArpResponder::arpPacketSize);
 	}
+	*/
 }
 
 void EthernetDevice::inject_recv_frame(uint8_t* frame, uint16_t length)
@@ -468,21 +471,21 @@ bool EthernetDevice::try_recv_raw_frame() {
 		if(ntohs(eh->ether_type) != ETH_P_IP)
 		{	//not IP
 			//cout << "dumped non-IP packet" << endl;
-			return false;
+			//return false;
 		}
 
 		iphdr *ip = reinterpret_cast<iphdr*>(recv_frame_buf + sizeof(ether_header));
 		if(ip->protocol != IPPROTO_UDP)
 		{	//not UDP
 			//cout << "dumped non-UDP packet" << endl;
-			return false;
+			//return false;
 		}
 
 		udphdr *udp = reinterpret_cast<udphdr*>(recv_frame_buf + sizeof(ether_header) + sizeof(iphdr));
 		if(ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68)
 		{	//not DHCP
 			//cout << "dumped non-DHCP packet" << endl;
-			return false;
+			//return false;
 		}
 
 

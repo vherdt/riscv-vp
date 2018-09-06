@@ -91,7 +91,7 @@ struct EthernetDevice : public sc_core::sc_module {
 	uint8_t inject_frame_buf[FRAME_SIZE];
     bool has_frame;
     uint16_t injectBufSize;
-    ArpResponder arpResponder;
+    //ArpResponder arpResponder;
 
     static const uint16_t STATUS_REG_ADDR       = 0x00;
 	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR       + sizeof(uint32_t);
