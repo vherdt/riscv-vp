@@ -29,35 +29,6 @@ struct arp_eth_header {
     uint8_t target_ip[4];
 };
 
-class ArpCache
-{
-	/* Format for fscanf() to read the 1st, 4th, and 6th space-delimited fields */
-	static const char arpLineFormat[];
-	static const char arpCachePath[];
-	static const uint16_t bufferLength = 1024;
-
-	//maps ip (4Byte) to MAC (6Byte)
-	std::map<uint32_t, uint64_t> cache;
-
-	void readKernelArpCache();
-public:
-	bool getHwidByIp(const uint32_t* ip, uint8_t* hwid);
-	void addHwid(const uint32_t& ip, uint64_t& hwid);
-};
-
-class ArpResponder
-{
-public:
-	static const uint16_t arpPacketSize = 60;
-private:
-	uint8_t packet[arpPacketSize];
-	ArpCache cache;
-public:
-	void addDevice(uint32_t ip, uint8_t* hwid);
-	bool isArpReq(uint8_t* eth, uint16_t len);
-	uint8_t* buildResponseFrom(uint8_t* eth);
-};
-
 struct EthernetDevice : public sc_core::sc_module {
     tlm_utils::simple_target_socket<EthernetDevice> tsock;
 
@@ -80,18 +51,14 @@ struct EthernetDevice : public sc_core::sc_module {
 
     vp::map::LocalRouter router;
 
-    int send_sockfd = 0;
-    int recv_sockfd = 0;
+    int sockfd = 0;
     int interfaceIdx = 0;
 
     static const uint16_t MTU_SIZE   = 1500;
-	static const uint16_t FRAME_SIZE = 1514;
+	static const uint16_t FRAME_SIZE = MTU_SIZE + 14;
 
 	uint8_t recv_frame_buf[FRAME_SIZE];
-	uint8_t inject_frame_buf[FRAME_SIZE];
     bool has_frame;
-    uint16_t injectBufSize;
-    //ArpResponder arpResponder;
 
     static const uint16_t STATUS_REG_ADDR       = 0x00;
 	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR       + sizeof(uint32_t);
@@ -111,12 +78,12 @@ struct EthernetDevice : public sc_core::sc_module {
 
     EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem);
 
-    void init_raw_sockets();
+    void init_network();
     void add_all_if_ips();
 
     void send_raw_frame();
-    void inject_recv_frame(uint8_t* frame, uint16_t length);
     bool try_recv_raw_frame();
+    bool isPacketForUs(uint8_t* packet, ssize_t size);
 
     void register_access_callback(const vp::map::register_access_t &r) {
         assert (mem);
