@@ -23,11 +23,8 @@ void VPDisplay::drawMainPage(QImage* mem)
 {
     for(int row = 0; row < mem->height(); row++)
     {
-        uint16_t* line = reinterpret_cast<uint16_t*>(mem->scanLine(row)); //two bytes per Pixel
-        for(int pix = 0; pix < mem->width(); pix++)
-        {
-            line[pix] = framebuffer->getActiveFrame().raw[pix][row];
-        }
+        uint8_t* line = mem->scanLine(row);
+        memcpy(line, framebuffer->getActiveFrame().raw[row], mem->width() * 2); //two bytes per Pixel
     }
 }
 

@@ -12,7 +12,7 @@ typedef uint16_t Color;
 
 struct Frame
 {
-    Color raw[screenWidth][screenHeight];
+    Color raw[screenHeight][screenWidth];   //Notice: Screen is on side
 };
 
 struct __attribute__((packed)) Framebuffer
