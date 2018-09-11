@@ -7,3 +7,4 @@ build/
 vp/dependencies/systemc-dist/
 *.bin
 systemc-*
+*.asm

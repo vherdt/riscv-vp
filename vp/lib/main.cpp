@@ -12,7 +12,7 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "basic_timer.h"
-#include "ethernet.h"
+//#include "ethernet.h"
 #include "display.hpp"
 #include "dma.h"
 #include "gdb_stub.h"
@@ -142,7 +142,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,11> bus("SimpleBus");
+    SimpleBus<2,10> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -153,8 +153,8 @@ int sc_main(int argc, char **argv) {
     SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
     Flashcontroller flashController("Flashcontroller", opt.flash_device);
-    EthernetDevice ethernet("EthernetDevice", 7, mem.data);
-    Display display;
+    //EthernetDevice ethernet("EthernetDevice", 7, mem.data);
+    Display display("Display");
 
 
     direct_memory_interface dmi({mem.data, opt.mem_start_addr, mem.size});
@@ -176,11 +176,10 @@ int sc_main(int argc, char **argv) {
     bus.ports[4] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
     bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
-    bus.ports[7] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
     bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
     bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-    bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
-    bus.ports[10]= new PortMapping(opt.display_start_addr, opt.display_end_addr);
+    //bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
+    bus.ports[9]= new PortMapping(opt.display_start_addr, opt.display_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region
@@ -198,8 +197,8 @@ int sc_main(int argc, char **argv) {
     bus.isocks[6].bind(sensor2.tsock);
     bus.isocks[7].bind(mram.tsock);
     bus.isocks[8].bind(flashController.tsock);
-    bus.isocks[9].bind(ethernet.tsock);
-    bus.isocks[10].bind(display.tsock);
+    //bus.isocks[9].bind(ethernet.tsock);
+    bus.isocks[9].bind(display.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
@@ -208,7 +207,7 @@ int sc_main(int argc, char **argv) {
     dma.plic = &plic;
     timer.plic = &plic;
     sensor2.plic = &plic;
-    ethernet.plic = &plic;
+    //ethernet.plic = &plic;
 
 
     if (opt.use_debug_runner) {

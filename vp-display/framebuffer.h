@@ -33,7 +33,10 @@ struct __attribute__((packed)) Framebuffer
     void applyFrame()
     {
         activeFrame ++;
-        //Copy new frame to next frame
-        memcpy(&frames[(activeFrame + 1) % 2], &frames[activeFrame % 2], sizeof(Frame));
+        memcpy(&getInactiveFrame(), &getActiveFrame(), sizeof(Frame));
+    }
+    void applyFrameHwAccelerated()
+    {
+    	activeFrame ++;
     }
 };

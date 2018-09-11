@@ -29,6 +29,6 @@ struct Display : public sc_core::sc_module
 
 	void createSM();
 
-	Display();
+	Display(sc_module_name);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 };

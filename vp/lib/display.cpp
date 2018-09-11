@@ -10,8 +10,9 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-Display::Display()
+Display::Display(sc_module_name)
 {
+	tsock.register_b_transport(this, &Display::transport);
 	createSM();
 	frame.buf = new(frame.raw) Framebuffer();	//just for the constructor
 
@@ -40,11 +41,16 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
     auto *ptr = trans.get_data_ptr();
     auto len = trans.get_data_length();
 
-    assert ((addr >= 0) && (addr + len < sizeof(Framebuffer)) && "Access display out of bounds");
+    assert ((addr >= 0) && (addr + len <= sizeof(Framebuffer)) && "Access display out of bounds");
 
 	if(cmd == tlm::TLM_WRITE_COMMAND)
 	{
 		memcpy(&frame.raw[addr], ptr, len);
+		if(addr == 0)
+		{	//this is activeFrame variable
+			//We do "hardware acceleration" to copy new frame to next frame
+			memcpy(&frame.buf->getInactiveFrame(), &frame.buf->getActiveFrame(), sizeof(Frame));
+		}
 	}
 	else if (cmd == tlm::TLM_READ_COMMAND)
 	{
