@@ -15,12 +15,21 @@ struct Frame
     Color raw[screenHeight][screenWidth];   //Notice: Screen is on side
 };
 
-struct __attribute__((packed)) Framebuffer
+struct Framebuffer
 {
     uint8_t activeFrame;
+    enum class Command : uint8_t
+    {
+        none = 0,
+        clearAll,
+        clearBackground,
+        clearForeground,
+        applyFrame
+    } command;
     Frame frames[2];
+    Frame background;
 
-    Framebuffer() : activeFrame(0){};
+    Framebuffer() : activeFrame(0), command(Command::none){};
 
     Frame& getActiveFrame()
     {
@@ -30,13 +39,8 @@ struct __attribute__((packed)) Framebuffer
     {
         return frames[(activeFrame + 1) % 2];
     }
-    void applyFrame()
+    Frame& getBackground()
     {
-        activeFrame ++;
-        memcpy(&getInactiveFrame(), &getActiveFrame(), sizeof(Frame));
-    }
-    void applyFrameHwAccelerated()
-    {
-    	activeFrame ++;
+        return background;
     }
 };

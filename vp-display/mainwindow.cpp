@@ -21,10 +21,15 @@ VPDisplay::~VPDisplay()
 
 void VPDisplay::drawMainPage(QImage* mem)
 {
+    Frame activeFrame = framebuffer->getActiveFrame();
+    Frame background = framebuffer->getBackground();
     for(int row = 0; row < mem->height(); row++)
     {
-        uint8_t* line = mem->scanLine(row);
-        memcpy(line, framebuffer->getActiveFrame().raw[row], mem->width() * 2); //two bytes per Pixel
+        uint16_t* line = reinterpret_cast<uint16_t*>(mem->scanLine(row)); //Two bytes per pixel
+        for(int x = 0; x < mem->width(); x++)
+        {
+            line[x] = activeFrame.raw[row][x] == 0 ? background.raw[row][x] : activeFrame.raw[row][x];
+        }
     }
 }
 

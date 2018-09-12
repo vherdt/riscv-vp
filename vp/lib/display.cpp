@@ -14,10 +14,7 @@ Display::Display(sc_module_name)
 {
 	tsock.register_b_transport(this, &Display::transport);
 	createSM();
-	frame.buf = new(frame.raw) Framebuffer();	//just for the constructor
-
-	memset(&frame.buf->getInactiveFrame(), 0, sizeof(Frame));
-	frame.buf->applyFrame();
+	memset(frame.raw, 0, sizeof(Framebuffer));
 }
 
 void Display::createSM()
@@ -45,12 +42,34 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
 
 	if(cmd == tlm::TLM_WRITE_COMMAND)
 	{
-		memcpy(&frame.raw[addr], ptr, len);
-		if(addr == 0)
-		{	//this is activeFrame variable
-			//We do "hardware acceleration" to copy new frame to next frame
-			memcpy(&frame.buf->getInactiveFrame(), &frame.buf->getActiveFrame(), sizeof(Frame));
+		if(addr == offsetof(Framebuffer, command))
+		{
+			assert(len == sizeof(Framebuffer::Command));
+			switch(*reinterpret_cast<Framebuffer::Command*>(ptr))
+			{
+			case Framebuffer::Command::clearBackground:
+				memset(&frame.buf->getBackground(), 0, sizeof(Frame));
+				break;
+			case Framebuffer::Command::clearAll:
+				memset(frame.raw, 0, sizeof(Framebuffer));
+				frame.buf->activeFrame++;
+				break;
+			case Framebuffer::Command::clearForeground:
+				memset(&frame.buf->getInactiveFrame(), 0, sizeof(Frame));
+				//fall-through
+			case Framebuffer::Command::applyFrame:
+				frame.buf->activeFrame++;
+				memcpy(&frame.buf->getInactiveFrame(), &frame.buf->getActiveFrame(), sizeof(Frame));
+				break;
+			default:
+				break;
+			}
 		}
+		else
+		{
+			memcpy(&frame.raw[addr], ptr, len);
+		}
+
 	}
 	else if (cmd == tlm::TLM_READ_COMMAND)
 	{
