@@ -99,7 +99,7 @@ int main()
 {
 	for(uint32_t i = 0; i < screenHeight; i ++)
 	{
-		drawLine(framebuffer->getBackground(), Point(0, i), Point(screenWidth-1, i), fromRGB(i, i << 4, (i+100) << 8));
+		drawLine(framebuffer->getBackground(), Point(0, i), Point(screenWidth, i), fromRGB(i & 0x7, 0, i >> 3));
 		if(i % 3 == 0)
 			framebuffer->command = Framebuffer::Command::applyFrame;
 	}
@@ -114,7 +114,7 @@ int main()
 					Point((screenWidth-(m+1)%screenWidth), (screenHeight-(m+1)%screenHeight)),
 					fromRGB(255-(m%255), (m%255), i%255));
 			framebuffer->command = Framebuffer::Command::applyFrame;
-			m += 15;
+			m += 17;
 		}
 		framebuffer->command = Framebuffer::Command::clearForeground;
 	}
