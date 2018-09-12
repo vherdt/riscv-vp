@@ -51,23 +51,29 @@ void printDec(const unsigned char* buf, const uint32_t len)
 
 
 void dump_ethernet_frame(uint8_t *buf, size_t size) {
-	return;
+
+	const bool verbose = false;
+
 	uint8_t* readbuf = buf;
     struct ether_header *eh = (struct ether_header *)readbuf;
-    cout << "destination MAC: ";
-    printHex(reinterpret_cast<unsigned char*>(&eh->ether_dhost), 6);
-    cout << endl;
-    cout << "source MAC     : ";
-    printHex(reinterpret_cast<unsigned char*>(&eh->ether_shost), 6);
-    cout << endl;
-    cout << "type           : " << ntohs(eh->ether_type)  << endl;
+
+    if(verbose)
+    {
+		cout << "destination MAC: ";
+		printHex(reinterpret_cast<unsigned char*>(&eh->ether_dhost), 6);
+		cout << endl;
+		cout << "source MAC     : ";
+		printHex(reinterpret_cast<unsigned char*>(&eh->ether_shost), 6);
+		cout << endl;
+		cout << "type           : " << ntohs(eh->ether_type)  << endl;
+    }
 
     readbuf += sizeof(struct ethhdr);
     switch(ntohs(eh->ether_type))
     {
     case ETH_P_IP:
     {
-    	cout << "IP" << endl;
+    	cout << "IP ";
     	unsigned short iphdrlen;
     	struct in_addr source;
     	struct in_addr  dest;
@@ -76,43 +82,52 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     	source.s_addr = ip->saddr;
     	memset(&dest, 0, sizeof(dest));
     	dest.s_addr = ip->daddr;
-    	cout << "\t|-Version               : " << ip->version << endl;
-		cout << "\t|-Internet Header Length: " << ip->ihl << " DWORDS or " << ip->ihl*4 << " Bytes" << endl;
-		cout << "\t|-Type Of Service       : " << (unsigned int)ip->tos << endl;
-		cout << "\t|-Total Length          : " << ntohs(ip->tot_len) << " Bytes" << endl;
-		cout << "\t|-Identification        : " << ntohs(ip->id) << endl;
-		cout << "\t|-Time To Live          : " << (unsigned int)ip->ttl << endl;
-    	cout << "\t|-Protocol              : " << (unsigned int) ip->protocol << endl;
-    	cout << "\t|-Header Checksum       : " << ntohs(ip->check) << endl;
-    	cout << "\t|-Source IP             : " <<  inet_ntoa(source) << endl;
-    	cout << "\t|-Destination IP        : " << inet_ntoa(dest) << endl;
+    	if(verbose)
+    	{
+    		cout << endl;
+			cout << "\t|-Version               : " << ip->version << endl;
+			cout << "\t|-Internet Header Length: " << ip->ihl << " DWORDS or " << ip->ihl*4 << " Bytes" << endl;
+			cout << "\t|-Type Of Service       : " << (unsigned int)ip->tos << endl;
+			cout << "\t|-Total Length          : " << ntohs(ip->tot_len) << " Bytes" << endl;
+			cout << "\t|-Identification        : " << ntohs(ip->id) << endl;
+			cout << "\t|-Time To Live          : " << (unsigned int)ip->ttl << endl;
+			cout << "\t|-Protocol              : " << (unsigned int) ip->protocol << endl;
+			cout << "\t|-Header Checksum       : " << ntohs(ip->check) << endl;
+			cout << "\t|-Source IP             : " <<  inet_ntoa(source) << endl;
+			cout << "\t|-Destination IP        : " << inet_ntoa(dest) << endl;
+    	}
     	readbuf += ip->ihl*4;
     	switch(ip->protocol)
     	{
     	case IPPROTO_UDP:
     	{
-    		cout << "UDP" << endl;
+    		cout << "UDP ";
     		struct udphdr *udp = (struct udphdr*)readbuf;
-    		cout << "\t|-Source port     : " << ntohs(udp->source) << endl;
-    		cout << "\t|-Destination port: " << ntohs(udp->dest) << endl;
-    		cout << "\t|-Length          : " << ntohs(udp->len) << endl;
-    		cout << "\t|-Checksum        : " << ntohs(udp->check) << endl;
+    		if(verbose)
+    		{
+    			cout << endl;
+				cout << "\t|-Source port     : " << ntohs(udp->source) << endl;
+				cout << "\t|-Destination port: " << ntohs(udp->dest) << endl;
+				cout << "\t|-Length          : " << ntohs(udp->len) << endl;
+				cout << "\t|-Checksum        : " << ntohs(udp->check) << endl;
+    		}
     		readbuf += sizeof(udphdr);
     		switch(ntohs(udp->dest))
     		{
     		case 67:
     			cout << "DHCP ";
-    			switch(ntohs(readbuf[0]))
+    			switch(readbuf[0])
     			{
     			case 1:
     				cout << "DISCOVER/REQUEST";
     				break;
     			case 2:
     				cout << "ACK";
+    				break;
     			default:
-    				cout << "UNKNOWN (" << to_string(ntohs(readbuf[0])) << ")";
+    				cout << "UNKNOWN (" << to_string(readbuf[0]) << ")";
+    				goto printHex;
     			}
-    			cout << endl;
     			break;
     		default:
     			break;
@@ -120,7 +135,9 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     		return;
 		}
     	case IPPROTO_TCP:
-    		cout << "TCP" << endl;
+    		cout << "TCP ";
+    		if(verbose)
+    			 cout << endl;
     		//fall-through
     	default:
     		return;
@@ -129,34 +146,37 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     }
     case ETH_P_ARP:
     {
-    	cout << "ARP" << endl;
+    	cout << "ARP ";
     	struct arp_eth_header *arp = (struct arp_eth_header*) readbuf;
-    	cout << "\t|-Sender MAC: ";
-    		printHex((uint8_t*)&arp->sender_mac, 6);
+    	if(verbose)
+    	{
     		cout << endl;
-		cout << "\t|-Sender IP : " ;
-			printDec((uint8_t*)&arp->sender_ip, 4);
-			cout << endl;
-		cout << "\t|-DEST MAC  : ";
-			printHex((uint8_t*)&arp->target_mac, 6);
-			cout << endl;
-		cout << "\t|-DEST IP   : " ;
-			printDec((uint8_t*)&arp->target_ip, 4);
-			cout << endl;
-		cout << "\t|-Operation : " << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID") << endl;
+			cout << "\t|-Sender MAC: ";
+				printHex((uint8_t*)&arp->sender_mac, 6);
+				cout << endl;
+			cout << "\t|-Sender IP : " ;
+				printDec((uint8_t*)&arp->sender_ip, 4);
+				cout << endl;
+			cout << "\t|-DEST MAC  : ";
+				printHex((uint8_t*)&arp->target_mac, 6);
+				cout << endl;
+			cout << "\t|-DEST IP   : " ;
+				printDec((uint8_t*)&arp->target_ip, 4);
+				cout << endl;
+    	}
+		cout << "\t|-Operation : " << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID");
 		return;
     	break;
     }
     default:
-    	cout << "unknown protocol" << endl;
+    	cout << "unknown protocol";
     	return;
     }
-
+printHex:
     ios_base::fmtflags f( cout.flags() );
     for (int i=0; i<size; ++i) {
         cout << hex << setw(2) << setfill('0') << (int)buf[i] << " ";
     }
-    cout  << endl;
     cout.flags( f );
 }
 
@@ -225,8 +245,9 @@ void EthernetDevice::send_raw_frame() {
         send_size = 60;
     }
 
-    cout << "\nSEND FRAME --->--->--->--->--->--->" << endl;
+    cout << "SEND FRAME --->--->--->--->--->---> ";
     dump_ethernet_frame(sendbuf, send_size);
+    cout << endl;
 
     struct ether_header *eh = (struct ether_header *)sendbuf;
 
@@ -252,22 +273,35 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
     	return false;
     }
 
-    return true;	//receive everything
+    uint8_t switch_addr[ 6 ] = { 0x00, 0x1e, 0x68, 0x57, 0x52, 0x9e };
+    if(memcmp(eh->ether_shost, switch_addr, 6) == 0)
+    {
+    	cout << " Packet from switch! ";
+    }
+    uint8_t pp_addr[ 6 ] = { 0x8c, 0x16, 0x45, 0x34, 0x6b, 0x1e };
+    if(memcmp(eh->ether_shost, pp_addr, 6) == 0)
+    {
+    	cout << " Packet from HOST! ";
+    }
 
 	if(ntohs(eh->ether_type) != ETH_P_IP)
 	{
-		return false; //Filter all non-IP!
-
 		if(ntohs(eh->ether_type) != ETH_P_ARP)
 		{	//Not ARP
-			//cout << "dumped non-ARP packet" << endl;
+			//cout << " dumped non-ARP " ;
+			//FIXME Comment out if you want to respond to ICMP
 			return false;
 		}
 
-		arp_eth_header *arp = reinterpret_cast<arp_eth_header*>(packet + sizeof(iphdr));
-		uint8_t ownIp[4] = {0x86, 0x66, 0xDA, 0xBE};
-		if(memcmp(arp->target_ip, ownIp, 4))
+		arp_eth_header *arp = reinterpret_cast<arp_eth_header*>(packet + sizeof(ether_header));
+
+		if(memcmp(arp->target_mac, VIRTUAL_MAC_ADDRESS, 6))
 		{	//not to us directly
+			//cout << " dumped ARP not targeted to US ";
+			/**
+			 * FIXME comment out if you want to generate arp table automatically
+			 * 		 instead of having to request every neighbor explicitly
+			 */
 			return false;
 		}
 	}
@@ -276,15 +310,15 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
 		iphdr *ip = reinterpret_cast<iphdr*>(packet + sizeof(ether_header));
 		if(ip->protocol != IPPROTO_UDP)
 		{	//not UDP
-			//cout << "dumped non-UDP packet" << endl;
-			return false;
+			//cout << " dumped non-UDP ";
+			return false;					//FIXME: Comment out if you want to use TCP
 		}
 
 		udphdr *udp = reinterpret_cast<udphdr*>(packet + sizeof(ether_header) + sizeof(iphdr));
 		if(ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68)
 		{	//not DHCP
-			//cout << "dumped non-DHCP packet" << endl;
-			return false;
+			//cout << " dumped non-DHCP ";
+			//return false;
 		}
 	}
 	return true;
@@ -302,7 +336,7 @@ bool EthernetDevice::try_recv_raw_frame() {
 	} else if (ans == -1) {
 		if (errno == EWOULDBLOCK || errno == EAGAIN)
 		{
-			return false;
+			return true;
 		}
 		else
 			throw runtime_error("recvfrom failed");
@@ -316,8 +350,9 @@ bool EthernetDevice::try_recv_raw_frame() {
 
 	has_frame = true;
 	receive_size = ans;
-	cout << "\nRECEIVED FRAME <---<---<---<---<---" << endl;
+	cout << "RECEIVED FRAME <---<---<---<---<--- ";
 	dump_ethernet_frame(recv_frame_buf, ans);
+	cout << endl;
 
 	return true;
 }
