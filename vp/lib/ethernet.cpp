@@ -144,16 +144,16 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     		switch(readbuf[0])
     		{
     		case 0:
-    			cout << " ECHO REPLY";
+    			cout << "ECHO REPLY";
     			break;
     		case 3:
-    			cout << " DEST UNREACHABLE";
+    			cout << "DEST UNREACHABLE";
     			break;
     		case 8:
-    			cout << " ECHO REQUEST";
+    			cout << "ECHO REQUEST";
     			break;
     		default:
-    			cout << " Sonstiges";
+    			cout << "Sonstiges";
     		}
     		if(verbose)
     			cout << endl;
@@ -294,12 +294,12 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
     uint8_t switch_addr[ 6 ] = { 0x00, 0x1e, 0x68, 0x57, 0x52, 0x9e };
     if(memcmp(eh->ether_shost, switch_addr, 6) == 0)
     {
-    	cout << " Packet from switch! ";
+    	cout << " Packet from switch: ";
     }
     uint8_t pp_addr[ 6 ] = { 0x8c, 0x16, 0x45, 0x34, 0x6b, 0x1e };
     if(memcmp(eh->ether_shost, pp_addr, 6) == 0)
     {
-    	cout << " Packet from HOST! ";
+    	cout << " Packet from HOST: ";
     }
 
 	if(ntohs(eh->ether_type) != ETH_P_IP)

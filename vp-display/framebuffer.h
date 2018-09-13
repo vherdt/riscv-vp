@@ -23,7 +23,7 @@ struct Framebuffer
         none = 0,
         clearAll,
         clearBackground,
-        clearForeground,
+        clearInactiveFrame,
         applyFrame
     } command;
     Frame frames[2];

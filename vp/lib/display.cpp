@@ -54,9 +54,9 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
 				memset(frame.raw, 0, sizeof(Framebuffer));
 				frame.buf->activeFrame++;
 				break;
-			case Framebuffer::Command::clearForeground:
+			case Framebuffer::Command::clearInactiveFrame:
 				memset(&frame.buf->getInactiveFrame(), 0, sizeof(Frame));
-				//fall-through
+				break;
 			case Framebuffer::Command::applyFrame:
 				frame.buf->activeFrame++;
 				memcpy(&frame.buf->getInactiveFrame(), &frame.buf->getActiveFrame(), sizeof(Frame));
