@@ -138,7 +138,25 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     		cout << "TCP ";
     		if(verbose)
     			 cout << endl;
-    		//fall-through
+    		return;
+    	case IPPROTO_ICMP:
+    		cout << "ICMP ";
+    		switch(readbuf[0])
+    		{
+    		case 0:
+    			cout << " ECHO REPLY";
+    			break;
+    		case 3:
+    			cout << " DEST UNREACHABLE";
+    			break;
+    		case 8:
+    			cout << " ECHO REQUEST";
+    			break;
+    		default:
+    			cout << " Sonstiges";
+    		}
+    		if(verbose)
+    			cout << endl;
     	default:
     		return;
     	}
@@ -289,7 +307,7 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
 		if(ntohs(eh->ether_type) != ETH_P_ARP)
 		{	//Not ARP
 			//cout << " dumped non-ARP " ;
-			//FIXME Comment out if you want to respond to ICMP
+			//FIXME change to true if you want other protocols than IP and ARP
 			return false;
 		}
 
@@ -301,24 +319,29 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
 			/**
 			 * FIXME comment out if you want to generate arp table automatically
 			 * 		 instead of having to request every neighbor explicitly
+			 * 		 also to reply to ARP requests
 			 */
 			return false;
 		}
 	}
 	else
 	{
+		//is IP
+		return true;
+
 		iphdr *ip = reinterpret_cast<iphdr*>(packet + sizeof(ether_header));
 		if(ip->protocol != IPPROTO_UDP)
 		{	//not UDP
 			//cout << " dumped non-UDP ";
-			return false;					//FIXME: Comment out if you want to use TCP
+			//FIXME change to true if you want to use TCP or ICMP
+			return false;
 		}
 
 		udphdr *udp = reinterpret_cast<udphdr*>(packet + sizeof(ether_header) + sizeof(iphdr));
 		if(ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68)
 		{	//not DHCP
 			//cout << " dumped non-DHCP ";
-			//return false;
+			return false;
 		}
 	}
 	return true;
