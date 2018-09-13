@@ -50,9 +50,7 @@ void printDec(const unsigned char* buf, const uint32_t len)
 }
 
 
-void dump_ethernet_frame(uint8_t *buf, size_t size) {
-
-	const bool verbose = false;
+void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 
 	uint8_t* readbuf = buf;
     struct ether_header *eh = (struct ether_header *)readbuf;
@@ -375,7 +373,7 @@ bool EthernetDevice::try_recv_raw_frame() {
 	has_frame = true;
 	receive_size = ans;
 	cout << "RECEIVED FRAME <---<---<---<---<--- ";
-	dump_ethernet_frame(recv_frame_buf, ans);
+	dump_ethernet_frame(recv_frame_buf, ans, true);
 	cout << endl;
 
 	return true;
