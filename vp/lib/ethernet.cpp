@@ -115,6 +115,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size) {
     		switch(ntohs(udp->dest))
     		{
     		case 67:
+    		case 68:
     			cout << "DHCP ";
     			switch(readbuf[0])
     			{
