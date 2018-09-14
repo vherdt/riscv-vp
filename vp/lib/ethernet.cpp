@@ -23,8 +23,8 @@
 using namespace std;
 
 //static const char IF_NAME[] = "mvl0";
-static const char IF_NAME[] = "tap0";
-//static const char IF_NAME[] = "macvtap0";
+//static const char IF_NAME[] = "tap0";
+static const char IF_NAME[] = "macvtap0";
 //static const char IF_NAME[] = "enp0s31f6";
 
 #define SYS_CHECK(arg,msg)  \
@@ -218,7 +218,7 @@ EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uin
 void EthernetDevice::init_network() {
 	struct ifreq ifr;
 	int err;
-	char clonedev[] = "/dev/net/tun";
+	char clonedev[] = "/dev/tap6";
 
 	if( (sockfd = open(clonedev , O_RDWR)) < 0 )
 	{
