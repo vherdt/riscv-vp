@@ -46,6 +46,30 @@ typedef struct {
 } Elf32_Phdr;
 
 
+typedef struct {
+    Elf32_Word	sh_name;
+    Elf32_Word	sh_type;
+    Elf32_Word	sh_flags;
+    Elf32_Addr	sh_addr;
+    Elf32_Off	sh_offset;
+    Elf32_Word	sh_size;
+    Elf32_Word	sh_link;
+    Elf32_Word	sh_info;
+    Elf32_Word	sh_addralign;
+    Elf32_Word	sh_entsize;
+} Elf32_Shdr;
+
+
+typedef struct {
+    Elf32_Word st_name;
+    Elf32_Addr st_value;
+    Elf32_Word st_size;
+    unsigned char st_info;
+    unsigned char st_other;
+    Elf32_Half st_shndx;
+} Elf32_Sym;
+
+
 enum Elf32_PhdrType {
     PT_NULL     = 0,
     PT_LOAD     = 1,
@@ -73,7 +97,7 @@ struct ELFLoader {
     void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset) {
         for (int i=0; i<hdr->e_phnum; ++i) {
             const Elf32_Phdr *p = reinterpret_cast<const Elf32_Phdr *>(
-                    elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
+                    elf.data() + hdr->e_phoff + hdr->e_phentsize*i);
 
             if (p->p_type != PT_LOAD)
                 continue;
@@ -100,6 +124,75 @@ struct ELFLoader {
 
     uint32_t get_entrypoint() {
         return hdr->e_entry;
+    }
+
+
+    const char *get_section_string_table() {
+        assert (hdr->e_shoff != 0 && "string table section not available");
+
+        const Elf32_Shdr *s = reinterpret_cast<const Elf32_Shdr *>(elf.data() + hdr->e_shoff + hdr->e_shentsize*hdr->e_shstrndx);
+        const char *start = elf.data() + s->sh_offset;
+        return start;
+    }
+
+
+    const char *get_symbol_string_table() {
+        auto s = get_section(".strtab");
+        return elf.data() + s->sh_offset;
+    }
+
+
+    const Elf32_Sym *get_symbol(const char *symbol_name) {
+        const Elf32_Shdr *s = get_section(".symtab");
+        const char *strings = get_symbol_string_table();
+
+        assert (s->sh_size % sizeof(Elf32_Sym) == 0);
+
+        auto num_entries = s->sh_size / sizeof(Elf32_Sym);
+        for (unsigned i=0; i<num_entries; ++i) {
+            const Elf32_Sym *p = reinterpret_cast<const Elf32_Sym *>(elf.data() + s->sh_offset + i*sizeof(Elf32_Sym));
+
+            //std::cout << "check symbol: " << strings + p->st_name << std::endl;
+
+            if (!strcmp(strings + p->st_name, symbol_name)) {
+                return p;
+            }
+        }
+
+        throw std::runtime_error("unable to find symbol in the symbol table");
+    }
+
+
+    uint32_t get_begin_signature_address() {
+        auto p = get_symbol("begin_signature");
+        return p->st_value;
+    }
+
+    uint32_t get_end_signature_address() {
+        auto p = get_symbol("end_signature");
+        return p->st_value;
+    }
+
+
+    const Elf32_Shdr *get_section(const char *section_name) {
+        if (hdr->e_shoff == 0) {
+            throw std::runtime_error("unable to find section address, section table not available");
+        }
+
+        const char *strings = get_section_string_table();
+
+        for (unsigned i=0; i<hdr->e_shnum; ++i) {
+            const Elf32_Shdr *s = reinterpret_cast<const Elf32_Shdr *>(
+                    elf.data() + hdr->e_shoff + hdr->e_shentsize*i);
+
+            //std::cout << "check section: " << strings + s->sh_name << std::endl;
+
+            if (!strcmp(strings + s->sh_name, section_name)) {
+                return s;
+            }
+        }
+
+        throw std::runtime_error("unable to find section address, seems not available");
     }
 };
 

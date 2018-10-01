@@ -520,6 +520,7 @@ struct ISS : public sc_core::sc_module,
     uint32_t pc;
     uint32_t last_pc;
     csr_table csrs;
+    uint32_t lrw_marked = 0;
 
     CoreExecStatus status = CoreExecStatus::Runnable;
     std::unordered_set<uint32_t> breakpoints;
@@ -569,6 +570,7 @@ struct ISS : public sc_core::sc_module,
     }
 
     Opcode::mapping decode(Instruction &instr) {
+        //NOTE: perhaps check constant fields inside the instructions to ensure that illegal instruction formats are detected (e.g. shamt extends into func7 field)
         using namespace Opcode;
 
         switch (instr.opcode()) {
@@ -647,6 +649,7 @@ struct ISS : public sc_core::sc_module,
                     case F3_ANDI:
                         return ANDI;
                     case F3_SLLI:
+                        assert (instr.funct7() == 0);
                         return SLLI;
                     case F3_SRLI: {
                         switch (instr.funct7()) {
@@ -874,12 +877,10 @@ struct ISS : public sc_core::sc_module,
                 break;
 
             case Opcode::LUI:
-                assert (instr.rd() != RegFile::zero);
                 regs[instr.rd()] = instr.U_imm();
                 break;
 
             case Opcode::AUIPC:
-                assert (instr.rd() != RegFile::zero);
                 regs[instr.rd()] = last_pc + instr.U_imm();
                 break;
 
@@ -992,33 +993,34 @@ struct ISS : public sc_core::sc_module,
 
             case Opcode::CSRRW: {
                 auto rd = instr.rd();
+                auto rs1_val = regs[instr.rs1()];
                 auto &csr = csr_update_and_get(instr.csr());
                 if (rd != RegFile::zero) {
                     regs[instr.rd()] = csr.read();
                 }
-                csr.write(regs[instr.rs1()]);
+                csr.write(rs1_val);
             } break;
 
             case Opcode::CSRRS: {
                 auto rd = instr.rd();
                 auto rs1 = instr.rs1();
+                auto rs1_val = regs[instr.rs1()];
                 auto &csr = csr_update_and_get(instr.csr());
                 if (rd != RegFile::zero)
                     regs[rd] = csr.read();
-                if (rs1 != RegFile::zero) {
-                    csr.set_bits(regs[rs1]);
-                }
+                if (rs1 != RegFile::zero)
+                    csr.set_bits(rs1_val);
             } break;
 
             case Opcode::CSRRC: {
                 auto rd = instr.rd();
                 auto rs1 = instr.rs1();
+                auto rs1_val = regs[instr.rs1()];
                 auto &csr = csr_update_and_get(instr.csr());
                 if (rd != RegFile::zero)
                     regs[rd] = csr.read();
-                if (rs1 != RegFile::zero) {
-                    csr.clear_bits(regs[rs1]);
-                }
+                if (rs1 != RegFile::zero)
+                    csr.clear_bits(rs1_val);
             } break;
 
             case Opcode::CSRRWI: {
@@ -1036,9 +1038,8 @@ struct ISS : public sc_core::sc_module,
                 auto &csr = csr_update_and_get(instr.csr());
                 if (rd != RegFile::zero)
                     regs[rd] = csr.read();
-                if (zimm != 0) {
+                if (zimm != 0)
                     csr.set_bits(zimm);
-                }
             } break;
 
             case Opcode::CSRRCI: {
@@ -1047,29 +1048,28 @@ struct ISS : public sc_core::sc_module,
                 auto &csr = csr_update_and_get(instr.csr());
                 if (rd != RegFile::zero)
                     regs[rd] = csr.read();
-                if (zimm != 0) {
+                if (zimm != 0)
                     csr.clear_bits(zimm);
-                }
             } break;
 
 
             case Opcode::MUL: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = ans & 0xFFFFFFFF;
             } break;
 
             case Opcode::MULH: {
-                int64_t ans = regs[instr.rs1()] * regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHU: {
-                int64_t ans = (uint32_t)regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
             case Opcode::MULHSU: {
-                int64_t ans = regs[instr.rs1()] * (uint32_t)regs[instr.rs2()];
+                int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
                 regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
             } break;
 
@@ -1122,13 +1122,21 @@ struct ISS : public sc_core::sc_module,
                 //TODO: in multi-threaded system (or even if other components can access the memory independently, e.g. through DMA) need to mark this addr as reserved
                 uint32_t addr = regs[instr.rs1()];
                 regs[instr.rd()] = mem->load_word(addr);
+                assert (addr != 0);
+                lrw_marked = addr;
             } break;
 
             case Opcode::SC_W: {
                 uint32_t addr = regs[instr.rs1()];
                 uint32_t val  = regs[instr.rs2()];
-                mem->store_word(addr, val);
-                regs[instr.rd()] = 0;       //TODO: assume success for now (i.e. the last marked word with LR_W has not been accessed in-between)
+                //TODO: check if other components (besides this iss) may have accessed the last marked memory region
+                if (lrw_marked == addr) {
+                    mem->store_word(addr, val);
+                    regs[instr.rd()] = 0;
+                } else {
+                    regs[instr.rd()] = 1;
+                }
+                lrw_marked = 0;
             } break;
 
             //TODO: implement the aq and rl flags if necessary (check for all AMO instructions)
@@ -1216,6 +1224,9 @@ struct ISS : public sc_core::sc_module,
             default:
                 assert (false && "unknown opcode");
         }
+
+        //NOTE: writes to zero register are supposedly allowed but must be ignored (reset it after every instruction, instead of checking *rd != zero* before every register write)
+        regs.regs[regs.zero] = 0;
 
         return op;
     }
@@ -1344,9 +1355,9 @@ struct ISS : public sc_core::sc_module,
     }
 
     void run_step() {
-        assert (regs.regs[0] == 0);
+        assert (regs.read(0) == 0);
 
-        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.regs[regs.sp] << std::endl;
+        //std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
         last_pc = pc;
         Opcode::mapping op = exec_step();
 
