@@ -27,16 +27,23 @@ std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
     uint32_t read_offset = boost::lexical_cast<uint32_t>(start);
     uint32_t read_size = boost::lexical_cast<uint32_t>(nbytes);
 
-    assert (read_offset >= mem_offset);
-    assert ((read_offset + read_size) <= (mem_offset + mem_size));
-
-    uint32_t local_offset = read_offset - mem_offset;
-
     std::stringstream stream;
-    stream << std::setfill('0') << std::hex;
-    for (uint32_t i=0; i<read_size; ++i) {
-        uint8_t byte = mem[local_offset+i];
-        stream << std::setw(2) << (unsigned)byte;
+    if(read_offset >= mem_offset)
+    {
+		assert ((read_offset + read_size) <= (mem_offset + mem_size));
+
+		uint32_t local_offset = read_offset - mem_offset;
+        stream << std::setfill('0') << std::hex;
+        for (uint32_t i=0; i<read_size; ++i) {
+            uint8_t byte = mem[local_offset+i];
+            stream << std::setw(2) << (unsigned)byte;
+        }
+    }
+    else
+    {
+        for (uint32_t i=0; i<read_size; ++i) {
+            stream << "00";
+        }
     }
 
     return stream.str();
@@ -327,14 +334,18 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
         } else if (msg == "vCont?") {
             send_packet(conn, "vCont;cs");
         } else if (msg == "c") {
-            core.run();
-            if (core.status == CoreExecStatus::Terminated) {
-                send_packet(conn, "S03");
-            } else if (core.status == CoreExecStatus::HitBreakpoint) {
-                send_packet(conn, "S05");
-                core.status = CoreExecStatus::Runnable;
-            } else {
-                assert (false && "invalid core status (apparently still marked as runnable)");
+            try {
+                core.run();
+                if (core.status == CoreExecStatus::HitBreakpoint) {
+                    send_packet(conn, "S05");
+                    core.status = CoreExecStatus::Runnable;
+                } else if (core.status == CoreExecStatus::Terminated) {
+                    send_packet(conn, "S03");
+                } else {
+                    assert (false && "invalid core status (apparently still marked as runnable)");
+                }
+            } catch (std::exception &e) {
+                send_packet(conn, "S04");
             }
         } else if (msg == "s") {
             core.run_step();
