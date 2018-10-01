@@ -28,7 +28,7 @@ struct Options {
 
     Options &check_and_post_process() {
         mem_end_addr = mem_start_addr + mem_size - 1;
-    	assert(((mem_end_addr < clint_start_addr) && (mem_start_addr > flash_end_addr)) && "RAM too big, would overlap memory");
+    	assert((mem_start_addr > flash_end_addr) && "RAM too big, would overlap memory");
         mram_end_addr = mram_start_addr + mram_size - 1;
         assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
         return *this;
