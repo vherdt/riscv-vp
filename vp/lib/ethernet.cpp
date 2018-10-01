@@ -197,7 +197,7 @@ printHex:
     cout.flags( f );
 }
 
-EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem)
+EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem, std::string clonedev)
         : irq_number(irq_number), mem(mem) {
     tsock.register_b_transport(this, &EthernetDevice::transport);
     SC_THREAD(run);
@@ -212,17 +212,22 @@ EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uin
              {MAC_LOW_REG_ADDR, &mac[1]},
      }).register_handler(this, &EthernetDevice::register_access_callback);
 
-    init_network();
+    disabled = clonedev == string("");
+
+    if(!disabled)
+    {
+		init_network(clonedev);
+    }
 }
 
-void EthernetDevice::init_network() {
+void EthernetDevice::init_network(std::string clonedev) {
 	struct ifreq ifr;
 	int err;
-	char clonedev[] = "/dev/tap6";
 
-	if( (sockfd = open(clonedev , O_RDWR)) < 0 )
+	if( (sockfd = open(clonedev.c_str() , O_RDWR)) < 0 )
 	{
-		perror("Opening /dev/net/tun");
+		cerr << "Error opening " << clonedev << endl;
+		perror("exiting");
 		assert(sockfd >= 0);
 	}
 

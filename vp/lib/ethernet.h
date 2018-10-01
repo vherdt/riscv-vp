@@ -59,6 +59,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
 	uint8_t recv_frame_buf[FRAME_SIZE];
     bool has_frame;
+    bool disabled;
 
     static const uint16_t STATUS_REG_ADDR       = 0x00;
 	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR       + sizeof(uint32_t);
@@ -76,9 +77,9 @@ struct EthernetDevice : public sc_core::sc_module {
 
     SC_HAS_PROCESS(EthernetDevice);
 
-    EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem);
+    EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem, std::string clonedev);
 
-    void init_network();
+    void init_network(std::string clonedev);
     void add_all_if_ips();
 
     void send_raw_frame();
@@ -87,6 +88,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
     void register_access_callback(const vp::map::register_access_t &r) {
         assert (mem);
+        assert (!disabled && "Tried accessing disabled network device");
 
         r.fn();
 
@@ -109,7 +111,8 @@ struct EthernetDevice : public sc_core::sc_module {
     }
 
     void run() {
-        while (true) {
+        while (!disabled)
+        {
             run_event.notify(sc_core::sc_time(10000, sc_core::SC_US));
             sc_core::wait(run_event);  // 10000 times per second by default
 
