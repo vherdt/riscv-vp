@@ -37,6 +37,7 @@ struct Options {
     std::string input_program;
     std::string mram_image;
     std::string flash_device;
+    std::string network_device;
     std::string test_signature;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
@@ -102,6 +103,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""), "MRAM image file for persistency")
                 ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
                 ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
+                ("network-device", po::value<std::string>(&opt.network_device)->default_value(""), "name of the tap network adapter, e.g. /dev/tap6")
                 ("signature", po::value<std::string>(&opt.test_signature)->default_value(""), "output filename for the test execution signature")
                 ;
 
@@ -153,7 +155,7 @@ int sc_main(int argc, char **argv) {
     SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
     Flashcontroller flashController("Flashcontroller", opt.flash_device);
-    EthernetDevice ethernet("EthernetDevice", 7, mem.data);
+    EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
     Display display("Display");
 
 
