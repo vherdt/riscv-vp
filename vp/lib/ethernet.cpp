@@ -22,10 +22,7 @@
 
 using namespace std;
 
-//static const char IF_NAME[] = "mvl0";
-//static const char IF_NAME[] = "tap0";
-static const char IF_NAME[] = "macvtap0";
-//static const char IF_NAME[] = "enp0s31f6";
+static const char IF_NAME[] = "tap0";
 
 #define SYS_CHECK(arg,msg)  \
     if ((arg) < 0) {      \
@@ -51,7 +48,6 @@ void printDec(const unsigned char* buf, const uint32_t len)
 
 
 void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
-
 	uint8_t* readbuf = buf;
     struct ether_header *eh = (struct ether_header *)readbuf;
 
@@ -268,7 +264,7 @@ void EthernetDevice::send_raw_frame() {
     }
 
     cout << "SEND FRAME --->--->--->--->--->---> ";
-    dump_ethernet_frame(sendbuf, send_size);
+    dump_ethernet_frame(sendbuf, send_size, true);
     cout << endl;
 
     struct ether_header *eh = (struct ether_header *)sendbuf;
@@ -295,17 +291,6 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
     	return false;
     }
 
-    uint8_t switch_addr[ 6 ] = { 0x00, 0x1e, 0x68, 0x57, 0x52, 0x9e };
-    if(memcmp(eh->ether_shost, switch_addr, 6) == 0)
-    {
-    	cout << " Packet from switch: ";
-    }
-    uint8_t pp_addr[ 6 ] = { 0x8c, 0x16, 0x45, 0x34, 0x6b, 0x1e };
-    if(memcmp(eh->ether_shost, pp_addr, 6) == 0)
-    {
-    	cout << " Packet from HOST: ";
-    }
-
 	if(ntohs(eh->ether_type) != ETH_P_IP)
 	{
 		if(ntohs(eh->ether_type) != ETH_P_ARP)
@@ -325,7 +310,7 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
 			 * 		 instead of having to request every neighbor explicitly
 			 * 		 also to reply to ARP requests
 			 */
-			return false;
+			return true;
 		}
 	}
 	else
@@ -378,7 +363,7 @@ bool EthernetDevice::try_recv_raw_frame() {
 	has_frame = true;
 	receive_size = ans;
 	cout << "RECEIVED FRAME <---<---<---<---<--- ";
-	dump_ethernet_frame(recv_frame_buf, ans, true);
+	dump_ethernet_frame(recv_frame_buf, ans);
 	cout << endl;
 
 	return true;
