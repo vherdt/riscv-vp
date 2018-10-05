@@ -10,6 +10,14 @@ static constexpr uint16_t screenHeight = 600;
 
 typedef uint16_t Color;
 
+struct Point
+{
+	float x;
+	float y;
+	Point() : x(0), y(0){};
+	Point(float x, float y) : x(x), y(y){};
+};
+
 struct Frame
 {
     Color raw[screenHeight][screenWidth];   //Notice: Screen is on side
@@ -22,10 +30,23 @@ struct Framebuffer
     {
         none = 0,
         clearAll,
-        clearBackground,
-        clearInactiveFrame,
-        applyFrame
-    } command;
+        fillBackground,
+        fillInactiveFrame,
+        applyFrame,
+    } volatile command;
+    union Parameter
+    {
+    	struct
+    	{
+    		Color color;
+    	} fill;
+    	struct
+    	{
+    		Point from;
+    		Point to;
+    	} line;
+    	inline Parameter(){};
+    } parameter;
     Frame frames[2];
     Frame background;
 
