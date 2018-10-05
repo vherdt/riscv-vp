@@ -30,6 +30,9 @@ struct Display : public sc_core::sc_module
 	void createSM();
 
 	Display(sc_module_name);
-	void fillFrame(Frame& frame, Color color);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
+
+	//graphics acceleration functions
+	void fillFrame(Framebuffer::Type frame, Color color);
+	void drawLine(Framebuffer::Type frame, PointF from, PointF to, Color color);
 };

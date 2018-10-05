@@ -12,11 +12,25 @@ typedef uint16_t Color;
 
 struct Point
 {
+	uint32_t x;
+	uint32_t y;
+	inline Point() : x(0), y(0){};
+	inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
+};
+
+struct PointF
+{
 	float x;
 	float y;
-	Point() : x(0), y(0){};
-	Point(float x, float y) : x(x), y(y){};
+	inline PointF() : x(0), y(0){};
+	inline PointF(float x, float y) : x(x), y(y){};
+	inline PointF(Point p) : x(p.x), y(p.y){};
 };
+
+inline PointF operator+(const PointF l, PointF const r)
+{
+	return PointF(l.x+r.x, l.y+r.y);
+}
 
 struct Frame
 {
@@ -25,25 +39,33 @@ struct Frame
 
 struct Framebuffer
 {
+	enum class Type : uint8_t
+	{
+		foreground,
+		background
+	};
     uint8_t activeFrame;
     enum class Command : uint8_t
     {
         none = 0,
         clearAll,
-        fillBackground,
-        fillInactiveFrame,
+        fillFrame,
         applyFrame,
+        drawLine,
     } volatile command;
     union Parameter
     {
     	struct
     	{
+    		Type frame;
     		Color color;
     	} fill;
     	struct
     	{
-    		Point from;
-    		Point to;
+    		Type frame;
+    		PointF from;
+    		PointF to;
+    		Color color;
     	} line;
     	inline Parameter(){};
     } parameter;
@@ -63,5 +85,15 @@ struct Framebuffer
     Frame& getBackground()
     {
         return background;
+    }
+    Frame& getFrame(Type type)
+    {
+    	if(type == Type::foreground)
+			return getInactiveFrame();
+		else if(type == Type::background)
+			return getBackground();
+
+		assert(false && "Get invalid frame type");
+    	return background;
     }
 };

@@ -23,15 +23,15 @@ inline Color fromRGB(uint8_t r, uint8_t g, uint8_t b)
 
 namespace display
 {
-	void drawLine(Frame& frame, Point from, Point to, Color color);
+	void setPixel(Framebuffer::Type frame, Point pixel, Color color);
 
-	void drawRect(Frame& frame, Point ol, Point ur, Color color);
+	void drawLine(Framebuffer::Type frame, PointF from, PointF to, Color color);
 
-	void fillRect(Frame& frame, Point ol, Point ur, Color color);
+	void drawRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color);
+
+	void fillRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color);
 
 	void applyFrame();
 
-	void fillInactiveFrame(Color color = 0);
-
-	void fillBackground(Color color = 0);
+	void fillFrame(Framebuffer::Type frame = Framebuffer::Type::foreground, Color color = 0);
 };
