@@ -12,6 +12,8 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "basic_timer.h"
+#include "ethernet.h"
+#include "display.hpp"
 #include "dma.h"
 #include "gdb_stub.h"
 
@@ -26,7 +28,7 @@ struct Options {
 
     Options &check_and_post_process() {
         mem_end_addr = mem_start_addr + mem_size - 1;
-    	assert(((mem_end_addr < clint_start_addr) || (mem_start_addr > flash_end_addr)) && "RAM too big, would overlap memory");
+    	assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) && "RAM too big, would overlap memory");
         mram_end_addr = mram_start_addr + mram_size - 1;
         assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
         return *this;
@@ -35,6 +37,7 @@ struct Options {
     std::string input_program;
     std::string mram_image;
     std::string flash_device;
+    std::string network_device;
     std::string test_signature;
 
     addr_t mem_size           = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
@@ -44,6 +47,8 @@ struct Options {
     addr_t clint_end_addr     = 0x0200ffff;
     addr_t term_start_addr    = 0x20000000;
     addr_t term_end_addr      = term_start_addr + 16;
+    addr_t ethernet_start_addr= 0x30000000;
+    addr_t ethernet_end_addr  = ethernet_start_addr + 1500;
     addr_t plic_start_addr    = 0x40000000;
     addr_t plic_end_addr      = 0x40001000;
     addr_t sensor_start_addr  = 0x50000000;
@@ -57,6 +62,8 @@ struct Options {
     addr_t dma_end_addr       = 0x70001000;
     addr_t flash_start_addr   = 0x71000000;
     addr_t flash_end_addr     = flash_start_addr + Flashcontroller::ADDR_SPACE;	//Usually 528 Byte
+    addr_t display_start_addr = 0x72000000;
+    addr_t display_end_addr   = display_start_addr + Display::addressRange;
 
 
     bool use_debug_runner = false;
@@ -96,6 +103,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
                 ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""), "MRAM image file for persistency")
                 ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
                 ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
+                ("network-device", po::value<std::string>(&opt.network_device)->default_value(""), "name of the tap network adapter, e.g. /dev/tap6")
                 ("signature", po::value<std::string>(&opt.test_signature)->default_value(""), "output filename for the test execution signature")
                 ;
 
@@ -136,7 +144,7 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleTerminal term("SimpleTerminal");
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2,9> bus("SimpleBus");
+    SimpleBus<2,11> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
     PLIC plic("PLIC");
@@ -147,6 +155,8 @@ int sc_main(int argc, char **argv) {
     SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
     SimpleDMA dma("SimpleDMA", 4);
     Flashcontroller flashController("Flashcontroller", opt.flash_device);
+    EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
+    Display display("Display");
 
 
     direct_memory_interface dmi({mem.data, opt.mem_start_addr, mem.size});
@@ -170,6 +180,8 @@ int sc_main(int argc, char **argv) {
     bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
     bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
     bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
+    bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
+    bus.ports[10]= new PortMapping(opt.display_start_addr, opt.display_end_addr);
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.mem_end_addr-4); // -4 to not overlap with the next region
@@ -187,6 +199,8 @@ int sc_main(int argc, char **argv) {
     bus.isocks[6].bind(sensor2.tsock);
     bus.isocks[7].bind(mram.tsock);
     bus.isocks[8].bind(flashController.tsock);
+    bus.isocks[9].bind(ethernet.tsock);
+    bus.isocks[10].bind(display.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
@@ -195,6 +209,7 @@ int sc_main(int argc, char **argv) {
     dma.plic = &plic;
     timer.plic = &plic;
     sensor2.plic = &plic;
+    ethernet.plic = &plic;
 
 
     if (opt.use_debug_runner) {
@@ -204,9 +219,7 @@ int sc_main(int argc, char **argv) {
         new DirectCoreRunner(core);
     }
 
-
     sc_core::sc_start();
-
 
     core.show();
 
