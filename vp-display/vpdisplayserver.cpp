@@ -47,7 +47,7 @@ void VPDisplayserver::startListening(std::function<void(bool)> notifyChange)
                 notifyChange(true);
                 lastFrame = framebuffer->activeFrame;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     });
     notifyChange(true);
