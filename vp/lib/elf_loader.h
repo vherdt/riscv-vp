@@ -4,6 +4,9 @@
 
 #include <boost/iostreams/device/mapped_file.hpp>
 
+#include <cstdint>
+#include <vector>
+
 
 // see: http://wiki.osdev.org/ELF_Tutorial
 // for ELF definitions
@@ -94,13 +97,26 @@ struct ELFLoader {
     }
 
 
-    void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset) {
+    std::vector<const Elf32_Phdr *> get_load_sections() {
+
+        std::vector<const Elf32_Phdr *> sections;
+
         for (int i=0; i<hdr->e_phnum; ++i) {
             const Elf32_Phdr *p = reinterpret_cast<const Elf32_Phdr *>(
-                    elf.data() + hdr->e_phoff + hdr->e_phentsize*i);
+                    elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
 
             if (p->p_type != PT_LOAD)
                 continue;
+
+            sections.push_back(p);
+        }
+
+        return sections;
+    }
+
+
+    void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset) {
+        for (auto p : get_load_sections()) {
 
             assert ((p->p_vaddr+p->p_memsz >= offset) && (p->p_vaddr+p->p_memsz < offset+size));
 
@@ -108,6 +124,7 @@ struct ELFLoader {
             memcpy(dst+p->p_vaddr-offset, elf.data()+p->p_offset, p->p_filesz);
         }
     }
+
 
     uint32_t get_memory_end() {
         const Elf32_Phdr *last = reinterpret_cast<const Elf32_Phdr *>(
