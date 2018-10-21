@@ -143,9 +143,9 @@ struct csr_misa : public csr_base {
     };
 
     void init() {
-        extensions = 1 | (1 << 8) | (1 << 12);
+        extensions = 1 | (1 << 2) | (1 << 8) | (1 << 12);   // IMAC
         wiri = 0;
-        mxl = 1;
+        mxl = 1;                                            // RV32
     }
 };
 

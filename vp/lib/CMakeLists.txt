@@ -3,6 +3,7 @@ file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 add_executable(riscv-vp
         main.cpp
         syscall.cpp
+        instr.cpp
         gdb_stub.cpp
         ethernet.cpp
         display.cpp

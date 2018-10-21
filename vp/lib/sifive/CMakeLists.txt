@@ -1,6 +1,7 @@
 add_executable(sifive-vp
         sifive_main.cpp
         ../syscall.cpp
+        ../instr.cpp
         ${HEADERS})
 
 target_include_directories(sifive-vp PRIVATE ..)
