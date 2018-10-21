@@ -2,13 +2,12 @@
 #define RISCV_ISA_MEMORY_H
 
 #include <stdint.h>
-
 #include <iostream>
+#include <boost/iostreams/device/mapped_file.hpp>
 
 #include "bus.h"
 
 #include "systemc"
-
 #include "tlm_utils/simple_target_socket.h"
 
 
@@ -24,7 +23,13 @@ struct SimpleMemory : public sc_core::sc_module {
         tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
     }
 
-    void write_data(unsigned addr, uint8_t *src, unsigned num_bytes) {
+    void load_binary_file(const std::string &filename, unsigned addr) {
+        boost::iostreams::mapped_file_source f(filename);
+        assert (f.is_open());
+        write_data(addr, (const uint8_t *)f.data(), f.size());
+    }
+
+    void write_data(unsigned addr, const uint8_t *src, unsigned num_bytes) {
         assert (addr + num_bytes <= size);
 
         memcpy(data + addr, src, num_bytes);

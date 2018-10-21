@@ -8,6 +8,8 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 
+#include <boost/format.hpp>
+
 /*
  * Optional modelling layer to simplify TLM register and memory access.
  * sensor2.h demonstrates how to use it.
@@ -207,7 +209,12 @@ namespace vp { namespace map {
 
 
     struct LocalRouter {
+        std::string name;
         std::vector<AbstractMapping *> maps;
+
+        LocalRouter(const std::string &name="unamed")
+                : name(name) {
+        }
 
         ~LocalRouter() {
             for (auto p : maps) {
@@ -221,7 +228,7 @@ namespace vp { namespace map {
                 if (m->try_handle(trans, delay))
                     return;
             }
-            throw std::runtime_error("access of unmapped address");
+            throw std::runtime_error("access of unmapped address (local TLM router): name=" + name + ", addr=0x" + (boost::format("%X") % trans.get_address()).str());
         }
 
         RegisterMapping &add_register_bank(const std::vector<reg_mapping_t> &regs) {

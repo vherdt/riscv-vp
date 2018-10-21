@@ -25,7 +25,7 @@ struct PRCI : public sc_core::sc_module {
         PLLOUTDIV_REG_ADDR = 0xC,
     };
 
-    vp::map::LocalRouter router;
+    vp::map::LocalRouter router = {"PRCI"};
 
     PRCI(sc_core::sc_module_name) {
         tsock.register_b_transport(this, &PRCI::transport);

@@ -19,7 +19,7 @@ struct SPI : public sc_core::sc_module {
         SCKDIV_REG_ADDR = 0x0,
     };
 
-    vp::map::LocalRouter router;
+    vp::map::LocalRouter router = {"SPI"};
 
     SPI(sc_core::sc_module_name) {
         tsock.register_b_transport(this, &SPI::transport);

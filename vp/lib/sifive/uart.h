@@ -66,7 +66,7 @@ struct UART : public sc_core::sc_module {
         DIV_REG_ADDR = 0x18,
     };
 
-    vp::map::LocalRouter router;
+    vp::map::LocalRouter router = {"UART"};
 
     UART(sc_core::sc_module_name) {
         tsock.register_b_transport(this, &UART::transport);

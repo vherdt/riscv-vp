@@ -155,16 +155,18 @@ int sc_main(int argc, char **argv) {
     bus.ports[8] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
 
 
+    flash.load_binary_file("../../../../bootcode/sifive/hifive-1-rev-a01/bootcode.bin", 0);
+
     for (auto p : loader.get_load_sections()) {
-        if (p->p_vaddr >= opt.dram_start_addr && p->p_vaddr < opt.dram_end_addr)
-            memcpy(dram.data+p->p_vaddr-opt.dram_start_addr, loader.elf.data()+p->p_offset, p->p_filesz);
-        else if (p->p_vaddr >= opt.flash_start_addr && p->p_vaddr < opt.flash_end_addr)
-            memcpy(flash.data+p->p_vaddr-opt.flash_start_addr, loader.elf.data()+p->p_offset, p->p_filesz);
+        if (p->p_paddr >= opt.dram_start_addr && p->p_paddr < opt.dram_end_addr)
+            memcpy(dram.data+p->p_paddr-opt.dram_start_addr, loader.elf.data()+p->p_offset, p->p_filesz);
+        else if (p->p_paddr >= opt.flash_start_addr && p->p_paddr < opt.flash_end_addr)
+            memcpy(flash.data+p->p_paddr-opt.flash_start_addr, loader.elf.data()+p->p_offset, p->p_filesz);
         else
             assert (false);
     }
 
-    core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.dram_end_addr-4); // -4 to not overlap with the next region
+    core.init(instr_mem_if, data_mem_if, &clint, &sys, 0x20000000, opt.dram_end_addr-4); // -4 to not overlap with the next region
     sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 
     // connect TLM sockets
