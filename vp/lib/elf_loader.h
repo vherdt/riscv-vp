@@ -115,13 +115,20 @@ struct ELFLoader {
     }
 
 
-    void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset) {
+    void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset, bool use_vaddr=true) {
         for (auto p : get_load_sections()) {
 
-            assert ((p->p_vaddr+p->p_memsz >= offset) && (p->p_vaddr+p->p_memsz < offset+size));
+            if (use_vaddr) {
+                assert ((p->p_vaddr >= offset) && (p->p_vaddr + p->p_memsz < offset + size));
 
-            //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
-            memcpy(dst+p->p_vaddr-offset, elf.data()+p->p_offset, p->p_filesz);
+                //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
+                memcpy(dst + p->p_vaddr - offset, elf.data() + p->p_offset, p->p_filesz);
+            } else {
+                assert ((p->p_paddr >= offset) && (p->p_paddr + p->p_memsz < offset + size));
+
+                //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
+                memcpy(dst + p->p_paddr - offset, elf.data() + p->p_offset, p->p_filesz);
+            }
         }
     }
 
