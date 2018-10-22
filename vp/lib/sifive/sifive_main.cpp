@@ -30,7 +30,7 @@ struct Options {
     addr_t dram_size          = 1024*16;  // 16 KB dram
     addr_t dram_start_addr    = 0x80000000;
     addr_t dram_end_addr      = dram_start_addr + dram_size - 1;
-    addr_t flash_size         = 1024*1024*512;  // 512 MB flash
+    addr_t flash_size         = 1024*1024*128;  // 128 MB flash
     addr_t flash_start_addr   = 0x20000000;
     addr_t flash_end_addr     = flash_start_addr + flash_size - 1;
     addr_t clint_start_addr   = 0x02000000;
