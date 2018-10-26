@@ -11,11 +11,11 @@
 #include "spi.h"
 #include "uart.h"
 #include "gpio.h"
-
 #include <iostream>
 #include <iomanip>
 #include <boost/program_options.hpp>
 #include <boost/io/ios_state.hpp>
+#include "maskROM.h"
 
 
 struct Options {
@@ -27,12 +27,8 @@ struct Options {
 
     std::string input_program;
 
-    addr_t dram_size          = 1024*16;  // 16 KB dram
-    addr_t dram_start_addr    = 0x80000000;
-    addr_t dram_end_addr      = dram_start_addr + dram_size - 1;
-    addr_t flash_size         = 1024*1024*128;  // 128 MB flash
-    addr_t flash_start_addr   = 0x20000000;
-    addr_t flash_end_addr     = flash_start_addr + flash_size - 1;
+    addr_t maskROM_start_addr = 0x00001000;
+    addr_t maskROM_end_addr   = 0x00001FFF;
     addr_t clint_start_addr   = 0x02000000;
     addr_t clint_end_addr     = 0x0200FFFF;
     addr_t plic_start_addr    = 0x0C000000;
@@ -47,6 +43,12 @@ struct Options {
     addr_t spi0_end_addr      = 0x10014FFF;
     addr_t gpio0_start_addr   = 0x10012000;
     addr_t gpio0_end_addr     = 0x10012FFF;
+    addr_t flash_size         = 1024*1024*128;  // 128 MB flash
+    addr_t flash_start_addr   = 0x20000000;
+    addr_t flash_end_addr     = flash_start_addr + flash_size - 1;
+    addr_t dram_size          = 1024*16;  // 16 KB dram
+    addr_t dram_start_addr    = 0x80000000;
+    addr_t dram_end_addr      = dram_start_addr + dram_size - 1;
 
 
     bool use_instr_dmi = false;
@@ -119,9 +121,10 @@ int sc_main(int argc, char **argv) {
     SimpleMemory dram("DRAM", opt.dram_size);
     SimpleMemory flash("Flash", opt.flash_size);
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<1,9> bus("SimpleBus");
+    SimpleBus<1,10> bus("SimpleBus");
     CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
     SyscallHandler sys;
+
     PLIC plic("PLIC");
     CLINT clint("CLINT");
     AON aon("AON");
@@ -129,7 +132,7 @@ int sc_main(int argc, char **argv) {
     SPI spi0("SPI0");
     UART uart0("UART0");
     GPIO gpio0("GPIO0");
-
+    MaskROM maskROM("MASKROM");
 
     direct_memory_interface dram_dmi({dram.data, opt.dram_start_addr, dram.size});
     direct_memory_interface flash_dmi({flash.data, opt.flash_start_addr, flash.size});
@@ -153,16 +156,9 @@ int sc_main(int argc, char **argv) {
     bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
     bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
     bus.ports[8] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
+    bus.ports[9] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
 
-
-    //NOTE: perhaps also simulate the hifive bootcode!?
-    // -->> change loader.get_entrypoint() to 0x20000000 constant in this case
-    //
-    //flash.load_binary_file("../../../../bootcode/sifive/hifive-1-rev-a01/bootcode.bin", 0);
-
-    //TODO/NOTE: it might be better to retrieve the destination using MMIO to allow easy loading into different memories (and reuse the bus routing)
     loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
-
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.dram_end_addr-4); // -4 to not overlap with the next region
     sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 
@@ -177,10 +173,12 @@ int sc_main(int argc, char **argv) {
     bus.isocks[6].bind(spi0.tsock);
     bus.isocks[7].bind(uart0.tsock);
     bus.isocks[8].bind(gpio0.tsock);
+    bus.isocks[9].bind(maskROM.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;
     clint.target_hart = &core;
+
 
 
     new DirectCoreRunner(core);

@@ -11,7 +11,6 @@
 #include <deque>
 #include <fcntl.h>
 
-
 struct Reg32 {
     uint32_t value;
 
@@ -26,8 +25,6 @@ struct Reg32 {
     operator uint32_t() const {
         return value;
     }
-
-
 };
 
 
@@ -82,29 +79,60 @@ struct UART : public sc_core::sc_module {
                  {DIV_REG_ADDR, &div},
          }).register_handler(this, &UART::register_access_callback);
 
-        //nonblocking reads to stdin
         fcntl (0, F_SETFL, O_NONBLOCK);
     }
 
     void register_access_callback(const vp::map::register_access_t &r) {
-        if (r.read && r.vptr == &rxdata) {
+        if (r.read) {
         	char c;
-        	if(read (0, &c, 1) > 0)
+        	if(r.vptr == &txdata)
         	{
-        		rxdata &= ~0xff;
-        		rxdata |= c & 0xff;
+        		txdata = 0;	//always transmit
+        	}
+        	else if(r.vptr == &rxdata)
+        	{
+        		//std::cout << "RXdata";
+				if(read (0, &c, 1) > 0)
+				{
+					rxdata &= ~0xff;
+					rxdata |= c & 0xff;
+				}
+				else
+				{	//rx-queue empty
+					rxdata = 1 << 31;
+				}
+        	}
+        	else if(r.vptr == &txctrl)
+        	{
+        		//std::cout << "TXctl";
+        	}
+        	else if(r.vptr == &rxctrl)
+        	{
+        		//std::cout << "RXctrl";
+        	}
+        	else if(r.vptr == &ie || r.vptr == &ip)
+        	{
+        		//std::cout << "IE or IP";
+        		ie = 0; 	//no interrupts enabled
+        		ip = 0; 	//no interrupts pending
+        	}
+        	else if(r.vptr == &div)
+        	{
+        		//std::cout << "div";
+        		// just return the last set value
         	}
         	else
-        	{	//rx-queue empty
-        		rxdata |= 1 << 31;
+        	{
+        		std::cerr << "invalid offset for UART " << std::endl;
         	}
+        	//std::cout << std::endl;
         }
 
         r.fn();
 
-        if (r.write && r.vptr == &txdata) {
-            uint8_t byte = txdata & 0xff;
-            std::cout << (char)byte;
+        if (r.write && r.vptr == &txdata)
+        {
+        	std::cout << static_cast<char>(txdata & 0xff);
         }
     }
 

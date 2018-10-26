@@ -46,6 +46,7 @@ struct SimpleBus : sc_core::sc_module {
             if (ports[i]->contains(addr))
                 return i;
         }
+        std::cerr << "unable to find target port for address " << std::hex << std::to_string(addr) << std::hex << std::endl;
         throw std::runtime_error("unable to find target port for address " + std::to_string(addr));
     }
 
