@@ -189,6 +189,5 @@ int sc_main(int argc, char **argv) {
 
     core.show();
 
-
     return 0;
 }

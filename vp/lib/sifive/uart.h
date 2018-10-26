@@ -9,6 +9,7 @@
 #include "irq_if.h"
 
 #include <deque>
+#include <fcntl.h>
 
 
 struct Reg32 {
@@ -18,7 +19,7 @@ struct Reg32 {
             : value(n){
     }
 
-    Reg32 operator =(uint32_t n) {
+    void operator=(const uint32_t n) {
         value = n;
     }
 
@@ -80,12 +81,23 @@ struct UART : public sc_core::sc_module {
                  {IP_REG_ADDR, &ip},
                  {DIV_REG_ADDR, &div},
          }).register_handler(this, &UART::register_access_callback);
+
+        //nonblocking reads to stdin
+        fcntl (0, F_SETFL, O_NONBLOCK);
     }
 
     void register_access_callback(const vp::map::register_access_t &r) {
         if (r.read && r.vptr == &rxdata) {
-            rxdata &= ~0xff;
-            rxdata |= rand() & 0xff;
+        	char c;
+        	if(read (0, &c, 1) > 0)
+        	{
+        		rxdata &= ~0xff;
+        		rxdata |= c & 0xff;
+        	}
+        	else
+        	{	//rx-queue empty
+        		rxdata |= 1 << 31;
+        	}
         }
 
         r.fn();
