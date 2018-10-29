@@ -10,6 +10,7 @@
 
 #include <deque>
 #include <fcntl.h>
+#include <termios.h>
 
 struct Reg32 {
     uint32_t value;
@@ -66,6 +67,8 @@ struct UART : public sc_core::sc_module {
 
     vp::map::LocalRouter router = {"UART"};
 
+    struct termios orig_termios;
+
     UART(sc_core::sc_module_name) {
         tsock.register_b_transport(this, &UART::transport);
 
@@ -79,23 +82,32 @@ struct UART : public sc_core::sc_module {
                  {DIV_REG_ADDR, &div},
          }).register_handler(this, &UART::register_access_callback);
 
-        fcntl (0, F_SETFL, O_NONBLOCK);
+
+        int flags = fcntl(0, F_GETFL, 0);
+        fcntl(0, F_SETFL, flags | O_NONBLOCK);
+        tcgetattr(STDIN_FILENO, &orig_termios);
+        struct termios raw = orig_termios;
+        raw.c_lflag &= ~(ICANON);	//Bytewise read
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    }
+
+    ~UART()
+    {
+    	  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     }
 
     void register_access_callback(const vp::map::register_access_t &r) {
         if (r.read) {
-        	char c;
         	if(r.vptr == &txdata)
         	{
         		txdata = 0;	//always transmit
         	}
         	else if(r.vptr == &rxdata)
         	{
-        		//std::cout << "RXdata";
-				if(read (0, &c, 1) > 0)
+        		char c;
+				if(read (0, &c, 1) >= 0)
 				{
-					rxdata &= ~0xff;
-					rxdata |= c & 0xff;
+					rxdata = c;
 				}
 				else
 				{	//rx-queue empty
@@ -112,20 +124,17 @@ struct UART : public sc_core::sc_module {
         	}
         	else if(r.vptr == &ie || r.vptr == &ip)
         	{
-        		//std::cout << "IE or IP";
         		ie = 0; 	//no interrupts enabled
         		ip = 0; 	//no interrupts pending
         	}
         	else if(r.vptr == &div)
         	{
-        		//std::cout << "div";
         		// just return the last set value
         	}
         	else
         	{
         		std::cerr << "invalid offset for UART " << std::endl;
         	}
-        	//std::cout << std::endl;
         }
 
         r.fn();

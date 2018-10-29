@@ -73,7 +73,8 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
                 assert (false && "unsupported tlm command");
             }
         } else {
-            assert (false && "access of unmapped address");
+        	std::cerr << "access of unmapped address at " << std::hex << trans.get_address() << std::endl;
+            assert (false);
         }
     }
 
@@ -84,7 +85,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
             //NOTE: has to be done for every hart
             if (!eip) {
                 auto irqs = pending_interrupts & enabled_mask;
-                if (irqs > 0) {
+                if (irqs != 0) {
                     eip = true;
                     target_hart->trigger_external_interrupt();   //TODO: check for priority threshold and order by priorities
                 }
