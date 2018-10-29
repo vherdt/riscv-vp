@@ -43,7 +43,7 @@ struct Options {
     addr_t spi0_end_addr      = 0x10014FFF;
     addr_t gpio0_start_addr   = 0x10012000;
     addr_t gpio0_end_addr     = 0x10012FFF;
-    addr_t flash_size         = 1024*1024*128;  // 128 MB flash
+    addr_t flash_size         = 1024*1024*512;  // 512 MB flash
     addr_t flash_start_addr   = 0x20000000;
     addr_t flash_end_addr     = flash_start_addr + flash_size - 1;
     addr_t dram_size          = 1024*16;  // 16 KB dram
