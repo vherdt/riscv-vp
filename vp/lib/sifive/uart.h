@@ -12,33 +12,6 @@
 #include <fcntl.h>
 #include <termios.h>
 
-struct Reg32 {
-    uint32_t value;
-
-    Reg32(uint32_t n)
-            : value(n){
-    }
-
-    void operator=(const uint32_t n) {
-        value = n;
-    }
-
-    operator uint32_t() const {
-        return value;
-    }
-};
-
-
-struct Reg32Field {
-    Reg32 *owner;
-    unsigned start;
-    unsigned end;
-
-    Reg32Field(Reg32 *owner, unsigned start, unsigned end)
-            : owner(owner), start(start), end(end) {
-    }
-};
-
 
 struct UART : public sc_core::sc_module {
     tlm_utils::simple_target_socket<UART> tsock;

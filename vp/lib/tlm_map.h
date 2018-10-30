@@ -153,6 +153,11 @@ namespace vp { namespace map {
         std::unordered_map<uint64_t, reg_mapping_t> addr_to_reg;
         handler_t handler;
 
+        RegisterMapping &add_register(reg_mapping_t m) {
+            addr_to_reg.insert(std::make_pair(m.addr, m));
+            return *this;
+        }
+
         template <typename Module, typename MemberFun>
         RegisterMapping &register_handler(Module *this_, MemberFun fn) {
             assert (!handler);
@@ -172,11 +177,11 @@ namespace vp { namespace map {
             auto len = trans.get_data_length();
             auto cmd = trans.get_command();
 
-            auto it = addr_to_reg.find(addr);
+            auto it = addr_to_reg.find(addr - addr%4);  // clamp to nearest register
             if (it == addr_to_reg.end())
                 return false;
 
-            assert (len == 4);	// NOTE: only allow to read/write whole register
+            assert (len + (addr%4) <= 4);	// do not allow access beyond the register
             assert (cmd == tlm::TLM_READ_COMMAND || cmd == tlm::TLM_WRITE_COMMAND);
 
             reg_mapping_t &r = it->second;
@@ -184,13 +189,20 @@ namespace vp { namespace map {
             assert (r.mode.can_read() || cmd != tlm::TLM_READ_COMMAND);
             assert (r.mode.can_write() || cmd != tlm::TLM_WRITE_COMMAND);
 
-            auto fn = [cmd,&r,new_vptr]() {
-                if (cmd == tlm::TLM_READ_COMMAND)
-                    *new_vptr = r.bus_read();
-                else if (cmd == tlm::TLM_WRITE_COMMAND)
-                    r.bus_write(*new_vptr);
-                else
+            auto fn = [cmd,&r,new_vptr,&trans]() {
+                auto off = trans.get_address() % 4;
+                if (cmd == tlm::TLM_READ_COMMAND) {
+                    uint32_t n = r.bus_read();
+                    memcpy(trans.get_data_ptr(), ((uint8_t*)&n)+off, trans.get_data_length());
+                    //*new_vptr = r.bus_read();
+                } else if (cmd == tlm::TLM_WRITE_COMMAND) {
+                    uint32_t n = r.value();
+                    memcpy(&n+off, trans.get_data_ptr(), trans.get_data_length());
+                    r.bus_write(n);
+                    //r.bus_write(*new_vptr);
+                } else {
                     throw std::runtime_error("unsupported TLM command detected");
+                }
             };
 
             assert (handler && "no callback function provided");
@@ -234,6 +246,7 @@ namespace vp { namespace map {
         RegisterMapping &add_register_bank(const std::vector<reg_mapping_t> &regs) {
             auto p = new RegisterMapping();
             for (auto &m : regs) {
+                assert (p->addr_to_reg.find(m.addr) == p->addr_to_reg.end() && "register at this address already available");
                 p->addr_to_reg.insert(std::make_pair(m.addr, m));
             }
             maps.push_back(p);
