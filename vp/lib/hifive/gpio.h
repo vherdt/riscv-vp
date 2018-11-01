@@ -52,6 +52,9 @@ struct GPIO : public sc_core::sc_module {
     };
 
     vp::map::LocalRouter router = {"GPIO"};
+    interrupt_gateway *plic = nullptr;
+
+    SC_HAS_PROCESS(GPIO);
 
     GPIO(sc_core::sc_module_name) {
         tsock.register_b_transport(this, &GPIO::transport);
@@ -75,18 +78,39 @@ struct GPIO : public sc_core::sc_module {
 								{IOF_SEL_REG_ADDR, &iof_sel},
 								{OUT_XOR_REG_ADDR, &out_xor},
          }).register_handler(this, &GPIO::register_access_callback);
+
+        SC_THREAD(run);
     }
 
     void register_access_callback(const vp::map::register_access_t &r) {
         r.fn();
-        if(r.vptr == &pin_value)
+        if(r.write)
         {
-        	std::cout << "new GIO Value " << std::hex << pin_value << std::endl;
+        	//std::cout << "Write to GPIO reg. no " << (r.vptr - &pin_value);
+			if(r.vptr == &port)
+			{
+				std::cout << "[VP] new GPIO Value: ";
+				for(unsigned i = 0; i < sizeof(uint32_t) * 8; i++)
+				{
+					printf("%c", port & 1 << (32 - i) ? '1' : '0');
+				}
+			}
+			std::cout << std::endl;
         }
     }
 
     void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
         router.transport(trans, delay);
+    }
+
+    void run() {
+    	sc_core::sc_event run_event;
+        while (true) {
+            run_event.notify(sc_core::sc_time(10000, sc_core::SC_US));
+            sc_core::wait(run_event);  // 10000 times per second by default
+            //Todo: wait for pin input from external sources
+            //std::cout << "Hi " << sc_core::sc_time_stamp() << std::endl;
+        }
     }
 };
 
