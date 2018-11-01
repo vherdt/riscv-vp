@@ -11,4 +11,4 @@ add_executable(riscv-vp
 
 target_link_libraries(riscv-vp ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
 
-subdirs(sifive)
+subdirs(hifive)

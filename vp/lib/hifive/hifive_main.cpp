@@ -7,15 +7,17 @@
 #include "plic.h"
 #include "clint.h"
 #include "aon.h"
+#include "gpio.h"
+#include "maskROM.h"
 #include "prci.h"
 #include "spi.h"
 #include "uart.h"
-#include "gpio.h"
+
 #include <iostream>
 #include <iomanip>
 #include <boost/program_options.hpp>
 #include <boost/io/ios_state.hpp>
-#include "maskROM.h"
+
 
 
 struct Options {
