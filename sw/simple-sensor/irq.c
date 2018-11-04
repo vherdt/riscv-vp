@@ -7,7 +7,7 @@
 #define RISCV_MACHINE_EXTERNAL_INTERRUPT 11
 
 
-static volatile uint32_t * const PLIC_CLAIM_AND_RESPONSE_REGISTER = (uint32_t * const)0x40000004;
+static volatile uint32_t * const PLIC_CLAIM_AND_RESPONSE_REGISTER = (uint32_t * const)0x40200004;
 
 static void irq_empty_handler() {}
 

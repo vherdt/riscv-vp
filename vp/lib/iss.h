@@ -891,7 +891,7 @@ struct ISS : public sc_core::sc_module,
     }
 
     virtual void trigger_external_interrupt() override {
-        //std::cout << "[sim] trigger external interrupt" << std::endl;
+        //std::cout << "[vp::iss] trigger external interrupt" << std::endl;
         csrs.mip->meip = true;
         wfi_event.notify(sc_core::SC_ZERO_TIME);
     }
@@ -902,7 +902,7 @@ struct ISS : public sc_core::sc_module,
     }
 
     void return_from_trap_handler() {
-        //std::cout << "[sim] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
+        //std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
 
         // NOTE: assumes a SW based solution to store/re-store the execution context, since this appears to be the RISC-V convention
         pc = csrs.mepc->reg;
@@ -920,7 +920,7 @@ struct ISS : public sc_core::sc_module,
 
     void switch_to_trap_handler() {
         assert (csrs.mstatus->mie);
-        //std::cout << "[sim] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
+        //std::cout << "[vp::iss] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
 
         csrs.mcause->interrupt = 1;
         if (csrs.mie->meie && csrs.mip->meip) {

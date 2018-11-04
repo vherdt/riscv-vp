@@ -77,6 +77,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
     void gateway_incoming_interrupt(uint32_t irq_id) {
         // NOTE: can use different techniques for each gateway, in this case a simple non queued edge trigger
         assert (irq_id > 0 && irq_id < NUM_INTERRUPTS);
+        //std::cout << "[vp::plic] incoming interrupt " << irq_id << std::endl;
 
         if (irq_id < 32) {
             pending_interrupts_1 |= 1 << irq_id;
@@ -90,6 +91,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 
     void clear_pending_interrupt(int irq_id) {
         assert (irq_id >= 0 && irq_id < NUM_INTERRUPTS);    //NOTE: ignore clear of zero interrupt (zero is not available)
+        //std::cout << "[vp::plic] clear pending interrupt " << irq_id << std::endl;
 
         uint32_t *pending = &pending_interrupts_1;
 
@@ -105,13 +107,19 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
         int min_id = 0;
         unsigned max_priority = 0;
 
+        //std::cout << "[vp::plic] get_next_pending_interrupt(consider_threshold=" << consider_threshold << ")" << std::endl;
+        //std::cout << "[vp::plic] pending interrupts 1: " << pending_interrupts_1 << std::endl;
+        //std::cout << "[vp::plic] pending interrupts 2: " << pending_interrupts_2 << std::endl;
+        //std::cout << "[vp::plic] priority threshold: " << hart_0_priority_threshold << std::endl;
+
         uint32_t irqs[2] = {
                 pending_interrupts_1 & hart_0_enabled_interrupts_1,
                 pending_interrupts_2 & hart_0_enabled_interrupts_2
         };
 
         for (int i=1; i<NUM_INTERRUPTS; ++i) {
-            if (irqs[i % 32] & (1 << i)) {
+            assert (i / 32 <= 1);
+            if (irqs[i / 32] & (1 << i)) {
                 auto prio = interrupt_priorities[i];
                 if (prio > 0 && (!consider_threshold || (prio > hart_0_priority_threshold))) {
                     if (prio > max_priority) {
@@ -137,6 +145,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
             int min_id = hart_0_get_next_pending_interrupt(false);
             hart_0_claim_response = min_id;    // zero means no more interrupt to claim
             clear_pending_interrupt(min_id);
+            //std::cout << "[vp::plic] claim interrupt " << min_id << std::endl;
         }
 
         r.fn();
@@ -145,6 +154,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
             //NOTE: on completed response, check if there are any other pending interrupts
             hart_0_eip = false;
             e_run.notify(clock_cycle);
+            //std::cout << "[vp::plic] clear eip" << std::endl;
         }
     }
 
@@ -163,6 +173,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
             //NOTE: has to be done for every hart
             if (!hart_0_eip) {
                 if (hart_0_has_pending_enabled_interrupts()) {
+                    //std::cout << "[vp::plic] trigger interrupt" << std::endl;
                     hart_0_eip = true;
                     target_hart->trigger_external_interrupt();
                 }

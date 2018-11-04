@@ -50,7 +50,7 @@ struct Options {
     addr_t ethernet_start_addr= 0x30000000;
     addr_t ethernet_end_addr  = ethernet_start_addr + 1500;
     addr_t plic_start_addr    = 0x40000000;
-    addr_t plic_end_addr      = 0x40001000;
+    addr_t plic_end_addr      = 0x41000000;
     addr_t sensor_start_addr  = 0x50000000;
     addr_t sensor_end_addr    = 0x50001000;
     addr_t sensor2_start_addr = 0x50002000;
