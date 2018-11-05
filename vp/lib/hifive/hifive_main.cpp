@@ -92,20 +92,24 @@ Options parse_command_line_arguments(int argc, char **argv) {
         po::variables_map vm;
         po::store(po::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
 
-        if (vm.count("help")) {
+        if (vm.count("help"))
+        {
             std::cout << desc << std::endl;
             exit(0);
         }
 
         po::notify(vm);
 
-        if (vm["use-dmi"].as<bool>()) {
+        if (vm["use-dmi"].as<bool>())
+        {
             opt.use_data_dmi = true;
             opt.use_instr_dmi = true;
         }
 
         return opt.check_and_post_process();
-    } catch (boost::program_options::error &e) {
+    }
+    catch (boost::program_options::error &e)
+    {
         std::cerr << "Error parsing command line options: " << e.what() << std::endl;
         exit(-1);
     }
