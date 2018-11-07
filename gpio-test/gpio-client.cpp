@@ -5,10 +5,7 @@
  *      Author: dwd
  */
 
-
-/*
-** client.c -- a stream socket client demo
-*/
+#include "gpio.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,10 +18,6 @@
 #include <sys/socket.h>
 
 #include <arpa/inet.h>
-
-#define PORT "3490" // the port client will be connecting to
-
-#define MAXDATASIZE 100 // max number of bytes we can get at once
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -39,7 +32,6 @@ void *get_in_addr(struct sockaddr *sa)
 int main(int argc, char *argv[])
 {
     int sockfd, numbytes;
-    char buf[MAXDATASIZE];
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
@@ -53,7 +45,7 @@ int main(int argc, char *argv[])
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(argv[1], "1339", &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -86,14 +78,19 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
+    GpioClient gpio;
+
+    for(uint8_t i = 0; i < 64; i++)
+    {
+    	if(!gpio.setBit(sockfd, i, 1))
+    		return -1;
+    	if(!gpio.update(sockfd))
+    		return -1;
+    	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
+    	if(!gpio.setBit(sockfd, i, 0))
+    		return -1;
+    	usleep(750);
     }
-
-    buf[numbytes] = '\0';
-
-    printf("client: received '%s'\n",buf);
 
     close(sockfd);
 

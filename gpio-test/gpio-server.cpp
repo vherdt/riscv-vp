@@ -5,6 +5,8 @@
  *      Author: dwd
  */
 
+#include "gpio.hpp"
+
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,15 +22,6 @@
 
 using namespace std;
 
-void hexPrint(char* buf, uint16_t size)
-{
-	for(uint16_t i = 0; i < size; i++)
-	{
-		printf("%2X ", buf[i]);
-	}
-	cout << endl;
-}
-
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -38,85 +31,6 @@ void *get_in_addr(struct sockaddr *sa)
 
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
-
-class Gpio
-{
-	typedef uint64_t Reg;
-	struct State
-	{
-		Reg val;
-		uint16_t interrupt_route[64];
-	} state;
-
-	enum Operation : uint8_t
-	{
-		GET_BANK = 1,
-		SET_BIT
-	};
-
-	struct Request
-	{
-		Operation op;
-		union
-		{
-			struct
-			{
-				uint8_t pos : 6;		//Todo: Packed
-				uint8_t tristate : 2;
-			} setBit;
-		};
-	};
-
-	void printRequest(Request* req)
-	{
-		switch(req->op)
-		{
-		case GET_BANK:
-			cout << "GET BANK";
-			break;
-		case SET_BIT:
-			cout << "SET BIT ";
-			cout << req->setBit.pos << " to ";
-			switch(req->setBit.tristate)
-			{
-			case 0:
-				cout << "LOW";
-				break;
-			case 1:
-				cout << "HIGH";
-				break;
-			case 2:
-				cout << "UNSET";
-				break;
-			default:
-				cout << "INVALID";
-			}
-			break;
-		default:
-			cout << "INVALID";
-		}
-		cout << endl;
-	}
-
-public:
-	Gpio()
-	{
-		memset(&state, 0, sizeof(State));
-	}
-	void handleConnection(int fd)
-	{
-		char buf[sizeof(Request)];
-	    int bytes;
-	    while((bytes = read(fd, buf, sizeof(Request))) > 0)
-		{
-	        hexPrint(buf, bytes);
-	        printRequest(reinterpret_cast<Request*>(buf));
-	    	if (write(fd, "OK", 3) == -1)
-	    		break;
-		}
-	    cout << "client disconnected." << endl;
-	}
-};
 
 int main(void)
 {
@@ -174,7 +88,7 @@ int main(void)
         exit(1);
     }
 
-    Gpio gpio;
+    GpioServer gpio;
     printf("server: waiting for connections...\n");
 
     while(1) {  // main accept() loop
