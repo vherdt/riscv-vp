@@ -7,6 +7,9 @@
 
 #include "gpio-server.hpp"
 #include <iostream>
+#include <thread>
+#include <functional>
+#include <unistd.h>
 
 using namespace std;
 
@@ -25,5 +28,14 @@ int main(int argc, char* argv[])
 		cerr << "cant set up server" << endl;
 	}
 
-	gpio.startListening();
+	thread server(bind(&GpioServer::startListening, &gpio));
+
+	bool stop = false;
+	while(!stop)
+	{
+		sleep(1);
+		//gpio.state.val ^= 0xFFFF;
+	}
+	gpio.quit();
+	server.join();
 }

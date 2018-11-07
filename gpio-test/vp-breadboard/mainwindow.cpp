@@ -88,6 +88,23 @@ void VPBreadboard::keyPressEvent(QKeyEvent *e)
     case Qt::Key_Q:
         QApplication::quit();
         break;
+    case Qt::Key_0:
+    {
+        uint8_t until = 6;
+        for(uint8_t i = 0; i < 8; i++)
+        {
+            gpio.setBit(i, i < until ? 1 : 0);
+        }
+        break;
+    }
+    case Qt::Key_1:
+    {
+        for(uint8_t i = 0; i < 8; i++)
+        {
+            gpio.setBit(i, 0);
+        }
+        break;
+    }
     default:
         break;
     }

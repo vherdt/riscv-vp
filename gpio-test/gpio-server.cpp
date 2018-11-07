@@ -105,6 +105,11 @@ bool GpioServer::setupConnection(const char* port)
     return true;
 }
 
+void GpioServer::quit()
+{
+	stop = true;
+}
+
 void GpioServer::startListening()
 {
 	struct sockaddr_storage their_addr; // connector's address information
