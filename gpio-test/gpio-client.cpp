@@ -5,7 +5,7 @@
  *      Author: dwd
  */
 
-#include "gpio.hpp"
+#include "gpio-client.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,8 +16,11 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
 #include <arpa/inet.h>
+
+#include <iostream>
+
+using namespace std;
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -29,37 +32,77 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(int argc, char *argv[])
+GpioClient::GpioClient() : fd(-1)
+{}
+
+GpioClient::~GpioClient()
 {
-    int sockfd, numbytes;
+	if(fd >= 0)
+	{
+		close(fd);
+	}
+}
+
+bool GpioClient::update()
+{
+	Request req;
+	memset(&req, 0, sizeof(Request));
+	req.op = GET_BANK;
+	if(write(fd, &req, sizeof(Request)) != sizeof(Request))
+	{
+		cerr << "Error in write " << fd << endl;
+		return false;
+	}
+	if(read(fd, &state.val, sizeof(Reg)) != sizeof(Reg))
+	{
+		cerr << "Error in read " << fd << endl;
+		return false;
+	}
+	return true;
+}
+
+bool GpioClient::setBit(uint8_t pos, uint8_t tristate)
+{
+	Request req;
+	memset(&req, 0, sizeof(Request));
+	req.op = SET_BIT;
+	req.setBit.pos = pos;
+	req.setBit.tristate = tristate;
+
+	if(write(fd, &req, sizeof(Request)) != sizeof(Request))
+	{
+		cerr << "Error in write" << endl;
+		return false;
+	}
+	return true;
+}
+
+bool GpioClient::setupConnection(const char* host, const char* port)
+{
+    int numbytes;
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
-
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
-        exit(1);
-    }
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(argv[1], "1339", &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
+        return false;
     }
 
     // loop through all the results and connect to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+        if ((fd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
             perror("client: socket");
             continue;
         }
 
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
+        if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(fd);
             perror("client: connect");
             continue;
         }
@@ -69,7 +112,7 @@ int main(int argc, char *argv[])
 
     if (p == NULL) {
         fprintf(stderr, "client: failed to connect\n");
-        return 2;
+        return false;
     }
 
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
@@ -78,22 +121,6 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    GpioClient gpio;
-
-    for(uint8_t i = 0; i < 64; i++)
-    {
-    	if(!gpio.setBit(sockfd, i, 1))
-    		return -1;
-    	if(!gpio.update(sockfd))
-    		return -1;
-    	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
-    	if(!gpio.setBit(sockfd, i, 0))
-    		return -1;
-    	usleep(750);
-    }
-
-    close(sockfd);
-
-    return 0;
+    return true;
 }
 

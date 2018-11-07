@@ -45,18 +45,3 @@ struct Gpio
 	void printRequest(Request* req);
 	Gpio();
 };
-
-struct GpioServer: public Gpio
-{
-public:
-	void handleConnection(int fd);
-};
-
-
-struct GpioClient: public Gpio
-{
-public:
-	bool update(int fd);
-	bool setBit(int fd, uint8_t pos, uint8_t tristate);
-};
-
