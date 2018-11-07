@@ -41,11 +41,23 @@ int main(int argc, char* argv[])
     		return -1;
     	}
     	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
+    	usleep(750);
+    }
+
+
+    for(uint8_t i = 0; i < 64; i++)
+    {
     	if(!gpio.setBit(i, 0))
 		{
     		cerr << "Error resetting Bit " << i << endl;
     		return -1;
 		}
+    	if(!gpio.update())
+    	{
+    		cerr << "Error updating" << endl;
+    		return -1;
+    	}
+    	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
     	usleep(750);
     }
 }

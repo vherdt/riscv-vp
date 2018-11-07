@@ -79,7 +79,6 @@ bool GpioClient::setBit(uint8_t pos, uint8_t tristate)
 
 bool GpioClient::setupConnection(const char* host, const char* port)
 {
-    int numbytes;
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];

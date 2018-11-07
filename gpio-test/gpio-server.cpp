@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <thread>
 
 using namespace std;
 
@@ -123,7 +124,6 @@ void GpioServer::startListening()
 			s, sizeof s);
 		printf("server: got connection from %s\n", s);
 		handleConnection(new_fd);
-		close(new_fd);
 	}
 }
 
@@ -169,4 +169,5 @@ void GpioServer::handleConnection(int conn)
 		}
 	}
 	cout << "client disconnected. (" << bytes << ")" << endl;
+	close(conn);
 }

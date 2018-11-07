@@ -34,20 +34,40 @@ VPBreadboard::VPBreadboard(QWidget *mparent)
     palette.setBrush(QPalette::Background, bkgnd);
     this->setPalette(palette);
     setFixedSize(size());
+    if(!gpio.setupConnection("localhost", "1339"))
+    {
+        cerr << "Could not setup Connection" << endl;
+        QApplication::quit();
+    }
 }
 
 VPBreadboard::~VPBreadboard()
 {
 }
 
+uint64_t VPBreadboard::translateGpioToExtPin(Gpio::Reg& reg)
+{
+    //Todo: This
+    return reg;
+}
+
+uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap)
+{
+    //Todo: This
+    return pinmap & 0xFF;
+}
+
 void VPBreadboard::paintEvent(QPaintEvent *){
     QPainter painter(this);
 
-    //painter.scale(size_factor, size_factor);
+    if(!gpio.update())
+    {
+        cerr << "Could not update values" << endl;
+        //todo: Try to reconnect
+        QApplication::quit();
+    }
 
-    //Draw Header
-    //QPainter mempaint(&memory);
-    sevensegment.map ^= 0xFF;
+    sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state.val));
     sevensegment.draw();
     painter.end();
     this->update();

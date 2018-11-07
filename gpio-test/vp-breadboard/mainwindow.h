@@ -1,7 +1,7 @@
 #pragma once
 #include <QMainWindow>
 #include <cassert>
-#include "../gpio.hpp"
+#include "../gpio-client.hpp"
 
 namespace Ui {
 class VPBreadboard;
@@ -19,6 +19,7 @@ class VPBreadboard : public QWidget
     GpioClient gpio;
     Sevensegment sevensegment;
     uint64_t translateGpioToExtPin(Gpio::Reg& reg);
+    uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
 
 public:
     VPBreadboard(QWidget *mparent = 0);
