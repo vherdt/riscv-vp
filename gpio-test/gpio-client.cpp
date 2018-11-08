@@ -53,7 +53,7 @@ bool GpioClient::update()
 		cerr << "Error in write " << fd << endl;
 		return false;
 	}
-	if(read(fd, &state.val, sizeof(Reg)) != sizeof(Reg))
+	if(read(fd, &state, sizeof(Reg)) != sizeof(Reg))
 	{
 		cerr << "Error in read " << fd << endl;
 		return false;

@@ -10,8 +10,25 @@
 #include <thread>
 #include <functional>
 #include <unistd.h>
+#include <csignal>
 
 using namespace std;
+
+bool stop = false;
+
+void signalHandler( int signum ) {
+   cout << "Interrupt signal (" << signum << ") received.\n";
+
+   if(stop)
+	   exit(signum);
+   stop = true;
+   raise(SIGUSR1);	//this breaks wait in thread
+}
+
+void onChangeCallback(uint8_t bit)
+{
+	printf("Bit %d changed\n", bit);
+}
 
 int main(int argc, char* argv[])
 {
@@ -28,16 +45,25 @@ int main(int argc, char* argv[])
 		cerr << "cant set up server" << endl;
 	}
 
+	signal(SIGINT, signalHandler);
+
+	gpio.registerOnChange(onChangeCallback);
 	thread server(bind(&GpioServer::startListening, &gpio));
 
-	bool stop = false;
 	while(!stop)
 	{
-		usleep(500000);
-		gpio.state.val <<= 1;
-		if(!(gpio.state.val & 0xFF))
+		usleep(100000);
+		if(gpio.state & (1 << 11))
+		{	//example button
+			gpio.state &= ~(0xFF);
+		}
+		else
 		{
-			gpio.state.val = 1;
+			gpio.state <<= 1;
+			if(!(gpio.state & 0xFF))
+			{
+				gpio.state = 1;
+			}
 		}
 	}
 	gpio.quit();

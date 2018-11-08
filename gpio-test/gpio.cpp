@@ -13,7 +13,7 @@
 
 using namespace std;
 
-void hexPrint(char* buf, size_t size){
+void hexPrint(unsigned char* buf, size_t size){
 	for(uint16_t i = 0; i < size; i++)
 	{
 		printf("%2X ", buf[i]);
@@ -21,7 +21,7 @@ void hexPrint(char* buf, size_t size){
 	cout << endl;
 }
 
-void bitPrint(char* buf, size_t size)
+void bitPrint(unsigned char* buf, size_t size)
 {
 	for(uint16_t byte = 0; byte < size; byte++)
 	{
@@ -67,7 +67,7 @@ void Gpio::printRequest(Request* req)
 
 Gpio::Gpio()
 {
-	memset(&state, 0, sizeof(State));
+	memset(&state, 0, sizeof(Reg));
 }
 
 

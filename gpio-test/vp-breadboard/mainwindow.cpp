@@ -56,7 +56,7 @@ void Sevensegment::draw(QPainter& p)
 }
 
 VPBreadboard::VPBreadboard(QWidget *mparent)
-    : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 51), 6)
+    : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 51), 6), button(QPoint(373, 343), QSize(55, 55))
 {
     //resize(800, 600);
 
@@ -89,6 +89,16 @@ uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap)
     return pinmap & 0xFF;
 }
 
+uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
+{
+    return pin;
+}
+
+uint8_t VPBreadboard::getPinnumberOfButton()
+{
+    return 11;
+}
+
 void VPBreadboard::paintEvent(QPaintEvent *){
     QPainter painter(this);
 
@@ -99,8 +109,15 @@ void VPBreadboard::paintEvent(QPaintEvent *){
         QApplication::quit();
     }
 
-    sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state.val));
+    sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
     sevensegment.draw(painter);
+
+
+    if(debugmode)
+    {
+        //painter.setBrush(QBrush(QColor("black")));
+        painter.drawRect(button);
+    }
     painter.end();
     this->update();
 }
@@ -138,38 +155,76 @@ void VPBreadboard::keyPressEvent(QKeyEvent *e)
         break;
     }
     case Qt::Key_W:
-        sevensegment.extent -= QPoint(0, 1);
-        cout << "E X: " << sevensegment.extent.x() << " Y: " << sevensegment.extent.y() << endl;
+        button.moveTopLeft(button.topLeft() - QPoint(0, 1));
+        cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
         break;
     case Qt::Key_A:
-        sevensegment.extent -= QPoint(1, 0);
-        cout << "E X: " << sevensegment.extent.x() << " Y: " << sevensegment.extent.y() << endl;
+        button.moveTopLeft(button.topLeft() - QPoint(1, 0));
+        cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
         break;
     case Qt::Key_S:
-        sevensegment.extent += QPoint(0, 1);
-        cout << "E X: " << sevensegment.extent.x() << " Y: " << sevensegment.extent.y() << endl;
+        button.moveTopLeft(button.topLeft() + QPoint(0, 1));
+        cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
         break;
     case Qt::Key_D:
-        sevensegment.extent += QPoint(1, 0);
-        cout << "E X: " << sevensegment.extent.x() << " Y: " << sevensegment.extent.y() << endl;
+        button.moveTopLeft(button.topLeft() + QPoint(1, 0));
+        cout << "BR X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
         break;
     case Qt::Key_Up:
-        sevensegment.offs -= QPoint(0, 1);
-        cout << "O X: " << sevensegment.offs.x() << " Y: " << sevensegment.offs.y() << endl;
+        button.setHeight(button.height() - 1);
+        cout << "height: " << button.height() << endl;
         break;
     case Qt::Key_Left:
-        sevensegment.offs -= QPoint(1, 0);
-        cout << "O X: " << sevensegment.offs.x() << " Y: " << sevensegment.offs.y() << endl;
+        button.setWidth(button.width() - 1);
+        cout << "width: " << button.height() << endl;
         break;
     case Qt::Key_Down:
-        sevensegment.offs += QPoint(0, 1);
-        cout << "O X: " << sevensegment.offs.x() << " Y: " << sevensegment.offs.y() << endl;
+        button.setHeight(button.height() + 1);
+        cout << "height: " << button.height() << endl;
         break;
     case Qt::Key_Right:
-        sevensegment.offs += QPoint(1, 0);
-        cout << "O X: " << sevensegment.offs.x() << " Y: " << sevensegment.offs.y() << endl;
+        button.setWidth(button.width() + 1);
+        cout << "width: " << button.height() << endl;
+        break;
+    case Qt::Key_Space:
+        cout << "Changed Debug mode" << endl;
+        debugmode ^= 1;
         break;
     default:
         break;
     }
+}
+
+void VPBreadboard::mousePressEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::LeftButton) {
+        if(button.contains(e->pos()))
+        {
+            cout << "button click!" << endl;
+            gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 1);
+        }
+        cout << "clicked summin elz" << endl;
+    }
+    else
+    {
+        cout << "Whatcha doin' there?" << endl;
+    }
+    e->accept();
+}
+
+void VPBreadboard::mouseReleaseEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::LeftButton) {
+        if(button.contains(e->pos()))
+        {
+            cout << "button release!" << endl;
+        }
+        cout << "released summin elz" << endl;
+        gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 0);
+    }
+    else
+    {
+        cout << "Whatcha doin' there?" << endl;
+    }
+    e->accept();
 }

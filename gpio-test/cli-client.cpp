@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     		cerr << "Error updating" << endl;
     		return -1;
     	}
-    	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
+    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(Gpio::Reg));
     	usleep(750);
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     		cerr << "Error updating" << endl;
     		return -1;
     	}
-    	bitPrint(reinterpret_cast<char*>(&gpio.state.val), sizeof(Gpio::Reg));
+    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(Gpio::Reg));
     	usleep(750);
     }
 }

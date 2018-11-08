@@ -33,7 +33,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-GpioServer::GpioServer() : fd(-1), stop(false)
+GpioServer::GpioServer() : fd(-1), stop(false), fun(nullptr)
 {}
 
 GpioServer::~GpioServer()
@@ -110,6 +110,11 @@ void GpioServer::quit()
 	stop = true;
 }
 
+void GpioServer::registerOnChange(std::function<void(uint8_t bit)> fun)
+{
+	this->fun = fun;
+}
+
 void GpioServer::startListening()
 {
 	struct sockaddr_storage their_addr; // connector's address information
@@ -139,27 +144,30 @@ void GpioServer::handleConnection(int conn)
 	int bytes;
 	while((bytes = read(conn, &req, sizeof(Request))) == sizeof(Request))
 	{
-		printRequest(&req);
-		hexPrint(reinterpret_cast<char*>(&req), bytes);
+		//hexPrint(reinterpret_cast<char*>(&req), bytes);
 		switch(req.op)
 		{
 		case GET_BANK:
-			if (write(conn, &state.val, sizeof(Reg)) != sizeof(Reg))
+			if (write(conn, &state, sizeof(Reg)) != sizeof(Reg))
 			{
 				cerr << "could not write answer" << endl;
 				return;
 			}
 			break;
 		case SET_BIT:
+		{
+			printRequest(&req);
 			if(req.setBit.pos > 63)
 			{
 				cerr << "invalid request" << endl;
 				return;
 			}
+			Reg oldReg = state & (1l << req.setBit.pos);
+
 			if(req.setBit.tristate == 0)
-				state.val &= ~(1l << req.setBit.pos);
+				state &= ~(1l << req.setBit.pos);
 			else if(req.setBit.tristate == 1)
-				state.val |= 1l << req.setBit.pos;
+				state |= 1l << req.setBit.pos;
 			else if(req.setBit.tristate == 2)
 				cout << "set bit " << req.setBit.pos << " unset" << endl;
 			else
@@ -167,7 +175,13 @@ void GpioServer::handleConnection(int conn)
 				cerr << "invalid request" << endl;
 				return;
 			}
+			if(oldReg != (state & (1l << req.setBit.pos)))
+			{
+				if(fun != nullptr)
+					fun(ffs(oldReg ^ (state & (1l << req.setBit.pos))));
+			}
 			break;
+		}
 		default:
 			cerr << "invalid request" << endl;
 			return;

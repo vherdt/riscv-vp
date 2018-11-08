@@ -10,18 +10,13 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-void hexPrint(char* buf, size_t size);
-void bitPrint(char* buf, size_t size);
+void hexPrint(unsigned char* buf, size_t size);
+void bitPrint(unsigned char* buf, size_t size);
 
 
 struct Gpio
 {
 	typedef uint64_t Reg;
-	struct State
-	{
-		Reg val;
-		uint16_t interrupt_route[64];
-	};
 
 	enum Operation : uint8_t
 	{
@@ -41,7 +36,8 @@ struct Gpio
 			} setBit;
 		};
 	};
-	State state;
+
+	Reg state;
 	void printRequest(Request* req);
 	Gpio();
 };

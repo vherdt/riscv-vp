@@ -25,14 +25,22 @@ class VPBreadboard : public QWidget
     Q_OBJECT
     GpioClient gpio;
     Sevensegment sevensegment;
+    QRect button;
+
+    bool debugmode = false;
+
     uint64_t translateGpioToExtPin(Gpio::Reg& reg);
     uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
+    uint8_t translatePinToGpioOffs(uint8_t pin);
+    uint8_t getPinnumberOfButton();
 
 public:
     VPBreadboard(QWidget *mparent = 0);
     ~VPBreadboard();
-    void paintEvent(QPaintEvent *);
-    void keyPressEvent(QKeyEvent *e);
+    void paintEvent(QPaintEvent *) override;
+    void keyPressEvent(QKeyEvent *e) override;
+    void mousePressEvent(QMouseEvent *e) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
 
     void notifyChange(bool success);
 };
