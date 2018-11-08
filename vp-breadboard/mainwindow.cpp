@@ -150,12 +150,6 @@ void VPBreadboard::paintEvent(QPaintEvent *){
         QApplication::quit();
     }
 
-    printBin(reinterpret_cast<char*>(&gpio.state), sizeof(uint64_t));
-    uint64_t extPin = translateGpioToExtPin(gpio.state);
-    printBin(reinterpret_cast<char*>(&extPin), sizeof(uint64_t));
-    uint8_t segment = translatePinNumberToSevensegment(gpio.state);
-    printBin(reinterpret_cast<char*>(&segment), sizeof(uint8_t));
-
     sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
     sevensegment.draw(painter);
 
