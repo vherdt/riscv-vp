@@ -33,8 +33,12 @@ int main(int argc, char* argv[])
 	bool stop = false;
 	while(!stop)
 	{
-		sleep(1);
-		//gpio.state.val ^= 0xFFFF;
+		usleep(500000);
+		gpio.state.val <<= 1;
+		if(!(gpio.state.val & 0xFF))
+		{
+			gpio.state.val = 1;
+		}
 	}
 	gpio.quit();
 	server.join();
