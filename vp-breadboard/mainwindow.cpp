@@ -77,26 +77,67 @@ VPBreadboard::~VPBreadboard()
 {
 }
 
-uint64_t VPBreadboard::translateGpioToExtPin(Gpio::Reg& reg)
+uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg& reg)
 {
-    //Todo: This
-    return reg;
+    uint64_t ext = 0;
+    for(uint64_t i = 0; i < 24; i++)     //Max Pin is 32, see SiFive HiFive1 Getting Started Guide 1.0.2 p. 20
+    {
+        //cout << i << " to ";;
+        if(i >= 16)
+        {
+            ext |= (reg & (1l << i)) >> 16;
+            //cout << i - 16 << endl;
+        }
+        else if(i <= 5)
+        {
+            ext |= (reg & (1l << i)) << 8;
+            //cout << i + 8 << endl;
+        }
+        else if(i >= 9 && i <= 13)
+        {
+            ext |= (reg & (1l << i)) << 6;  //Bitshift Ninja! (with broken legs)
+            //cout << i + 6 << endl;
+        }
+        //rest is not connected.
+    }
+    return ext;
 }
 
 uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap)
 {
     //Todo: This
-    return pinmap & 0xFF;
+    return (pinmap >> 2);
 }
 
 uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
 {
-    return pin;
+    if(pin < 8)
+    {
+        return pin + 16;    //PIN_0_OFFSET
+    }
+    if(pin < 20)
+    {
+        return pin - 8;
+    }
+    return 0;	//also ignoring non-wired pin 14 <==> 8
 }
 
 uint8_t VPBreadboard::getPinnumberOfButton()
 {
     return 11;
+}
+
+void printBin(char* buf, uint8_t len)
+{
+    for(uint16_t byte = 0; byte < len; byte++)
+    {
+        for(int8_t bit = 7; bit >= 0; bit--)
+        {
+            printf("%c", buf[byte] & (1 << bit) ? '1' : '0');
+        }
+        printf(" ");
+    }
+    printf("\n");
 }
 
 void VPBreadboard::paintEvent(QPaintEvent *){
@@ -108,6 +149,12 @@ void VPBreadboard::paintEvent(QPaintEvent *){
         //todo: Try to reconnect
         QApplication::quit();
     }
+
+    printBin(reinterpret_cast<char*>(&gpio.state), sizeof(uint64_t));
+    uint64_t extPin = translateGpioToExtPin(gpio.state);
+    printBin(reinterpret_cast<char*>(&extPin), sizeof(uint64_t));
+    uint8_t segment = translatePinNumberToSevensegment(gpio.state);
+    printBin(reinterpret_cast<char*>(&segment), sizeof(uint8_t));
 
     sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
     sevensegment.draw(painter);
@@ -132,6 +179,7 @@ void VPBreadboard::notifyChange(bool success)
 
 void VPBreadboard::keyPressEvent(QKeyEvent *e)
 {
+    this->update();
     cout << "Yee, keypress" << endl;
     switch (e->key()) {
     case Qt::Key_Escape:

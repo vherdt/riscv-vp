@@ -47,9 +47,6 @@ GpioServer::~GpioServer()
 bool GpioServer::setupConnection(const char* port)
 {
     struct addrinfo hints, *servinfo, *p;
-    struct sockaddr_storage their_addr; // connector's address information
-    socklen_t sin_size;
-    struct sigaction sa;
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
@@ -99,9 +96,6 @@ bool GpioServer::setupConnection(const char* port)
         return false;
     }
 
-    GpioServer gpio;
-    printf("server: waiting for connections...\n");
-
     return true;
 }
 
@@ -117,6 +111,7 @@ void GpioServer::registerOnChange(std::function<void(uint8_t bit)> fun)
 
 void GpioServer::startListening()
 {
+    printf("server: waiting for connections...\n");
 	struct sockaddr_storage their_addr; // connector's address information
 	socklen_t sin_size = sizeof their_addr;
 	char s[INET6_ADDRSTRLEN];

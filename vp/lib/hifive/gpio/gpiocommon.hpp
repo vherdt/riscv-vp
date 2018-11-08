@@ -14,7 +14,7 @@ void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
 
 
-struct Gpio
+struct GpioCommon
 {
 	typedef uint64_t Reg;
 
@@ -39,5 +39,5 @@ struct Gpio
 
 	Reg state;
 	void printRequest(Request* req);
-	Gpio();
+	GpioCommon();
 };

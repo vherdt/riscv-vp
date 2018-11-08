@@ -5,12 +5,13 @@
  *      Author: dwd
  */
 
-#include "gpio-server.hpp"
 #include <iostream>
 #include <thread>
 #include <functional>
 #include <unistd.h>
 #include <csignal>
+
+#include "gpio-server.hpp"
 
 using namespace std;
 

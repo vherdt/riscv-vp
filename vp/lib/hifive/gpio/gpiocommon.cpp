@@ -5,7 +5,8 @@
  *      Author: dwd
  */
 
-#include "gpio.hpp"
+#include "gpiocommon.hpp"
+
 #include <iostream>
 #include <stdio.h>
 #include <cstring>
@@ -34,7 +35,7 @@ void bitPrint(unsigned char* buf, size_t size)
 	printf("\n");
 }
 
-void Gpio::printRequest(Request* req)
+void GpioCommon::printRequest(Request* req)
 {
 	switch(req->op)
 	{
@@ -65,7 +66,7 @@ void Gpio::printRequest(Request* req)
 	cout << endl;
 };
 
-Gpio::Gpio()
+GpioCommon::GpioCommon()
 {
 	memset(&state, 0, sizeof(Reg));
 }

@@ -1,7 +1,8 @@
 #pragma once
 #include <QMainWindow>
 #include <cassert>
-#include "../gpio-client.hpp"
+
+#include "../vp/lib/hifive/gpio/gpio-client.hpp"
 
 namespace Ui {
 class VPBreadboard;
@@ -29,7 +30,7 @@ class VPBreadboard : public QWidget
 
     bool debugmode = false;
 
-    uint64_t translateGpioToExtPin(Gpio::Reg& reg);
+    uint64_t translateGpioToExtPin(GpioCommon::Reg& reg);
     uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
     uint8_t translatePinToGpioOffs(uint8_t pin);
     uint8_t getPinnumberOfButton();

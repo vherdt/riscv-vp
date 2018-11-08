@@ -6,9 +6,10 @@
  */
 
 
-#include "gpio-client.hpp"
 #include <iostream>
 #include <unistd.h>
+
+#include "gpio-client.hpp"
 
 using namespace std;
 
@@ -28,6 +29,17 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	while(true)
+	{
+    	if(!gpio.update())
+    	{
+    		cerr << "Error updating" << endl;
+    		return -1;
+    	}
+    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
+    	usleep(125000);
+	}
+
     for(uint8_t i = 0; i < 64; i++)
     {
     	if(!gpio.setBit(i, 1))
@@ -40,7 +52,7 @@ int main(int argc, char* argv[])
     		cerr << "Error updating" << endl;
     		return -1;
     	}
-    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(Gpio::Reg));
+    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
     	usleep(750);
     }
 
@@ -57,7 +69,7 @@ int main(int argc, char* argv[])
     		cerr << "Error updating" << endl;
     		return -1;
     	}
-    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(Gpio::Reg));
+    	bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
     	usleep(750);
     }
 }

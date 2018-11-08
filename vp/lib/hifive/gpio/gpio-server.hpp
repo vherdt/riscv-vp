@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "gpio.hpp"
 #include <functional>
+#include "gpiocommon.hpp"
 
-class GpioServer: public Gpio
+class GpioServer: public GpioCommon
 {
 	int fd;
 	volatile bool stop;

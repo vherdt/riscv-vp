@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "gpio.hpp"
+#include "gpiocommon.hpp"
 
-struct GpioClient: public Gpio
+class GpioClient: public GpioCommon
 {
 	int fd;
 public:

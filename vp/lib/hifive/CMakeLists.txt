@@ -2,6 +2,8 @@ add_executable(hifive-vp
         hifive_main.cpp
         ../syscall.cpp
         ../instr.cpp
+        gpio/gpiocommon.cpp
+        gpio/gpio-server.cpp
         ${HEADERS})
 
 target_include_directories(hifive-vp PRIVATE ..)
