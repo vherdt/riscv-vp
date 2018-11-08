@@ -53,11 +53,7 @@ int main(int argc, char* argv[])
 	while(!stop)
 	{
 		usleep(100000);
-		if(gpio.state & (1 << 11))
-		{	//example button
-			gpio.state &= ~(0xFF);
-		}
-		else
+		if(!(gpio.state & (1 << 11)))
 		{
 			gpio.state <<= 1;
 			if(!(gpio.state & 0xFF))

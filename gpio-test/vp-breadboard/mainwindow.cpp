@@ -12,7 +12,7 @@ using namespace std;
 void Sevensegment::draw(QPainter& p)
 {
     p.save();
-    QPen segment(QColor("#fc5c44"), linewidth, Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
+    QPen segment(QColor("#f72727"), linewidth, Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
     p.setPen(segment);
 
     //  0
@@ -56,7 +56,7 @@ void Sevensegment::draw(QPainter& p)
 }
 
 VPBreadboard::VPBreadboard(QWidget *mparent)
-    : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 51), 6), button(QPoint(373, 343), QSize(55, 55))
+    : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 50), 7), button(QPoint(373, 343), QSize(55, 55))
 {
     //resize(800, 600);
 
@@ -117,6 +117,7 @@ void VPBreadboard::paintEvent(QPaintEvent *){
     {
         //painter.setBrush(QBrush(QColor("black")));
         painter.drawRect(button);
+        painter.drawRect(QRect(sevensegment.offs, QSize(sevensegment.extent.x(), sevensegment.extent.y())));
     }
     painter.end();
     this->update();
