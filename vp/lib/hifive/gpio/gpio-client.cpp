@@ -61,13 +61,13 @@ bool GpioClient::update()
 	return true;
 }
 
-bool GpioClient::setBit(uint8_t pos, uint8_t tristate)
+bool GpioClient::setBit(uint8_t pos, Tristate val)
 {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = SET_BIT;
 	req.setBit.pos = pos;
-	req.setBit.tristate = tristate;
+	req.setBit.val = val;
 
 	if(write(fd, &req, sizeof(Request)) != sizeof(Request))
 	{

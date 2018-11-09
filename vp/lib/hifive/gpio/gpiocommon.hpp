@@ -17,6 +17,7 @@ void bitPrint(unsigned char* buf, size_t size);
 struct GpioCommon
 {
 	typedef uint64_t Reg;
+	typedef uint8_t Tristate;
 
 	enum Operation : uint8_t
 	{
@@ -32,7 +33,7 @@ struct GpioCommon
 			struct
 			{
 				uint8_t pos : 6;
-				uint8_t tristate : 2;
+				Tristate val : 2;
 			} setBit;
 		};
 	};

@@ -26,9 +26,27 @@ void signalHandler( int signum ) {
    raise(SIGUSR1);	//this breaks wait in thread
 }
 
-void onChangeCallback(uint8_t bit)
+void onChangeCallback(GpioServer* gpio, uint8_t bit, GpioCommon::Tristate val)
 {
-	printf("Bit %d changed\n", bit);
+	if(((gpio->state & (1l << bit)) >> bit) == val)
+	{
+		printf("Bit %d still at %d\n", bit, val);
+		return;
+	}
+	if(val == 0)
+	{
+		gpio->state &= ~(1l << bit);
+	}
+	else if(val == 1)
+	{
+		gpio->state |= 1l << bit;
+	}
+	else
+	{
+		printf("Ignoring tristate for now\n");
+		return;
+	}
+	printf("Bit %d changed to %d\n", bit, val);
 }
 
 int main(int argc, char* argv[])
@@ -44,14 +62,15 @@ int main(int argc, char* argv[])
 	if(!gpio.setupConnection(argv[1]))
 	{
 		cerr << "cant set up server" << endl;
+		exit(-1);
 	}
 
 	signal(SIGINT, signalHandler);
 
-	gpio.registerOnChange(onChangeCallback);
+	gpio.registerOnChange(bind(onChangeCallback, &gpio, placeholders::_1, placeholders::_2));
 	thread server(bind(&GpioServer::startListening, &gpio));
 
-	while(!stop)
+	while(!stop && !gpio.isStopped())
 	{
 		usleep(100000);
 		if(!(gpio.state & (1 << 11)))

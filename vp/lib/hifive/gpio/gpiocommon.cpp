@@ -45,7 +45,7 @@ void GpioCommon::printRequest(Request* req)
 	case SET_BIT:
 		cout << "SET BIT ";
 		cout << to_string(req->setBit.pos) << " to ";
-		switch(req->setBit.tristate)
+		switch(req->setBit.val)
 		{
 		case 0:
 			cout << "LOW";

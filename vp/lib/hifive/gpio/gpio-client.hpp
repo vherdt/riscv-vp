@@ -17,7 +17,7 @@ public:
 	~GpioClient();
 	bool setupConnection(const char* host, const char* port);
 	bool update();
-	bool setBit(uint8_t pos, uint8_t tristate);
+	bool setBit(uint8_t pos, Tristate val);
 };
 
 

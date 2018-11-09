@@ -40,7 +40,9 @@ GpioServer::~GpioServer()
 {
 	if(fd >= 0)
 	{
+		cout << "closing server socket " << fd << endl;
 		close(fd);
+		fd = -1;
 	}
 }
 
@@ -91,11 +93,6 @@ bool GpioServer::setupConnection(const char* port)
         return false;
     }
 
-    if (listen(fd, 1) == -1) {
-        perror("listen");
-        return false;
-    }
-
     return true;
 }
 
@@ -104,14 +101,27 @@ void GpioServer::quit()
 	stop = true;
 }
 
-void GpioServer::registerOnChange(std::function<void(uint8_t bit)> fun)
+bool GpioServer::isStopped()
+{
+	return stop;
+}
+
+void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun)
 {
 	this->fun = fun;
 }
 
 void GpioServer::startListening()
 {
-    printf("server: waiting for connections...\n");
+    if (listen(fd, 1) == -1)
+    {
+    	cerr << "fd " << fd << " ";
+        perror("listen");
+        stop = true;
+        return;
+    }
+    printf("server: waiting for connections (%d)\n", fd);
+
 	struct sockaddr_storage their_addr; // connector's address information
 	socklen_t sin_size = sizeof their_addr;
 	char s[INET6_ADDRSTRLEN];
@@ -121,6 +131,7 @@ void GpioServer::startListening()
 		int new_fd = accept(fd, (struct sockaddr *)&their_addr, &sin_size);
 		if (new_fd == -1) {
 			perror("accept");
+			stop = true;
 			return;
 		}
 
@@ -146,6 +157,7 @@ void GpioServer::handleConnection(int conn)
 			if (write(conn, &state, sizeof(Reg)) != sizeof(Reg))
 			{
 				cerr << "could not write answer" << endl;
+				close(conn);
 				return;
 			}
 			break;
@@ -157,24 +169,26 @@ void GpioServer::handleConnection(int conn)
 				cerr << "invalid request" << endl;
 				return;
 			}
-			Reg oldReg = state & (1l << req.setBit.pos);
-
-			if(req.setBit.tristate == 0)
-				state &= ~(1l << req.setBit.pos);
-			else if(req.setBit.tristate == 1)
-				state |= 1l << req.setBit.pos;
-			else if(req.setBit.tristate == 2)
-				cout << "set bit " << req.setBit.pos << " unset" << endl;
-			else
+			if(req.setBit.val > 2)
 			{
 				cerr << "invalid request" << endl;
 				return;
 			}
-			if(oldReg != (state & (1l << req.setBit.pos)))
+
+			if(fun != nullptr)
 			{
-				if(fun != nullptr)
-					fun(ffs(oldReg ^ (state & (1l << req.setBit.pos))));
+				fun(req.setBit.pos, req.setBit.val);
 			}
+			else
+			{
+				if(req.setBit.val == 0)
+					state &= ~(1l << req.setBit.pos);
+				else if(req.setBit.val == 1)
+					state |= 1l << req.setBit.pos;
+				else if(req.setBit.val == 2)
+					cout << "set bit " << req.setBit.pos << " unset" << endl;
+			}
+
 			break;
 		}
 		default:
