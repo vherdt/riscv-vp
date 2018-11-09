@@ -26,9 +26,9 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 							{OUT_XOR_REG_ADDR, &out_xor},
 	 }).register_handler(this, &GPIO::register_access_callback);
 
-	SC_METHOD(synchronousChange);	//this does not work?
+	SC_METHOD(synchronousChange);
 	sensitive << asyncEvent;
-	dont_initialize();		//dont know why, copied from example...
+	dont_initialize();
 
 	server.setupConnection("1339");
 	server.registerOnChange(bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
@@ -60,8 +60,8 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 	{
 		if(r.vptr == &port)
 		{
-			cout << "[GPIO] new Port value: ";
-			bitPrint(reinterpret_cast<unsigned char*>(&port), sizeof(uint32_t));
+			//cout << "[GPIO] new Port value: ";
+			//bitPrint(reinterpret_cast<unsigned char*>(&port), sizeof(uint32_t));
 
 			//value and server.state might differ, if a bit is changed by client
 			//and the interrupt was not fired yet.
@@ -70,13 +70,13 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 		}
 		else if(r.vptr == &fall_intr_en)
 		{
-			cout << "[GPIO] set fall_intr_en to ";
-			bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en), sizeof(uint32_t));
+			//cout << "[GPIO] set fall_intr_en to ";
+			//bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en), sizeof(uint32_t));
 		}
 		else if(r.vptr == &fall_intr_pending)
 		{
-			cout << "[GPIO] set fall_intr_pending to ";
-			bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), sizeof(uint32_t));
+			//cout << "[GPIO] set fall_intr_pending to ";
+			//bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), sizeof(uint32_t));
 		}
 	}
 }
@@ -89,7 +89,7 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val)
 {
 	if(((server.state & (1l << bit)) >> bit) == val)
 	{
-		cout << "[GPIO] Bit " << (unsigned) bit << " still at " << (unsigned) val << endl;
+		//cout << "[GPIO] Bit " << (unsigned) bit << " still at " << (unsigned) val << endl;
 		return;
 	}
 	if(val == 0)
@@ -105,75 +105,79 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val)
 		cout << "[GPIO] Ignoring tristate for now\n";
 		return;
 	}
-	cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned) val << endl;
+	//cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned) val << endl;
 
 	asyncEvent.notify();
 }
 
 void GPIO::synchronousChange() {
-   cout << "[GPIO] might have changed!" << endl;
+   //cout << "[GPIO] might have changed!" << endl;
 
    GpioCommon::Reg serverSnapshot = server.state;
    uint32_t diff = (serverSnapshot ^ value) & input_en;
 
-   bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
-   bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), 4);
+   //bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
+   //bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), 4);
 
    if(diff == 0)
    {
-	   cout << "server and value do not differ." << endl;
+	   //cout << "server and value do not differ." << endl;
 	   return;
    }
-   cout << "server and value differ." << endl;
+   //cout << "server and value differ." << endl;
+
+   //This is seriously more complicated just handling the last updated bit from asyncChange.
+   //But because we have to wait until the update phase, and until then there may fire multiple bits!
+
    for(uint8_t i = 0; i < 32; i++)
    {
 	   if(diff & (1l << i))
 	   {
-		   cout << "bit " << (unsigned) i << " changed ";
+		   //cout << "bit " << (unsigned) i << " changed ";
 		   if(serverSnapshot & (1l << i))
 		   {
-			   cout << "to 1 ";
+			   //cout << "to 1 ";
 			   if(rise_intr_en & (1l << i))
 			   {
-				   cout << "and interrupt is enabled ";
+				   //cout << "and interrupt is enabled ";
 				   //interrupt pending is inverted
 				   if(~rise_intr_pending & (1l << i))
 				   {
-					   cout << "but not yet consumed" << endl;
+					   //cout << "but not yet consumed" << endl;
 				   }
 				   else
 				   {
-					   cout << "and is being fired at " << int_gpio_base + i << endl;
+					   //cout << "and is being fired at " << int_gpio_base + i << endl;
 					   rise_intr_pending &= ~(1l << i);
 					   plic->gateway_incoming_interrupt(int_gpio_base + i);
 				   }
 			   }
 			   else
 			   {
-				   cout << "but no interrupt is registered." << endl;
+				   //cout << "but no interrupt is registered." << endl;
 			   }
 		   }
 		   else
 		   {
-			   cout << "to 0 ";
+			   //cout << "to 0 ";
 			   if(fall_intr_en & (1l << i))
 			   {
-				   cout << "and interrupt is enabled ";
+				   //cout << "and interrupt is enabled ";
 				   //interrupt pending is inverted
 				   if(~fall_intr_pending & (1l << i))
 				   {
-					   cout << "but not yet consumed" << endl;
+					   //cout << "but not yet consumed" << endl;
 				   }
 				   else
 				   {
-					   cout << "and is being fired at " << int_gpio_base + i << endl;
+					   //cout << "and is being fired at " << int_gpio_base + i << endl;
 					   fall_intr_pending &= ~(1l << i);
 					   plic->gateway_incoming_interrupt(int_gpio_base + i);
 				   }
 			   }
 			   else
 			   {
-				   cout << "but no interrupt is registered." << endl;
+				   //cout << "but no interrupt is registered." << endl;
 			   }
 		   }
 	   }

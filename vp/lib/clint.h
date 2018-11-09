@@ -35,7 +35,7 @@ struct CLINT : public clint_if,
     // sw a0, mtimecmp    # New value.
     //
 
-    static constexpr uint64_t scaler = 5000000;    // scale from PS resolution (default in SystemC) to US resolution (apparently required by FreeRTOS)
+    static constexpr uint64_t scaler = 2000000;    // scale from PS resolution (default in SystemC) to US resolution (apparently required by FreeRTOS)
 
     tlm_utils::simple_target_socket<CLINT> tsock;
 
