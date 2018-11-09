@@ -26,8 +26,9 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 							{OUT_XOR_REG_ADDR, &out_xor},
 	 }).register_handler(this, &GPIO::register_access_callback);
 
-	//SC_METHOD(fireInterrupt);
+	SC_METHOD(fireInterrupt);	//this does not work?
 	sensitive << asyncEvent;
+	dont_initialize();		//dont know why, copied from example...
 
 	server.setupConnection("1339");
 	server.registerOnChange(bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
@@ -57,7 +58,6 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 	r.fn();
 	if(r.write)
 	{
-		//cout << "Write to GPIO reg. no " << (r.vptr - &pin_value);
 		if(r.vptr == &port)
 		{
 			cout << "[GPIO] new Port value: ";
@@ -97,8 +97,7 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val)
 	}
 	cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned) val << endl;
 
-	//TODO: let this do async_update
-	fireInterrupt();
+	asyncEvent.notify();
 }
 
 void GPIO::fireInterrupt() {
