@@ -896,6 +896,10 @@ struct ISS : public sc_core::sc_module,
         wfi_event.notify(sc_core::SC_ZERO_TIME);
     }
 
+    virtual void clear_external_interrupt() override {
+        csrs.mip->meip = false;
+    }
+
     virtual void trigger_timer_interrupt(bool status) override {
         csrs.mip->mtip = status;
         wfi_event.notify(sc_core::SC_ZERO_TIME);

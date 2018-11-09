@@ -100,8 +100,11 @@ void PLIC::register_access_callback(const vp::map::register_access_t &r) {
 
 	if (r.write && r.vptr == &hart_0_claim_response) {
 		//NOTE: on completed response, check if there are any other pending interrupts
-		hart_0_eip = false;
-		e_run.notify(clock_cycle);
+		if (!hart_0_has_pending_enabled_interrupts()) {
+			hart_0_eip = false;
+			target_hart->clear_external_interrupt();
+			//e_run.notify(clock_cycle);
+		}
 		//std::cout << "[vp::plic] clear eip" << std::endl;
 	}
 }

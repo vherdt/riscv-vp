@@ -6,6 +6,7 @@ struct external_interrupt_target {
     virtual ~external_interrupt_target() {}
 
     virtual void trigger_external_interrupt() = 0;
+    virtual void clear_external_interrupt() = 0;
 };
 
 struct timer_interrupt_target {
