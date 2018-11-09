@@ -7,6 +7,7 @@
 #include <tlm_utils/simple_target_socket.h>
 #include "tlm_map.h"
 #include "irq_if.h"
+#include "async_event.h"
 
 
 struct GPIO : public sc_core::sc_module {
@@ -54,10 +55,12 @@ struct GPIO : public sc_core::sc_module {
     vp::map::LocalRouter router = {"GPIO"};
     interrupt_gateway *plic = nullptr;
 
+    const unsigned int_gpio_base;
     GpioServer server;
     std::thread serverThread;
+    AsyncEvent asyncEvent;
 
-    GPIO(sc_core::sc_module_name);
+    GPIO(sc_core::sc_module_name, unsigned int_gpio_base);
     ~GPIO();
 
     void register_access_callback(const vp::map::register_access_t &r);

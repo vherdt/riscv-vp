@@ -18,7 +18,19 @@
 #include <boost/program_options.hpp>
 #include <boost/io/ios_state.hpp>
 
-
+// Interrupt numbers	(see platform.h)
+#define INT_RESERVED 0
+#define INT_WDOGCMP 1
+#define INT_RTCCMP 2
+#define INT_UART0_BASE 3
+#define INT_UART1_BASE 4
+#define INT_SPI0_BASE 5
+#define INT_SPI1_BASE 6
+#define INT_SPI2_BASE 7
+#define INT_GPIO_BASE 8
+#define INT_PWM0_BASE 40
+#define INT_PWM1_BASE 44
+#define INT_PWM2_BASE 48
 
 struct Options {
     typedef unsigned int addr_t;
@@ -137,7 +149,7 @@ int sc_main(int argc, char **argv) {
     PRCI prci("PRCI");
     SPI spi0("SPI0");
     UART uart0("UART0");
-    GPIO gpio0("GPIO0");
+    GPIO gpio0("GPIO0", INT_GPIO_BASE);
     MaskROM maskROM("MASKROM");
 
     direct_memory_interface dram_dmi({dram.data, opt.dram_start_addr, dram.size});

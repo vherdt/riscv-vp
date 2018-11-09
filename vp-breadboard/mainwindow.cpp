@@ -124,7 +124,7 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
 
 uint8_t VPBreadboard::getPinnumberOfButton()
 {
-    return 11;
+    return 10;
 }
 
 void printBin(char* buf, uint8_t len)

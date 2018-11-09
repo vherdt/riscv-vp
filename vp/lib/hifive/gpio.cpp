@@ -2,7 +2,8 @@
 
 using namespace std;
 
-GPIO::GPIO(sc_core::sc_module_name) {
+GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_gpio_base)
+	{
 	tsock.register_b_transport(this, &GPIO::transport);
 
 	router.add_register_bank({
@@ -26,6 +27,8 @@ GPIO::GPIO(sc_core::sc_module_name) {
 	 }).register_handler(this, &GPIO::register_access_callback);
 
 	//SC_METHOD(fireInterrupt);
+	sensitive << asyncEvent;
+
 	server.setupConnection("1339");
 	server.registerOnChange(bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
 	serverThread = thread(bind(&GpioServer::startListening, &server));
@@ -39,12 +42,16 @@ GPIO::~GPIO()
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r)
 {
-	if(r.write)
+	if(r.vptr == &value)
 	{
-		if(r.vptr == &value)
+		if(r.write)
 		{
 			cerr << "[GPIO] write to value register is ignored!" << endl;
 			return;
+		}
+		if(r.read)
+		{
+
 		}
 	}
 	r.fn();
@@ -54,19 +61,13 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 		if(r.vptr == &port)
 		{
 			cout << "[GPIO] new Port value: ";
-			for(unsigned i = 0; i < sizeof(uint32_t) * 8; i++)
-			{
-				if(i > 1 && (i % 8 == 0))
-					cout << " ";
-				printf("%c", port & 1 << (32 - i) ? '1' : '0');
-			}
+			bitPrint(reinterpret_cast<unsigned char*>(&port), sizeof(uint32_t));
 
 			//value and server.state might differ, if a bit is changed by client
 			//and the interrupt was not fired yet.
 			value = (value & ~output_en) | (port & output_en);
 			server.state = (server.state & ~output_en) | (port & output_en);
 		}
-		cout << endl;
 	}
 }
 
@@ -95,8 +96,76 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val)
 		return;
 	}
 	cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned) val << endl;
+
+	//TODO: let this do async_update
+	fireInterrupt();
 }
 
 void GPIO::fireInterrupt() {
    cout << "[GPIO] Interrupts to fire!" << endl;
+
+   GpioCommon::Reg serverSnapshot = server.state;
+   uint32_t diff = (serverSnapshot ^ value) & input_en;
+
+   bitPrint(reinterpret_cast<unsigned char*>(&value), 4);
+   bitPrint(reinterpret_cast<unsigned char*>(&serverSnapshot), 4);
+   bitPrint(reinterpret_cast<unsigned char*>(&input_en), 4);
+   bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
+
+   if(diff == 0)
+   {
+	   cout << "server and value do not differ." << endl;
+	   return;
+   }
+   cout << "server and value differ." << endl;
+   for(uint8_t i = 0; i < 32; i++)
+   {
+	   if(diff & (1l << i))
+	   {
+		   cout << "bit " << (unsigned) i << " changed ";
+		   if(serverSnapshot & (1l << i))
+		   {
+			   cout << "to 1 ";
+			   if(rise_intr_en & (1l << i))
+			   {
+				   cout << "and interrupt is enabled ";
+				   if(rise_intr_pending & (1l << i))
+				   {
+					   cout << "but not yet consumed" << endl;
+				   }
+				   else
+				   {
+					   //todo: fire interrupt
+					   cout << "and is being fired at " << int_gpio_base + i << endl;
+				   }
+			   }
+			   else
+			   {
+				   cout << "but no interrupt is registered." << endl;
+			   }
+		   }
+		   else
+		   {
+			   cout << "to 0 " << endl;
+			   if(fall_intr_en & (1l << i))
+			   {
+				   cout << "and interrupt is enabled ";
+				   if(fall_intr_pending & (1l << i))
+				   {
+					   cout << "but not yet consumed" << endl;
+				   }
+				   else
+				   {
+					   //todo: fire interrupt
+					   cout << "and is being fired at " << int_gpio_base + i << endl;
+				   }
+			   }
+			   else
+			   {
+				   cout << "but no interrupt is registered." << endl;
+			   }
+		   }
+	   }
+   }
+   value = (serverSnapshot & input_en) | (port & output_en);
 }
