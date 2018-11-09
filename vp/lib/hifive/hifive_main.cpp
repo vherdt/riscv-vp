@@ -196,7 +196,7 @@ int sc_main(int argc, char **argv) {
     // connect interrupt signals/communication
     plic.target_hart = &core;
     clint.target_hart = &core;
-
+    gpio0.plic = &plic;
 
 
     new DirectCoreRunner(core);

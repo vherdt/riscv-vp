@@ -1,5 +1,6 @@
 add_executable(hifive-vp
         hifive_main.cpp
+        ../plic.cpp
         ../syscall.cpp
         ../instr.cpp
         gpio.cpp

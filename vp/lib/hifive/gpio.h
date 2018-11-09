@@ -1,13 +1,13 @@
 #pragma once
 
 #include "gpio/gpio-server.hpp"
+#include "tlm_map.h"
+#include "irq_if.h"
+#include "async_event.h"
 
 #include <systemc>
 #include <thread>
 #include <tlm_utils/simple_target_socket.h>
-#include "tlm_map.h"
-#include "irq_if.h"
-#include "async_event.h"
 
 
 struct GPIO : public sc_core::sc_module {
@@ -21,13 +21,13 @@ struct GPIO : public sc_core::sc_module {
     uint32_t pullup_en = 0;
     uint32_t pin_drive_strength = 0;
     uint32_t rise_intr_en = 0;
-    uint32_t rise_intr_pending = 0;
+    uint32_t rise_intr_pending = ~0l;
     uint32_t fall_intr_en = 0;
-    uint32_t fall_intr_pending = 0;
+    uint32_t fall_intr_pending = ~0l;
     uint32_t high_intr_en = 0;
-    uint32_t high_intr_pending = 0;
+    uint32_t high_intr_pending = ~0l;
     uint32_t low_intr_en = 0;
-    uint32_t low_intr_pending = 0;
+    uint32_t low_intr_pending = ~0l;
     uint32_t iof_en = 0;
     uint32_t iof_sel = 0;
     uint32_t out_xor = 0;
@@ -60,6 +60,7 @@ struct GPIO : public sc_core::sc_module {
     std::thread serverThread;
     AsyncEvent asyncEvent;
 
+    SC_HAS_PROCESS(GPIO);
     GPIO(sc_core::sc_module_name, unsigned int_gpio_base);
     ~GPIO();
 
@@ -68,5 +69,5 @@ struct GPIO : public sc_core::sc_module {
     void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 
     void asyncOnchange(uint8_t bit, GpioCommon::Tristate val);
-    void fireInterrupt();
+    void synchronousChange();
 };

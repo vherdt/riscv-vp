@@ -26,7 +26,7 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 							{OUT_XOR_REG_ADDR, &out_xor},
 	 }).register_handler(this, &GPIO::register_access_callback);
 
-	SC_METHOD(fireInterrupt);	//this does not work?
+	SC_METHOD(synchronousChange);	//this does not work?
 	sensitive << asyncEvent;
 	dont_initialize();		//dont know why, copied from example...
 
@@ -68,6 +68,16 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 			value = (value & ~output_en) | (port & output_en);
 			server.state = (server.state & ~output_en) | (port & output_en);
 		}
+		else if(r.vptr == &fall_intr_en)
+		{
+			cout << "[GPIO] set fall_intr_en to ";
+			bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en), sizeof(uint32_t));
+		}
+		else if(r.vptr == &fall_intr_pending)
+		{
+			cout << "[GPIO] set fall_intr_pending to ";
+			bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), sizeof(uint32_t));
+		}
 	}
 }
 
@@ -100,16 +110,14 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val)
 	asyncEvent.notify();
 }
 
-void GPIO::fireInterrupt() {
-   cout << "[GPIO] Interrupts to fire!" << endl;
+void GPIO::synchronousChange() {
+   cout << "[GPIO] might have changed!" << endl;
 
    GpioCommon::Reg serverSnapshot = server.state;
    uint32_t diff = (serverSnapshot ^ value) & input_en;
 
-   bitPrint(reinterpret_cast<unsigned char*>(&value), 4);
-   bitPrint(reinterpret_cast<unsigned char*>(&serverSnapshot), 4);
-   bitPrint(reinterpret_cast<unsigned char*>(&input_en), 4);
    bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
+   bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), 4);
 
    if(diff == 0)
    {
@@ -128,14 +136,16 @@ void GPIO::fireInterrupt() {
 			   if(rise_intr_en & (1l << i))
 			   {
 				   cout << "and interrupt is enabled ";
-				   if(rise_intr_pending & (1l << i))
+				   //interrupt pending is inverted
+				   if(~rise_intr_pending & (1l << i))
 				   {
 					   cout << "but not yet consumed" << endl;
 				   }
 				   else
 				   {
-					   //todo: fire interrupt
 					   cout << "and is being fired at " << int_gpio_base + i << endl;
+					   rise_intr_pending &= ~(1l << i);
+					   plic->gateway_incoming_interrupt(int_gpio_base + i);
 				   }
 			   }
 			   else
@@ -145,18 +155,20 @@ void GPIO::fireInterrupt() {
 		   }
 		   else
 		   {
-			   cout << "to 0 " << endl;
+			   cout << "to 0 ";
 			   if(fall_intr_en & (1l << i))
 			   {
 				   cout << "and interrupt is enabled ";
-				   if(fall_intr_pending & (1l << i))
+				   //interrupt pending is inverted
+				   if(~fall_intr_pending & (1l << i))
 				   {
 					   cout << "but not yet consumed" << endl;
 				   }
 				   else
 				   {
-					   //todo: fire interrupt
 					   cout << "and is being fired at " << int_gpio_base + i << endl;
+					   fall_intr_pending &= ~(1l << i);
+					   plic->gateway_incoming_interrupt(int_gpio_base + i);
 				   }
 			   }
 			   else
