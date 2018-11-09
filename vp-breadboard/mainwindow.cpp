@@ -124,7 +124,7 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
 
 uint8_t VPBreadboard::getPinnumberOfButton()
 {
-    return 10;
+    return 10   ;
 }
 
 void printBin(char* buf, uint8_t len)
@@ -161,6 +161,9 @@ void VPBreadboard::paintEvent(QPaintEvent *){
         painter.drawRect(QRect(sevensegment.offs, QSize(sevensegment.extent.x(), sevensegment.extent.y())));
     }
     painter.end();
+    //intentional slow down
+    //TODO: update at fixed rate, async between redraw and gpioserver
+    usleep(5000);
     this->update();
 }
 
