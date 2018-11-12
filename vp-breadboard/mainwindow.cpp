@@ -247,7 +247,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent *e)
         if(button.contains(e->pos()))
         {
             cout << "button click!" << endl;
-            gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 1);
+            gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 0); //Active low
         }
         cout << "clicked summin elz" << endl;
     }
@@ -266,7 +266,7 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent *e)
             cout << "button release!" << endl;
         }
         cout << "released summin elz" << endl;
-        gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 0);
+        gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 1);
     }
     else
     {

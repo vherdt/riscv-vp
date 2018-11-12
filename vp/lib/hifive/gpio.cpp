@@ -43,16 +43,17 @@ GPIO::~GPIO()
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r)
 {
-	if(r.vptr == &value)
+	uint32_t reg_bak = 0;
+	if(r.write)
 	{
-		if(r.write)
+		if(r.vptr == &value)
 		{
 			cerr << "[GPIO] write to value register is ignored!" << endl;
 			return;
 		}
-		if(r.read)
+		else if(r.vptr == &pullup_en)
 		{
-
+			reg_bak = pullup_en;
 		}
 	}
 	r.fn();
@@ -67,6 +68,13 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 			//and the interrupt was not fired yet.
 			value = (value & ~output_en) | (port & output_en);
 			server.state = (server.state & ~output_en) | (port & output_en);
+		}
+		else if(r.vptr == &pullup_en)
+		{
+			//cout << "[GPIO] pullup changed" << endl;
+			//bitPrint(reinterpret_cast<unsigned char*>(&pullup_en), sizeof(uint32_t));
+			value |= reg_bak ^ pullup_en;
+			server.state |= reg_bak ^ pullup_en;
 		}
 		else if(r.vptr == &fall_intr_en)
 		{

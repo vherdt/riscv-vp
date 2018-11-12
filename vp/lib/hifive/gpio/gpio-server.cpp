@@ -163,7 +163,7 @@ void GpioServer::handleConnection(int conn)
 			break;
 		case SET_BIT:
 		{
-			printRequest(&req);
+			//printRequest(&req);
 			if(req.setBit.pos > 63)
 			{
 				cerr << "invalid request" << endl;
