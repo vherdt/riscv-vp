@@ -191,4 +191,8 @@ void GPIO::synchronousChange() {
 	   }
    }
    value = (serverSnapshot & input_en) | (port & output_en);
+   if(serverSnapshot != server.state)
+   {
+	   synchronousChange();
+   }
 }

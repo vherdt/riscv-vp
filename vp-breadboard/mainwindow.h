@@ -30,13 +30,13 @@ class VPBreadboard : public QWidget
 
     bool debugmode = false;
 
-    uint64_t translateGpioToExtPin(GpioCommon::Reg& reg);
+    uint64_t translateGpioToExtPin(GpioCommon::Reg reg);
     uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
     uint8_t translatePinToGpioOffs(uint8_t pin);
     uint8_t getPinnumberOfButton();
 
 public:
-    VPBreadboard(QWidget *mparent = 0);
+    VPBreadboard(const char* host, const char* port, QWidget *mparent = 0);
     ~VPBreadboard();
     void paintEvent(QPaintEvent *) override;
     void keyPressEvent(QKeyEvent *e) override;

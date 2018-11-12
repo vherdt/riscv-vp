@@ -55,7 +55,7 @@ void Sevensegment::draw(QPainter& p)
     p.restore();
 }
 
-VPBreadboard::VPBreadboard(QWidget *mparent)
+VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget *mparent)
     : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 50), 7), button(QPoint(373, 343), QSize(55, 55))
 {
     //resize(800, 600);
@@ -66,7 +66,7 @@ VPBreadboard::VPBreadboard(QWidget *mparent)
     palette.setBrush(QPalette::Background, bkgnd);
     this->setPalette(palette);
     setFixedSize(size());
-    if(!gpio.setupConnection("localhost", "1339"))
+    if(!gpio.setupConnection(host, port))
     {
         cerr << "Could not setup Connection" << endl;
         QApplication::quit();
@@ -77,7 +77,7 @@ VPBreadboard::~VPBreadboard()
 {
 }
 
-uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg& reg)
+uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg)
 {
     uint64_t ext = 0;
     for(uint64_t i = 0; i < 24; i++)     //Max Pin is 32, see SiFive HiFive1 Getting Started Guide 1.0.2 p. 20
@@ -246,10 +246,10 @@ void VPBreadboard::mousePressEvent(QMouseEvent *e)
     if (e->button() == Qt::LeftButton) {
         if(button.contains(e->pos()))
         {
-            cout << "button click!" << endl;
+            //cout << "button click!" << endl;
             gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 0); //Active low
         }
-        cout << "clicked summin elz" << endl;
+        //cout << "clicked summin elz" << endl;
     }
     else
     {
@@ -263,9 +263,9 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent *e)
     if (e->button() == Qt::LeftButton) {
         if(button.contains(e->pos()))
         {
-            cout << "button release!" << endl;
+            //cout << "button release!" << endl;
         }
-        cout << "released summin elz" << endl;
+        //cout << "released summin elz" << endl;
         gpio.setBit(translatePinToGpioOffs(getPinnumberOfButton()), 1);
     }
     else

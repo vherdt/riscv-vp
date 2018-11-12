@@ -68,7 +68,7 @@ void GpioCommon::printRequest(Request* req)
 
 GpioCommon::GpioCommon()
 {
-	memset(&state, 0, sizeof(Reg));
+    state = 0;
 }
 
 
