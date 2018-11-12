@@ -55,8 +55,27 @@ void Sevensegment::draw(QPainter& p)
     p.restore();
 }
 
+void RGBLed::draw(QPainter& p)
+{
+    if(!map)
+    {
+        return;
+    }
+    p.save();
+    QPen led(QColor(map & 1 ? 255 : 0, map & (1 << 1) ? 255 : 0, map & (1 << 2) ? 255 : 0, 0xC0),
+             linewidth, Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
+    p.setPen(led);
+
+    p.drawPoint(offs);
+
+    p.restore();
+}
+
 VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget *mparent)
-    : QWidget(mparent), sevensegment(QPoint(312, 353), QPoint(36, 50), 7), button(QPoint(373, 343), QSize(55, 55))
+    : QWidget(mparent),
+      sevensegment(QPoint(312, 353), QPoint(36, 50), 7),
+      rgbLed(QPoint(89, 161), 15),
+      button(QPoint(373, 343), QSize(55, 55))
 {
     //resize(800, 600);
 
@@ -105,8 +124,16 @@ uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg)
 
 uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap)
 {
-    //Todo: This
     return (pinmap >> 2);
+}
+
+uint8_t VPBreadboard::translatePinNumberToRGBLed(uint64_t pinmap)
+{
+    uint8_t ret = 0;
+    ret |= (~pinmap & (1 << 6)) >> 6; //R
+    ret |= (~pinmap & (1 << 3)) >> 2; //G
+    ret |= (~pinmap & (1 << 5)) >> 3; //B
+    return ret;
 }
 
 uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
@@ -124,7 +151,7 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin)
 
 uint8_t VPBreadboard::getPinnumberOfButton()
 {
-    return 10   ;
+    return 10;
 }
 
 void printBin(char* buf, uint8_t len)
@@ -150,9 +177,14 @@ void VPBreadboard::paintEvent(QPaintEvent *){
         QApplication::quit();
     }
 
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::HighQualityAntialiasing);
+
     sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
     sevensegment.draw(painter);
 
+    rgbLed.map = translatePinNumberToRGBLed(translateGpioToExtPin(gpio.state));
+    rgbLed.draw(painter);
 
     if(debugmode)
     {
@@ -177,7 +209,7 @@ void VPBreadboard::notifyChange(bool success)
 void VPBreadboard::keyPressEvent(QKeyEvent *e)
 {
     this->update();
-    cout << "Yee, keypress" << endl;
+    //scout << "Yee, keypress" << endl;
     switch (e->key()) {
     case Qt::Key_Escape:
     case Qt::Key_Q:
@@ -200,6 +232,23 @@ void VPBreadboard::keyPressEvent(QKeyEvent *e)
         }
         break;
     }
+    case Qt::Key_I:
+        rgbLed.offs = rgbLed.offs - QPoint(0, 1);
+        cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
+        break;
+    case Qt::Key_J:
+        rgbLed.offs = rgbLed.offs - QPoint(1, 0);
+        cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
+        break;
+    case Qt::Key_K:
+        rgbLed.offs = rgbLed.offs + QPoint(0, 1);
+        cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
+        break;
+    case Qt::Key_L:
+        rgbLed.offs = rgbLed.offs + QPoint(1, 0);
+        cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
+        break;
+
     case Qt::Key_W:
         button.moveTopLeft(button.topLeft() - QPoint(0, 1));
         cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;

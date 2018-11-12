@@ -21,17 +21,28 @@ struct Sevensegment
         offs(offs), extent(extent), linewidth(linewidth), map(0){};
 };
 
+struct RGBLed
+{
+    QPoint offs;
+    uint8_t linewidth;
+    uint8_t map;
+    void draw(QPainter& p);
+    RGBLed(QPoint offs, uint8_t linewidth) : offs(offs), linewidth(linewidth){};
+};
+
 class VPBreadboard : public QWidget
 {
     Q_OBJECT
     GpioClient gpio;
     Sevensegment sevensegment;
+    RGBLed rgbLed;
     QRect button;
 
     bool debugmode = false;
 
     uint64_t translateGpioToExtPin(GpioCommon::Reg reg);
     uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
+    uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
     uint8_t translatePinToGpioOffs(uint8_t pin);
     uint8_t getPinnumberOfButton();
 
