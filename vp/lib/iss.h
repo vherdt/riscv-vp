@@ -328,10 +328,10 @@ struct ISS : public sc_core::sc_module,
              public external_interrupt_target,
              public timer_interrupt_target {
 
-    clint_if *clint;
-    instr_memory_interface *instr_mem;
-    data_memory_interface *mem;
-    SyscallHandler *sys;
+    clint_if *clint = nullptr;
+    instr_memory_interface *instr_mem = nullptr;
+    data_memory_interface *mem = nullptr;
+    SyscallHandler *sys = nullptr;
     RegFile regs;
     uint32_t pc;
     uint32_t last_pc;
