@@ -818,6 +818,7 @@ struct ISS : public sc_core::sc_module,
             case Opcode::URET:
             case Opcode::SRET:
                 assert (false && "not implemented");
+                break;
             case Opcode::MRET:
                 return_from_trap_handler();
                 break;
