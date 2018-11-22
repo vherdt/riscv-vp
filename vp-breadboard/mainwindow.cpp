@@ -85,10 +85,10 @@ VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget *mparent)
     palette.setBrush(QPalette::Background, bkgnd);
     this->setPalette(palette);
     setFixedSize(size());
-    if(!gpio.setupConnection(host, port))
+    while(!gpio.setupConnection(host, port))
     {
         cerr << "Could not setup Connection" << endl;
-        QApplication::quit();
+        usleep(250000);
     }
 }
 
