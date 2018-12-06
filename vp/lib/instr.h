@@ -7,6 +7,18 @@
 namespace Opcode {
     enum parts {
         OP_LUI    = 0b0110111,
+        OP_CUST0  = 0b0001011,
+        F3_C0F0   = 0b000,
+        F3_C0F1   = 0b001,
+        F3_C0F2   = 0b010,
+        F3_C0F3   = 0b011,
+        F3_C0F4   = 0b100,
+        OP_CUST1  = 0b0101011,
+        F3_C1F0   = 0b000,
+        F3_C1F1   = 0b001,
+        F3_C1F2   = 0b010,
+        F3_C1F3   = 0b011,
+        F3_C1F4   = 0b100,
         OP_AUIPC  = 0b0010111,
         OP_JAL    = 0b1101111,
         OP_JALR   = 0b1100111,
