@@ -3,6 +3,7 @@ add_executable(hifive-vp
         ../plic.cpp
         ../syscall.cpp
         ../instr.cpp
+        ../iss.cpp
         gpio.cpp
         gpio/gpiocommon.cpp
         gpio/gpio-server.cpp
