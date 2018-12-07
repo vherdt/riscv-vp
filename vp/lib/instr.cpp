@@ -176,7 +176,7 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping)
 
 
 unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
-     return (BIT_SLICE(n,12,11) << 4) | (BIT_SLICE(n,10,7) << 6) | (BIT_SINGLE_P1(n,6) << 2) | (BIT_SINGLE_P1(n,5) << 3);
+    return (BIT_SLICE(n,12,11) << 4) | (BIT_SLICE(n,10,7) << 6) | (BIT_SINGLE_P1(n,6) << 2) | (BIT_SINGLE_P1(n,5) << 3);
 }
 
 unsigned C_LW_UIMM(uint32_t n) {
