@@ -353,7 +353,7 @@ struct ISS : public sc_core::sc_module,
     };
 
     ISS()
-        : sc_module(sc_core::sc_module_name("ISS")) {
+        : sc_module(sc_core::sc_module_name("ISS")), pc(0), last_pc(0) {
 
         sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
         cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -385,10 +385,10 @@ struct ISS : public sc_core::sc_module,
         instr_cycles[Opcode::REMU] = mul_div_cycles;
     }
 
-    Opcode::mapping exec_step() {
+    Opcode::Mapping exec_step() {
         auto mem_word = instr_mem->load_instr(pc);
         Instruction instr(mem_word);
-        Opcode::mapping op;
+        Opcode::Mapping op;
         if (instr.is_compressed()) {
             op = instr.decode_and_expand_compressed();
             pc += 2;
@@ -949,7 +949,7 @@ struct ISS : public sc_core::sc_module,
     }
 
 
-    void performance_and_sync_update(Opcode::mapping executed_op) {
+    void performance_and_sync_update(Opcode::Mapping executed_op) {
         ++csrs.instret_root->reg;
 
         auto new_cycles = instr_cycles[executed_op];
@@ -965,7 +965,7 @@ struct ISS : public sc_core::sc_module,
 
         //std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
         last_pc = pc;
-        Opcode::mapping op = exec_step();
+        Opcode::Mapping op = exec_step();
 
         if (has_pending_enabled_interrupts())
             switch_to_trap_handler();

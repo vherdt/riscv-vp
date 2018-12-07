@@ -2,118 +2,122 @@
 #define RISCV_ISA_INSTR_H
 
 #include "stdint.h"
-
+#include <iostream>
 
 namespace Opcode {
-    enum parts {
-        OP_LUI    = 0b0110111,
-        OP_CUST0  = 0b0001011,
-        F3_C0F0   = 0b000,
-        F3_C0F1   = 0b001,
-        F3_C0F2   = 0b010,
-        F3_C0F3   = 0b011,
-        F3_C0F4   = 0b100,
-        OP_CUST1  = 0b0101011,
-        F3_C1F0   = 0b000,
-        F3_C1F1   = 0b001,
-        F3_C1F2   = 0b010,
-        F3_C1F3   = 0b011,
-        F3_C1F4   = 0b100,
-        OP_AUIPC  = 0b0010111,
-        OP_JAL    = 0b1101111,
-        OP_JALR   = 0b1100111,
-        F3_JALR   = 0b000,
+    enum Parts {
+		OP_LUI    = 0b0110111,
 
-        OP_LB     = 0b0000011,
-        F3_LB     = 0b000,
-        F3_LH     = 0b001,
-        F3_LW     = 0b010,
-        F3_LBU    = 0b100,
-        F3_LHU    = 0b101,
+		OP_AUIPC  = 0b0010111,
 
-        OP_SB     = 0b0100011,
-        F3_SB     = 0b000,
-        F3_SH     = 0b001,
-        F3_SW     = 0b010,
+		OP_JAL    = 0b1101111,
 
-        OP_BEQ    = 0b1100011,
-        F3_BEQ    = 0b000,
-        F3_BNE    = 0b001,
-        F3_BLT    = 0b100,
-        F3_BGE    = 0b101,
-        F3_BLTU   = 0b110,
-        F3_BGEU   = 0b111,
+		OP_JALR   = 0b1100111,
+			F3_JALR   = 0b000,
 
-        OP_ADDI   = 0b0010011,
-        F3_ADDI   = 0b000,
-        F3_SLTI   = 0b010,
-        F3_SLTIU  = 0b011,
-        F3_XORI   = 0b100,
-        F3_ORI    = 0b110,
-        F3_ANDI   = 0b111,
-        F3_SLLI   = 0b001,
-        F3_SRLI   = 0b101,
-        F7_SRLI   = 0b0000000,
-        F7_SRAI   = 0b0100000,
+		OP_LB     = 0b0000011,
+			F3_LB     = 0b000,
+			F3_LH     = 0b001,
+			F3_LW     = 0b010,
+			F3_LBU    = 0b100,
+			F3_LHU    = 0b101,
 
-        OP_ADD    = 0b0110011,
-        F7_ADD    = 0b0000000,
-        F7_SUB    = 0b0100000,
-        F3_ADD    = 0b000,
-        F3_SUB    = 0b000,
-        F3_SLL    = 0b001,
-        F3_SLT    = 0b010,
-        F3_SLTU   = 0b011,
-        F3_XOR    = 0b100,
-        F3_SRL    = 0b101,
-        F3_SRA    = 0b101,
-        F3_OR     = 0b110,
-        F3_AND    = 0b111,
+		OP_SB     = 0b0100011,
+			F3_SB     = 0b000,
+			F3_SH     = 0b001,
+			F3_SW     = 0b010,
 
-        F7_MUL    = 0b0000001,
-        F3_MUL    = 0b000,
-        F3_MULH   = 0b001,
-        F3_MULHSU = 0b010,
-        F3_MULHU  = 0b011,
-        F3_DIV    = 0b100,
-        F3_DIVU   = 0b101,
-        F3_REM    = 0b110,
-        F3_REMU   = 0b111,
+		OP_BEQ    = 0b1100011,
+			F3_BEQ    = 0b000,
+			F3_BNE    = 0b001,
+			F3_BLT    = 0b100,
+			F3_BGE    = 0b101,
+			F3_BLTU   = 0b110,
+			F3_BGEU   = 0b111,
 
-        OP_FENCE   = 0b0001111,
-        OP_ECALL   = 0b1110011,
-        F3_SYS     = 0b000,
-        F12_ECALL  = 0b000000000000,
-        F12_EBREAK = 0b000000000001,
-        //begin:privileged-instructions
-                F12_URET   = 0b000000000010,
-        F12_SRET   = 0b000100000010,
-        F12_MRET   = 0b001100000010,
-        F12_WFI    = 0b000100000101,
-        F7_SFENCE_VMA = 0b0001001,
-        //end:privileged-instructions
-                F3_CSRRW   = 0b001,
-        F3_CSRRS   = 0b010,
-        F3_CSRRC   = 0b011,
-        F3_CSRRWI  = 0b101,
-        F3_CSRRSI  = 0b110,
-        F3_CSRRCI  = 0b111,
+		OP_ADDI   = 0b0010011,
+			F3_ADDI   = 0b000,
+			F3_SLTI   = 0b010,
+			F3_SLTIU  = 0b011,
+			F3_XORI   = 0b100,
+			F3_ORI    = 0b110,
+			F3_ANDI   = 0b111,
+			F3_SLLI   = 0b001,
+			F3_SRLI   = 0b101,
+				F7_SRLI   = 0b0000000,
+				F7_SRAI   = 0b0100000,
 
-        OP_AMO        = 0b0101111,
-        F5_LR_W       = 0b00010,
-        F5_SC_W       = 0b00011,
-        F5_AMOSWAP_W  = 0b00001,
-        F5_AMOADD_W   = 0b00000,
-        F5_AMOXOR_W   = 0b00100,
-        F5_AMOAND_W   = 0b01100,
-        F5_AMOOR_W    = 0b01000,
-        F5_AMOMIN_W   = 0b10000,
-        F5_AMOMAX_W   = 0b10100,
-        F5_AMOMINU_W  = 0b11000,
-        F5_AMOMAXU_W  = 0b11100,
+		OP_ADD    = 0b0110011,
+			F3_ADD    = 0b000,
+				F7_ADD    = 0b0000000,
+			F3_SUB    = 0b000,
+				F7_SUB    = 0b0100000,
+			F3_SLL    = 0b001,
+			F3_SLT    = 0b010,
+			F3_SLTU   = 0b011,
+			F3_XOR    = 0b100,
+			F3_SRL    = 0b101,
+			F3_SRA    = 0b101,
+			F3_OR     = 0b110,
+			F3_AND    = 0b111,
+
+			F3_MUL    = 0b000,
+				F7_MUL    = 0b0000001,
+			F3_MULH   = 0b001,
+			F3_MULHSU = 0b010,
+			F3_MULHU  = 0b011,
+			F3_DIV    = 0b100,
+			F3_DIVU   = 0b101,
+			F3_REM    = 0b110,
+			F3_REMU   = 0b111,
+
+		OP_FENCE   = 0b0001111,
+
+		OP_ECALL   = 0b1110011,
+			F3_SYS     = 0b000,
+				F12_ECALL  = 0b000000000000,
+				F12_EBREAK = 0b000000000001,
+				//begin:privileged-instructions
+				F12_URET   = 0b000000000010,
+				F12_SRET   = 0b000100000010,
+				F12_MRET   = 0b001100000010,
+				F12_WFI    = 0b000100000101,
+				F7_SFENCE_VMA = 0b0001001,
+				//end:privileged-instructions
+			F3_CSRRW   = 0b001,
+			F3_CSRRS   = 0b010,
+			F3_CSRRC   = 0b011,
+			F3_CSRRWI  = 0b101,
+			F3_CSRRSI  = 0b110,
+			F3_CSRRCI  = 0b111,
+
+		OP_CUST1  = 0b0101011,
+			F3_C1F0   = 0b000,	//settaint.i
+			F3_C1F1   = 0b001,	//settaint.r
+			F3_C1F2   = 0b010,	//gettaint
+			/*...*/
+		OP_CUST0  = 0b0001011,
+			F3_C0F0   = 0b000,
+			F3_C0F1   = 0b001,
+			F3_C0F2   = 0b010,
+			F3_C0F3   = 0b011,
+			F3_C0F4   = 0b100,
+
+		OP_AMO    = 0b0101111,
+			F5_LR_W       = 0b00010,
+			F5_SC_W       = 0b00011,
+			F5_AMOSWAP_W  = 0b00001,
+			F5_AMOADD_W   = 0b00000,
+			F5_AMOXOR_W   = 0b00100,
+			F5_AMOAND_W   = 0b01100,
+			F5_AMOOR_W    = 0b01000,
+			F5_AMOMIN_W   = 0b10000,
+			F5_AMOMAX_W   = 0b10100,
+			F5_AMOMINU_W  = 0b11000,
+			F5_AMOMAXU_W  = 0b11100,
     };
 
-    enum mapping {
+    enum Mapping : uint16_t{
         UNDEF = 0,
 
         // RV32I Base Instruction Set
@@ -196,6 +200,9 @@ namespace Opcode {
 
         NUMBER_OF_INSTRUCTIONS
     };
+
+    extern const char* mappingStr[];
+
 }
 
 
@@ -264,9 +271,9 @@ struct Instruction {
         return BIT_SLICE(instr,6,5);
     }
 
-    Opcode::mapping decode_normal();
+    Opcode::Mapping decode_normal();
 
-    Opcode::mapping decode_and_expand_compressed();
+    Opcode::Mapping decode_and_expand_compressed();
 
     inline uint32_t csr() {
         // cast to unsigned to avoid sign extension when shifting

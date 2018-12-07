@@ -42,6 +42,87 @@ namespace Compressed {
     };
 }
 
+const char* Opcode::mappingStr[] =
+{
+	"ZERO-INVALID",
+	"LUI",
+	"AUIPC",
+	"JAL",
+	"JALR",
+	"BEQ",
+	"BNE",
+	"BLT",
+	"BGE",
+	"BLTU",
+	"BGEU",
+	"LB",
+	"LH",
+	"LW",
+	"LBU",
+	"LHU",
+	"SB",
+	"SH",
+	"SW",
+	"ADDI",
+	"SLTI",
+	"SLTIU",
+	"XORI",
+	"ORI",
+	"ANDI",
+	"SLLI",
+	"SRLI",
+	"SRAI",
+	"ADD",
+	"SUB",
+	"SLL",
+	"SLT",
+	"SLTU",
+	"XOR",
+	"SRL",
+	"SRA",
+	"OR",
+	"AND",
+	"FENCE",
+	"ECALL",
+	"EBREAK",
+	"CSRRW",
+	"CSRRS",
+	"CSRRC",
+	"CSRRWI",
+	"CSRRSI",
+	"CSRRCI",
+
+	// RV32M Standard Extension
+	"MUL",
+	"MULH",
+	"MULHSU",
+	"MULHU",
+	"DIV",
+	"DIVU",
+	"REM",
+	"REMU",
+
+	// RV32A Standard Extension
+	"LR_W",
+	"SC_W",
+	"AMOSWAP_W",
+	"AMOADD_W",
+	"AMOXOR_W",
+	"AMOAND_W",
+	"AMOOR_W",
+	"AMOMIN_W",
+	"AMOMAX_W",
+	"AMOMINU_W",
+	"AMOMAXU_W",
+
+	// privileged instructions
+	"URET",
+	"SRET",
+	"MRET",
+	"WFI",
+	"SFENCE_VMA",
+};
+
 
 unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
      return (BIT_SLICE(n,12,11) << 4) | (BIT_SLICE(n,10,7) << 6) | (BIT_SINGLE_P1(n,6) << 2) | (BIT_SINGLE_P1(n,5) << 3);
@@ -290,7 +371,7 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 }
 
 
-Opcode::mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
+Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
     using namespace Opcode;
     using namespace Compressed;
 
@@ -438,13 +519,13 @@ Opcode::mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 }
 
 
-Opcode::mapping Instruction::decode_and_expand_compressed() {
+Opcode::Mapping Instruction::decode_and_expand_compressed() {
     auto c_op = decode_compressed(*this);
     return expand_compressed(*this, c_op);
 }
 
 
-Opcode::mapping Instruction::decode_normal() {
+Opcode::Mapping Instruction::decode_normal() {
     //NOTE: perhaps check constant fields inside the instructions to ensure that illegal instruction formats are detected (e.g. shamt extends into func7 field)
     using namespace Opcode;
 
@@ -453,8 +534,24 @@ Opcode::mapping Instruction::decode_normal() {
     switch (instr.opcode()) {
         case OP_LUI:
             return LUI;
+        case OP_CUST1:
+            switch (instr.funct3())
+            {
+				/*	Example:
+                case F3_C1F0:
+                    return SETTAINT_I;
+                case F3_C1F1:
+                	return SETTAINT_R;
+                case F3_C1F2:
+                	return GETTAINT;
+				*/
+            }
+            break;
 
-        case OP_AUIPC:
+		case OP_CUST0:
+            break;
+
+		case OP_AUIPC:
             return AUIPC;
 
         case OP_JAL:
