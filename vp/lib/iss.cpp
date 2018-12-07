@@ -1,5 +1,41 @@
 #include "iss.h"
 
+const char* regnames[] =
+{
+	"zero (x0)",
+	"ra   (x1)",
+	"sp   (x2)",
+	"gp   (x3)",
+	"tp   (x4)",
+	"t0   (x5)",
+	"t1   (x6)",
+	"t2   (x7)",
+	"s0/sp(x8)",
+	"s1   (x9)",
+	"a0  (x10)",
+	"a1  (x11)",
+	"a2  (x12)",
+	"a3  (x13)",
+	"a4  (x14)",
+	"a5  (x15)",
+	"a6  (x16)",
+	"a7  (x17)",
+	"s2  (x18)",
+	"s3  (x19)",
+	"s4  (x20)",
+	"s5  (x21)",
+	"s6  (x22)",
+	"s7  (x23)",
+	"s8  (x24)",
+	"s9  (x25)",
+	"s10 (x26)",
+	"s11 (x27)",
+	"t3  (x28)",
+	"t4  (x29)",
+	"t5  (x30)",
+	"t6  (x31)",
+};
+
 
 RegFile::RegFile() {
 	memset(regs, 0, sizeof(regs));
@@ -31,12 +67,12 @@ int32_t& RegFile::operator [](const uint32_t idx) {
 
 void RegFile::show() {
 	for (int i=0; i<NUM_REGS; ++i) {
-		std::cout << "r[" << i << "] = " << regs[i] << std::endl;
+		std::cout << regnames[i] << " = " << regs[i] << std::endl;
 	}
 }
 
 ISS::ISS()
-	: sc_module(sc_core::sc_module_name("ISS")), pc(0), last_pc(0) {
+	: sc_module(sc_core::sc_module_name("ISS")), pc(0), last_pc(0), debug(false) {
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -50,34 +86,66 @@ ISS::ISS()
 	const sc_core::sc_time memory_access_cycles = 4*cycle_time;
 	const sc_core::sc_time mul_div_cycles = 8*cycle_time;
 
-	instr_cycles[Opcode::LB] = memory_access_cycles;
+	instr_cycles[Opcode::LB]  = memory_access_cycles;
 	instr_cycles[Opcode::LBU] = memory_access_cycles;
-	instr_cycles[Opcode::LH] = memory_access_cycles;
+	instr_cycles[Opcode::LH]  = memory_access_cycles;
 	instr_cycles[Opcode::LHU] = memory_access_cycles;
-	instr_cycles[Opcode::LW] = memory_access_cycles;
-	instr_cycles[Opcode::SB] = memory_access_cycles;
-	instr_cycles[Opcode::SH] = memory_access_cycles;
-	instr_cycles[Opcode::SW] = memory_access_cycles;
-	instr_cycles[Opcode::MUL] = mul_div_cycles;
-	instr_cycles[Opcode::MULH] = mul_div_cycles;
-	instr_cycles[Opcode::MULHU] = mul_div_cycles;
+	instr_cycles[Opcode::LW]  = memory_access_cycles;
+	instr_cycles[Opcode::SB]  = memory_access_cycles;
+	instr_cycles[Opcode::SH]  = memory_access_cycles;
+	instr_cycles[Opcode::SW]  = memory_access_cycles;
+	instr_cycles[Opcode::MUL]    = mul_div_cycles;
+	instr_cycles[Opcode::MULH]   = mul_div_cycles;
+	instr_cycles[Opcode::MULHU]  = mul_div_cycles;
 	instr_cycles[Opcode::MULHSU] = mul_div_cycles;
-	instr_cycles[Opcode::DIV] = mul_div_cycles;
-	instr_cycles[Opcode::DIVU] = mul_div_cycles;
-	instr_cycles[Opcode::REM] = mul_div_cycles;
-	instr_cycles[Opcode::REMU] = mul_div_cycles;
+	instr_cycles[Opcode::DIV]    = mul_div_cycles;
+	instr_cycles[Opcode::DIVU]   = mul_div_cycles;
+	instr_cycles[Opcode::REM]    = mul_div_cycles;
+	instr_cycles[Opcode::REMU]   = mul_div_cycles;
 }
 
 Opcode::Mapping ISS::exec_step() {
 	auto mem_word = instr_mem->load_instr(pc);
 	Instruction instr(mem_word);
 	Opcode::Mapping op;
+
+	if(debug) printf("pc %8x: ", pc);
+
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed();
 		pc += 2;
 	} else {
 		op = instr.decode_normal();
 		pc += 4;
+	}
+
+	if(debug)
+	{
+		printf("%s ", Opcode::mappingStr[op]);
+		switch(Opcode::getType(op))
+		{
+		case Opcode::Type::R:
+			printf("%s, %s, %s", regnames[instr.rd()], regnames[instr.rs1()], regnames[instr.rs2()]);
+			break;
+		case Opcode::Type::I:
+			printf("%s, %s, 0x%x", regnames[instr.rd()], regnames[instr.rs1()], (uint32_t)instr.I_imm());
+			break;
+		case Opcode::Type::S:
+			printf("%s, %s, 0x%x", regnames[instr.rs1()], regnames[instr.rs2()], (uint32_t)instr.S_imm());
+			break;
+		case Opcode::Type::B:
+			printf("%s, %s, 0x%x", regnames[instr.rs1()], regnames[instr.rs2()], (uint32_t)instr.B_imm());
+			break;
+		case Opcode::Type::U:
+			printf("%s, 0x%x", regnames[instr.rs1()], (uint32_t)instr.U_imm());
+			break;
+		case Opcode::Type::J:
+			printf("%s, 0x%x", regnames[instr.rs1()], (uint32_t)instr.J_imm());
+			break;
+		default:
+			printf("???");
+		}
+		puts("\n");
 	}
 
 	switch (op) {
@@ -89,11 +157,11 @@ Opcode::Mapping ISS::exec_step() {
 			break;
 
 		case Opcode::SLTI:
-			regs[instr.rd()] = regs[instr.rs1()] < instr.I_imm() ? 1 : 0;
+			regs[instr.rd()] = regs[instr.rs1()] < instr.I_imm();
 			break;
 
 		case Opcode::SLTIU:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm()) ? 1 : 0;
+			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm());
 			break;
 
 		case Opcode::XORI:

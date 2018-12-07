@@ -124,6 +124,57 @@ const char* Opcode::mappingStr[] =
 };
 
 
+Opcode::Type Opcode::getType(Opcode::Mapping mapping)
+{
+	switch(mapping)
+	{
+	case SLLI:
+	case SRLI:
+	case SRAI:
+	case ADD:
+	case SUB:
+	case SLL:
+	case SLT:
+	case SLTU:
+	case XOR:
+	case SRL:
+	case SRA:
+	case OR:
+	case AND:
+		return Type::R;
+	case JALR:
+	case LB:
+	case LH:
+	case LW:
+	case LBU:
+	case LHU:
+	case ADDI:
+	case SLTI:
+	case SLTIU:
+	case XORI:
+	case ANDI:
+		return Type::I;
+	case SB:
+	case SH:
+	case SW:
+		return Type::S;
+	case BEQ:
+	case BNE:
+	case BLT:
+	case BGE:
+	case BLTU:
+	case BGEU:
+		return Type::B;
+	case LUI:
+	case AUIPC:
+		return Type::U;
+	case JAL:
+		return Type::J;
+	}
+	return Type::UNKNOWN;
+}
+
+
 unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
      return (BIT_SLICE(n,12,11) << 4) | (BIT_SLICE(n,10,7) << 6) | (BIT_SINGLE_P1(n,6) << 2) | (BIT_SINGLE_P1(n,5) << 3);
 }
@@ -486,7 +537,8 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
             instr = InstructionFactory::BNE(instr.c_rd_small(), 0, C_BRANCH_IMM(instr.data()));
             return BNE;
 
-        case C_SLLI: {
+        case C_SLLI:
+        {
             auto n = instr.c_uimm();
             if (n > 31)
                 return UNDEF;

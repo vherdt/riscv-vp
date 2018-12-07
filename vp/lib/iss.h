@@ -111,9 +111,10 @@ struct RegFile {
         t5 = x30,
         t6 = x31,
     };
+
 };
 
-
+extern const char* regnames[];
 
 struct instr_memory_interface {
     virtual ~instr_memory_interface() {}
@@ -312,6 +313,7 @@ struct ISS : public sc_core::sc_module,
     RegFile regs;
     uint32_t pc;
     uint32_t last_pc;
+    bool debug;
     csr_table csrs;
     uint32_t lrw_marked = 0;
 

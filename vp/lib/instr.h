@@ -75,13 +75,13 @@ namespace Opcode {
 
 		OP_ECALL   = 0b1110011,
 			F3_SYS     = 0b000,
-				F12_ECALL  = 0b000000000000,
-				F12_EBREAK = 0b000000000001,
-				//begin:privileged-instructions
-				F12_URET   = 0b000000000010,
-				F12_SRET   = 0b000100000010,
-				F12_MRET   = 0b001100000010,
-				F12_WFI    = 0b000100000101,
+					F12_ECALL  = 0b000000000000,
+					F12_EBREAK = 0b000000000001,
+					//begin:privileged-instructions
+					F12_URET   = 0b000000000010,
+					F12_SRET   = 0b000100000010,
+					F12_MRET   = 0b001100000010,
+					F12_WFI    = 0b000100000101,
 				F7_SFENCE_VMA = 0b0001001,
 				//end:privileged-instructions
 			F3_CSRRW   = 0b001,
@@ -201,8 +201,20 @@ namespace Opcode {
         NUMBER_OF_INSTRUCTIONS
     };
 
+    enum class Type : uint8_t
+    {
+    	UNKNOWN = 0,
+    	R,
+		I,
+		S,
+		B,
+		U,
+		J,
+    };
+
     extern const char* mappingStr[];
 
+    Type getType(Mapping mapping);
 }
 
 
@@ -339,7 +351,6 @@ struct Instruction {
     inline int32_t U_imm() {
         return BIT_RANGE(instr,31,12);
     }
-
 
     inline uint32_t rs1() {
         return BIT_RANGE(instr,19,15) >> 15;
