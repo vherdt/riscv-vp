@@ -1,5 +1,5 @@
 all : main.c
-	riscv32-unknown-elf-gcc main.c --coverage -o main -march=rv32g -mabi=ilp32d
+	riscv32-unknown-elf-gcc main.c --coverage -o main -march=rv32ima
 	
 main.gcda : all
 	../../vp/build/lib/riscv-vp main

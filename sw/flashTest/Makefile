@@ -1,5 +1,5 @@
 all : main.cpp
-	riscv32-unknown-elf-g++ -ggdb -std=c++14 main.cpp -o main -march=rv32g -mabi=ilp32d
+	riscv32-unknown-elf-g++ -ggdb -std=c++14 main.cpp -o main -march=rv32ima
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
