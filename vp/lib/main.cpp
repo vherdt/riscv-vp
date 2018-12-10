@@ -211,9 +211,8 @@ int sc_main(int argc, char **argv) {
     sensor2.plic = &plic;
     ethernet.plic = &plic;
 
-
-		core.debug = true;				//Debug switch for printing instructions
     if (opt.use_debug_runner) {
+		core.debug = true;				//Debug switch for printing instructions
         debug_memory_mapping dmm({mem.data, opt.mem_start_addr, mem.size});
         new DebugCoreRunner(core, dmm);
     } else {
