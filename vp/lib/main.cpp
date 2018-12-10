@@ -212,8 +212,8 @@ int sc_main(int argc, char **argv) {
     ethernet.plic = &plic;
 
 
-    if (opt.use_debug_runner) {
 		core.debug = true;				//Debug switch for printing instructions
+    if (opt.use_debug_runner) {
         debug_memory_mapping dmm({mem.data, opt.mem_start_addr, mem.size});
         new DebugCoreRunner(core, dmm);
     } else {

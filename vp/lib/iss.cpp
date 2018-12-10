@@ -67,12 +67,12 @@ int32_t& RegFile::operator [](const uint32_t idx) {
 
 void RegFile::show() {
 	for (int i=0; i<NUM_REGS; ++i) {
-		std::cout << regnames[i] << " = " << regs[i] << std::endl;
+		printf("\e[38;5;%um%s\e[39m = %8x\n", 100 + i, regnames[i], regs[i]);
 	}
 }
 
 ISS::ISS()
-	: sc_module(sc_core::sc_module_name("ISS")), pc(0), last_pc(0), debug(false) {
+	: sc_module(sc_core::sc_module_name("ISS")), clint(nullptr), pc(0), last_pc(0), debug(false) {
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -125,27 +125,32 @@ Opcode::Mapping ISS::exec_step() {
 		switch(Opcode::getType(op))
 		{
 		case Opcode::Type::R:
-			printf("%s, %s, %s", regnames[instr.rd()], regnames[instr.rs1()], regnames[instr.rs2()]);
-			break;
+				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m",
+						100 + instr.rd(), regnames[instr.rd()], 100 + instr.rs1(), regnames[instr.rs1()],
+						100 + instr.rs2(), regnames[instr.rs2()]);
+				break;
 		case Opcode::Type::I:
-			printf("%s, %s, 0x%x", regnames[instr.rd()], regnames[instr.rs1()], (uint32_t)instr.I_imm());
-			break;
+				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
+						100 + instr.rd(), regnames[instr.rd()], 100 + instr.rs1(), regnames[instr.rs1()], instr.I_imm());
+				break;
 		case Opcode::Type::S:
-			printf("%s, %s, 0x%x", regnames[instr.rs1()], regnames[instr.rs2()], (uint32_t)instr.S_imm());
-			break;
+				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
+						100 + instr.rs1(), regnames[instr.rs1()], 100 + instr.rs2(), regnames[instr.rs2()], instr.S_imm());
+				break;
 		case Opcode::Type::B:
-			printf("%s, %s, 0x%x", regnames[instr.rs1()], regnames[instr.rs2()], (uint32_t)instr.B_imm());
-			break;
+				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
+						100 + instr.rs1(), regnames[instr.rs1()], 100 + instr.rs2(), regnames[instr.rs2()], instr.B_imm());
+				break;
 		case Opcode::Type::U:
-			printf("%s, 0x%x", regnames[instr.rs1()], (uint32_t)instr.U_imm());
-			break;
+				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.U_imm());
+				break;
 		case Opcode::Type::J:
-			printf("%s, 0x%x", regnames[instr.rs1()], (uint32_t)instr.J_imm());
-			break;
+				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.J_imm());
+				break;
 		default:
-			printf("???");
+				printf("???");
 		}
-		puts("\n");
+		puts("");
 	}
 
 	switch (op) {
