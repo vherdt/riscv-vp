@@ -141,6 +141,14 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping)
 	case SRA:
 	case OR:
 	case AND:
+	case MUL:
+	case MULH:
+	case MULHSU:
+	case MULHU:
+	case DIV:
+	case DIVU:
+	case REM:
+	case REMU:
 		return Type::R;
 	case JALR:
 	case LB:
@@ -152,6 +160,7 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping)
 	case SLTI:
 	case SLTIU:
 	case XORI:
+	case ORI:
 	case ANDI:
 		return Type::I;
 	case SB:

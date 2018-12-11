@@ -109,8 +109,6 @@ Opcode::Mapping ISS::exec_step() {
 	Instruction instr(mem_word);
 	Opcode::Mapping op;
 
-	if(debug) printf("pc %8x: ", pc);
-
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed();
 		pc += 2;
@@ -121,7 +119,7 @@ Opcode::Mapping ISS::exec_step() {
 
 	if(debug)
 	{
-		printf("%s ", Opcode::mappingStr[op]);
+		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch(Opcode::getType(op))
 		{
 		case Opcode::Type::R:
@@ -142,13 +140,12 @@ Opcode::Mapping ISS::exec_step() {
 						100 + instr.rs1(), regnames[instr.rs1()], 100 + instr.rs2(), regnames[instr.rs2()], instr.B_imm());
 				break;
 		case Opcode::Type::U:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.U_imm());
+				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rd(), regnames[instr.rd()], instr.U_imm());
 				break;
 		case Opcode::Type::J:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.J_imm());
+				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rd(), regnames[instr.rd()], instr.J_imm());
 				break;
 		default:
-				printf("???");
 		}
 		puts("");
 	}
