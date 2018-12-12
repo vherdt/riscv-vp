@@ -19,7 +19,7 @@ struct SimTimingInterface {
 };
 
 
-struct ExternalTimingDecorator : public ExecutionDecorator {
+struct ExternalTimingDecorator : public timing_interface {
 
     SimTimingInterface* timing_sim = 0;
     void *lib_handle = 0;
