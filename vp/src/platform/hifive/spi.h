@@ -5,8 +5,8 @@
 
 #include <tlm_utils/simple_target_socket.h>
 
-#include "tlm_map.h"
-#include "irq_if.h"
+#include "util/tlm_map.h"
+#include "core/common/irq_if.h"
 
 
 struct SPI : public sc_core::sc_module {

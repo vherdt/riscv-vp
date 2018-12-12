@@ -8,7 +8,7 @@
 
 #include <tlm_utils/simple_target_socket.h>
 
-#include "irq_if.h"
+#include "core/common/irq_if.h"
 
 
 struct SimpleSensor : public sc_core::sc_module {

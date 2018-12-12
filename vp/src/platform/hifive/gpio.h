@@ -1,8 +1,8 @@
 #pragma once
 
 #include "gpio/gpio-server.hpp"
-#include "tlm_map.h"
-#include "irq_if.h"
+#include "util/tlm_map.h"
+#include "core/common/irq_if.h"
 #include "async_event.h"
 
 #include <systemc>

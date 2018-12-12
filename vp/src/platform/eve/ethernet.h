@@ -14,8 +14,8 @@
 
 #include <tlm_utils/simple_target_socket.h>
 
-#include "irq_if.h"
-#include "tlm_map.h"
+#include "core/common/irq_if.h"
+#include "util/tlm_map.h"
 
 struct arp_eth_header {
     uint16_t htype;

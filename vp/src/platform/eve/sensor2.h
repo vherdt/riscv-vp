@@ -4,8 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "tlm_map.h"
-#include "irq_if.h"
+#include "util/tlm_map.h"
+#include "core/common/irq_if.h"
 
 
 /*

@@ -5,7 +5,7 @@
 #include "memory.h"
 #include "elf_loader.h"
 #include "plic.h"
-#include "clint.h"
+#include "core/common/clint.h"
 #include "aon.h"
 #include "gpio.h"
 #include "maskROM.h"

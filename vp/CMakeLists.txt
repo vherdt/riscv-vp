@@ -3,6 +3,7 @@ project(riscv-vp)
 
 ADD_DEFINITIONS(-std=c++14 -g3)
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 find_package( Boost REQUIRED COMPONENTS iostreams program_options )

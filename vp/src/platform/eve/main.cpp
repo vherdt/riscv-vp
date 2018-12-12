@@ -7,7 +7,7 @@
 #include "flash.h"
 #include "elf_loader.h"
 #include "plic.h"
-#include "clint.h"
+#include "core/common/clint.h"
 #include "terminal.h"
 #include "sensor.h"
 #include "sensor2.h"

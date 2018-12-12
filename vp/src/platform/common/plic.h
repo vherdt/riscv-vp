@@ -3,8 +3,8 @@
 #include <systemc>
 #include <tlm_utils/simple_target_socket.h>
 
-#include "irq_if.h"
-#include "tlm_map.h"
+#include "core/common/irq_if.h"
+#include "util/tlm_map.h"
 
 
 struct PLIC : public sc_core::sc_module, public interrupt_gateway {

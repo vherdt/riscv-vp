@@ -1,6 +1,4 @@
-include_directories(core/common)
-include_directories(platform/common)
-include_directories(util)
+include_directories(.)
 
 subdirs(core)
 subdirs(platform)

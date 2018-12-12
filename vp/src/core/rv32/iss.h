@@ -7,8 +7,8 @@
 #include "instr.h"
 #include "syscall.h"
 #include "csr.h"
-#include "irq_if.h"
-#include "clint.h"
+#include "core/common/irq_if.h"
+#include "core/common/clint.h"
 
 #include <iostream>
 #include <memory>
@@ -117,7 +117,7 @@ struct ISS;
 
 struct timing_interface {
 	virtual ~timing_interface() {}
-	
+
 	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
 

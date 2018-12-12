@@ -5,8 +5,8 @@
 
 #include <tlm_utils/simple_target_socket.h>
 
-#include "irq_if.h"
-#include "tlm_map.h"
+#include "util/tlm_map.h"
+#include "core/common/irq_if.h"
 
 
 struct AON : public sc_core::sc_module {
