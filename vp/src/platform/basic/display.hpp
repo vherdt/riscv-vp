@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../../../env/eve/vp-display/framebuffer.h"
+#include "../../../../env/basic/vp-display/framebuffer.h"
 #include <systemc>
 #include <tlm_utils/simple_target_socket.h>
 

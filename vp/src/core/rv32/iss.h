@@ -113,6 +113,7 @@ struct RegFile {
 };
 
 
+// NOTE: on this branch, currently the *simple-timing* model is still directly integrated in the ISS. Merge the *timedb* branch to use the timing_interface.
 struct ISS;
 
 struct timing_interface {

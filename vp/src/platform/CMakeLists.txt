@@ -1,3 +1,3 @@
 subdirs(common)
-subdirs(eve)
+subdirs(basic)
 subdirs(hifive)
