@@ -1,4 +1,4 @@
-include_directories(core/rv32)
+include_directories(core/common)
 include_directories(platform/common)
 include_directories(util)
 

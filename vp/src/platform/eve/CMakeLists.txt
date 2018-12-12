@@ -6,5 +6,5 @@ add_executable(riscv-vp
         display.cpp
         ${HEADERS})
 
-target_link_libraries(riscv-vp rv32 common ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
+target_link_libraries(riscv-vp rv32 platform-common ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
 
