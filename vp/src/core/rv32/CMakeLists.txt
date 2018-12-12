@@ -7,3 +7,6 @@ add_library(rv32
 		syscall.cpp
         ${HEADERS})
 
+target_link_libraries(rv32 common)
+
+target_include_directories(rv32 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
