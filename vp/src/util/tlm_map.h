@@ -1,12 +1,12 @@
 #ifndef RISCV_TLM_MAP_H
 #define RISCV_TLM_MAP_H
 
-#include <functional>
-
 #include <systemc>
 
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
+
+#include <functional>
 #include <unordered_map>
 #include <boost/format.hpp>
 

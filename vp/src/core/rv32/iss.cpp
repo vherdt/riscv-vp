@@ -1,5 +1,9 @@
 #include "iss.h"
 
+// to save *cout* format setting, see *ISS::show*
+#include <boost/io/ios_state.hpp>
+
+
 const char* regnames[] =
 {
 	"zero (x0)",
@@ -37,6 +41,42 @@ const char* regnames[] =
 };
 
 
+int regcolors_dark[] = {
+	0,
+	1,
+	2,
+	3,
+	4,
+	5,
+	6,
+	52,
+	8,
+	9,
+	53,
+	54,
+	55,
+	56,
+	57,
+	58,
+	16,
+	17,
+	18,
+	19,
+	20,
+	21,
+	22,
+	23,
+	24,
+	25,
+	26,
+	27,
+	28,
+	29,
+	30,
+	31,
+};
+
+
 RegFile::RegFile() {
 	memset(regs, 0, sizeof(regs));
 }
@@ -67,12 +107,12 @@ int32_t& RegFile::operator [](const uint32_t idx) {
 
 void RegFile::show() {
 	for (int i=0; i<NUM_REGS; ++i) {
-		printf("\e[38;5;%um%s\e[39m = %8x\n", 100 + i, regnames[i], regs[i]);
+		printf("\e[38;5;%um%s\e[39m = %8x\n", regcolors_dark[i], regnames[i], regs[i]);
 	}
 }
 
 ISS::ISS()
-	: sc_module(sc_core::sc_module_name("ISS")), clint(nullptr), pc(0), last_pc(0), debug(false) {
+	: sc_module(sc_core::sc_module_name("ISS")) {
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -109,8 +149,6 @@ Opcode::Mapping ISS::exec_step() {
 	Instruction instr(mem_word);
 	Opcode::Mapping op;
 
-	if(debug) printf("pc %8x: ", pc);
-
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed();
 		pc += 2;
@@ -121,34 +159,34 @@ Opcode::Mapping ISS::exec_step() {
 
 	if(debug)
 	{
-		printf("%s ", Opcode::mappingStr[op]);
+		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch(Opcode::getType(op))
 		{
 		case Opcode::Type::R:
 				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m",
-						100 + instr.rd(), regnames[instr.rd()], 100 + instr.rs1(), regnames[instr.rs1()],
-						100 + instr.rs2(), regnames[instr.rs2()]);
+						regcolors_dark[instr.rd()], regnames[instr.rd()], regcolors_dark[instr.rs1()], regnames[instr.rs1()],
+						regcolors_dark[instr.rs2()], regnames[instr.rs2()]);
 				break;
 		case Opcode::Type::I:
 				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						100 + instr.rd(), regnames[instr.rd()], 100 + instr.rs1(), regnames[instr.rs1()], instr.I_imm());
+						regcolors_dark[instr.rd()], regnames[instr.rd()], regcolors_dark[instr.rs1()], regnames[instr.rs1()], instr.I_imm());
 				break;
 		case Opcode::Type::S:
 				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						100 + instr.rs1(), regnames[instr.rs1()], 100 + instr.rs2(), regnames[instr.rs2()], instr.S_imm());
+						regcolors_dark[instr.rs1()], regnames[instr.rs1()], regcolors_dark[instr.rs2()], regnames[instr.rs2()], instr.S_imm());
 				break;
 		case Opcode::Type::B:
 				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						100 + instr.rs1(), regnames[instr.rs1()], 100 + instr.rs2(), regnames[instr.rs2()], instr.B_imm());
+						regcolors_dark[instr.rs1()], regnames[instr.rs1()], regcolors_dark[instr.rs2()], regnames[instr.rs2()], instr.B_imm());
 				break;
 		case Opcode::Type::U:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.U_imm());
+				printf("\e[38;5;%um%s\e[39m, 0x%x", regcolors_dark[instr.rd()], regnames[instr.rd()], instr.U_imm());
 				break;
 		case Opcode::Type::J:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", 100 + instr.rs1(), regnames[instr.rs1()], instr.J_imm());
+				printf("\e[38;5;%um%s\e[39m, 0x%x", regcolors_dark[instr.rd()], regnames[instr.rd()], instr.J_imm());
 				break;
 		default:
-				printf("???");
+			;
 		}
 		puts("");
 	}
@@ -748,10 +786,11 @@ void ISS::run() {
 }
 
 void ISS::show() {
+	boost::io::ios_flags_saver ifs(std::cout);
 	std::cout << "simulation time: " << sc_core::sc_time_stamp() << std::endl;
 	regs.show();
-	std::cout << "pc = " << pc << std::endl;
-	std::cout << "num-instr = " << csrs.instret_root->reg << std::endl;
+	std::cout << "pc = " << std::hex << pc << std::endl;
+	std::cout << "num-instr = " << std::dec << csrs.instret_root->reg << std::endl;
 	std::cout << "max-heap (c-lib malloc, bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
 }
 

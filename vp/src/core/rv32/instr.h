@@ -1,10 +1,11 @@
 #ifndef RISCV_ISA_INSTR_H
 #define RISCV_ISA_INSTR_H
 
-#include "stdint.h"
+#include <stdint.h>
 #include <iostream>
 
 namespace Opcode {
+	// opcode masks used to decode an instruction
     enum Parts {
 		OP_LUI    = 0b0110111,
 
@@ -117,6 +118,7 @@ namespace Opcode {
 			F5_AMOMAXU_W  = 0b11100,
     };
 
+	// each instruction is mapped by the decoder to the following mapping
     enum Mapping : uint16_t{
         UNDEF = 0,
 
@@ -201,6 +203,7 @@ namespace Opcode {
         NUMBER_OF_INSTRUCTIONS
     };
 
+	// type denotes the instruction format
     enum class Type : uint8_t
     {
     	UNKNOWN = 0,

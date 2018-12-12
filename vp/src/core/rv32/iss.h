@@ -1,12 +1,10 @@
 #pragma once
 
-#include "stdint.h"
-#include "string.h"
-#include "assert.h"
+#include <stdint.h>
+#include <string.h>
+#include <assert.h>
 
-#include "memory.h"
 #include "instr.h"
-#include "bus.h"
 #include "syscall.h"
 #include "csr.h"
 #include "irq_if.h"
@@ -114,7 +112,15 @@ struct RegFile {
 
 };
 
-extern const char* regnames[];
+
+struct ISS;
+
+struct timing_interface {
+	virtual ~timing_interface() {}
+	
+	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
+};
+
 
 struct instr_memory_interface {
     virtual ~instr_memory_interface() {}
@@ -311,9 +317,9 @@ struct ISS : public sc_core::sc_module,
     data_memory_interface *mem = nullptr;
     SyscallHandler *sys = nullptr;
     RegFile regs;
-    uint32_t pc;
-    uint32_t last_pc;
-    bool debug;
+    uint32_t pc = 0;
+    uint32_t last_pc = 0;
+    bool debug = false;
     csr_table csrs;
     uint32_t lrw_marked = 0;
 

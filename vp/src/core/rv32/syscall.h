@@ -1,8 +1,8 @@
 #ifndef RISCV_ISA_SYSCALL_H
 #define RISCV_ISA_SYSCALL_H
 
-#include "stdint.h"
-#include "assert.h"
+#include <stdint.h>
+#include <assert.h>
 
 //see: newlib/libgloss/riscv @ https://github.com/riscv/riscv-newlib/tree/riscv-newlib-2.5.0/libgloss/riscv
 

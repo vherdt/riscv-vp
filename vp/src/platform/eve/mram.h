@@ -4,9 +4,11 @@
 #include <iostream>
 #include <fstream>	//file IO
 #include <unistd.h> //truncate
+
+#include <systemc>
+#include <tlm_utils/simple_target_socket.h>
+
 #include "bus.h"
-#include "systemc"
-#include "tlm_utils/simple_target_socket.h"
 
 using namespace std;
 using namespace sc_core;

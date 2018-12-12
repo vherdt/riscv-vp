@@ -7,8 +7,8 @@
 
 #include "bus.h"
 
-#include "systemc"
-#include "tlm_utils/simple_target_socket.h"
+#include <systemc>
+#include <tlm_utils/simple_target_socket.h>
 
 
 struct SimpleMemory : public sc_core::sc_module {

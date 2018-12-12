@@ -1,9 +1,9 @@
 #ifndef RISCV_ISA_TERMINAL_H
 #define RISCV_ISA_TERMINAL_H
 
-#include "systemc"
+#include <systemc>
 
-#include "tlm_utils/simple_target_socket.h"
+#include <tlm_utils/simple_target_socket.h>
 
 
 struct SimpleTerminal : public sc_core::sc_module {
