@@ -1,0 +1,2 @@
+subdirs(hifive)
+subdirs(core)
