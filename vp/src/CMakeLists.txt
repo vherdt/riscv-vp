@@ -1,2 +1,2 @@
-subdirs(hifive)
 subdirs(core)
+subdirs(platform)

@@ -10,4 +10,4 @@ find_package( Boost REQUIRED COMPONENTS iostreams program_options )
 find_package( SystemC REQUIRED )
 include_directories( ${SystemC_INCLUDE_DIRS} )
 
-subdirs(lib)
+subdirs(src)
