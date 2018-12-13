@@ -2,7 +2,7 @@
 #include <QMainWindow>
 #include <cassert>
 
-#include "../vp/lib/hifive/gpio/gpio-client.hpp"
+#include <gpio/gpio-client.hpp>
 
 namespace Ui {
 class VPBreadboard;

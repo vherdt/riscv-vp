@@ -27,8 +27,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-        ../vp/lib/hifive/gpio/gpiocommon.cpp \
-        ../vp/lib/hifive/gpio/gpio-client.cpp
+        ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp \
+        ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
 
 HEADERS += \
         mainwindow.h
