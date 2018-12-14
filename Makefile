@@ -1,6 +1,9 @@
 all: vps vp-display vp-breadboard
 
-vps: vp/build/Makefile
+vp/dependencies/systemc-dist:
+	cd vp/dependencies/ && ./build_systemc_232.sh
+
+vps: vp/build/Makefile vp/dependencies/systemc-dist
 	make install -C vp/build -j6
 
 vp/build/Makefile:
@@ -22,6 +25,7 @@ vp-breadboard: env/hifive/vp-breadboard/build/Makefile
 	make -C  env/hifive/vp-breadboard/build -j4
 
 clean:
+	rm -rf vp/dependencies/systemc*
 	rm -rf vp/build
 	rm -rf env/basic/vp-display/build
 	rm -rf env/hifive/vp-breadboard/build
