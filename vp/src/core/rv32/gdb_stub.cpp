@@ -21,7 +21,7 @@
 
 
 std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
-    assert (start >= 0);
+    //assert (start >= 0);
     assert (nbytes > 0);
 
     uint32_t read_offset = boost::lexical_cast<uint32_t>(start);
