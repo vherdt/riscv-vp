@@ -179,8 +179,11 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping)
 		return Type::U;
 	case JAL:
 		return Type::J;
+
+	default:
+		return Type::UNKNOWN;
 	}
-	return Type::UNKNOWN;
+
 }
 
 

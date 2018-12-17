@@ -64,7 +64,7 @@ std::string debug_memory_mapping::zero_memory(int nbytes) {
 
 
 void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
-    assert (start >= 0);
+    //assert (start >= 0);
     assert (nbytes > 0);
     assert (data.length() % 2 == 0);
 
@@ -127,7 +127,7 @@ std::string DebugCoreRunner::receive_packet(int conn) {
     	std::cerr << "recv error" << strerror(errno) << std::endl;
     	return std::string("err");
     }
-    assert (nbytes <= bufsize);
+    assert (nbytes <= (long)bufsize);
 
     //std::cout << "recv: " << buffer << std::endl;
 
@@ -166,18 +166,18 @@ void DebugCoreRunner::send_packet(int conn, const std::string &msg) {
     std::string frame = "+$" + msg + "#" + compute_checksum_string(msg);
     //std::cout << "send: " << frame << std::endl;
 
-    assert (frame.size() < bufsize);
+    assert (frame.size() < (long)bufsize);
 
     memcpy(iobuf, frame.c_str(), frame.size());
 
     int nbytes = ::send(conn, iobuf, frame.size(), 0);
-    assert (nbytes == frame.size());
+    assert (nbytes == (long)frame.size());
 }
 
 
 void send_raw(int conn, const std::string &msg) {
     int nbytes = ::send(conn, msg.c_str(), msg.size(), 0);
-    assert (nbytes == msg.size());
+    assert (nbytes == (long)msg.size());
 }
 
 
