@@ -41,7 +41,7 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
     auto *ptr = trans.get_data_ptr();
     auto len = trans.get_data_length();
 
-    assert ((addr >= 0) && (addr + len <= sizeof(Framebuffer)) && "Access display out of bounds");
+    assert ((addr + len <= sizeof(Framebuffer)) && "Access display out of bounds");
 
 	if(cmd == tlm::TLM_WRITE_COMMAND)
 	{
@@ -72,7 +72,7 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
 				break;
 			}
 			//reset parameter
-			memset(&frame.buf->parameter, 0, sizeof(Framebuffer::Parameter));
+			memset(reinterpret_cast<void*>(&frame.buf->parameter), 0, sizeof(Framebuffer::Parameter));
 		}
 		else if(addr >= offsetof(Framebuffer, parameter) &&
 				addr + len < offsetof(Framebuffer, parameter) + sizeof(Framebuffer::Parameter))

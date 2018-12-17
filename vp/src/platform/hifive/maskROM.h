@@ -33,6 +33,11 @@ struct MaskROM : public sc_core::sc_module {
         auto *ptr = trans.get_data_ptr();
         auto len = trans.get_data_length();
 
+        if(cmd != tlm::TLM_READ_COMMAND)
+        {
+        	throw(std::runtime_error("invalid write to MROM"));
+        }
+
         if(addr < 0x000C)
         {	//should contain jump to OTP
         	memset(ptr, 0, len);

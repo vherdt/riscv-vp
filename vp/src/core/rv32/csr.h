@@ -366,7 +366,7 @@ struct csr_64_low : public csr_base {
     csr_64 &target;
 
     csr_64_low(csr_64 &obj, uint32_t addr, const char *name)
-            : target(obj), csr_base(addr, name) {
+            : csr_base(addr, name), target(obj) {
     }
 
     virtual int32_t unchecked_read() override {
@@ -383,7 +383,7 @@ struct csr_64_high : public csr_base {
     csr_64 &target;
 
     csr_64_high(csr_64 &obj, uint32_t addr, const char *name)
-        : target(obj), csr_base(addr, name) {
+        : csr_base(addr, name), target(obj) {
     }
 
     virtual int32_t unchecked_read() override {

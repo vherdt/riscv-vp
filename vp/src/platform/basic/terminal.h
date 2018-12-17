@@ -19,6 +19,7 @@ struct SimpleTerminal : public sc_core::sc_module {
         sc_assert (trans.get_data_length() == 1);
 
         std::cout << (char)*trans.get_data_ptr();
+        delay +=(sc_time(1, sc_time_unit::SC_US));
     }
 };
 

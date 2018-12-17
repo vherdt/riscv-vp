@@ -50,7 +50,7 @@ struct SimpleSensor : public sc_core::sc_module {
         auto len  = trans.get_data_length();
         auto ptr  = trans.get_data_ptr();
 
-        if (addr >= 0 && addr <= 63) {
+        if (addr <= 63) {
             // access data frame
             assert (cmd == tlm::TLM_READ_COMMAND);
             assert ((addr + len) <= data_frame.size());
@@ -85,6 +85,8 @@ struct SimpleSensor : public sc_core::sc_module {
                 run_event.notify(sc_core::sc_time(scaler, sc_core::SC_MS));
             }
         }
+
+        (void) delay;	//zero delay
     }
 
     void run() {

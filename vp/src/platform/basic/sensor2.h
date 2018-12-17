@@ -51,7 +51,7 @@ struct SimpleSensor2 : public sc_core::sc_module {
                 vp::map::read_only).register_handler(this, &SimpleSensor2::data_frame_access_callback);
     }
 
-    void data_frame_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+    void data_frame_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time) {
         // return last generated random data at requested address
         vp::map::execute_memory_access(trans, data_frame.data());
     }

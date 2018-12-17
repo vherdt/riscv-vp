@@ -67,7 +67,7 @@ struct SimpleMRAM : public sc_core::sc_module {
         auto *ptr = trans.get_data_ptr();
         auto len = trans.get_data_length();
 
-        assert ((addr >= 0) && (addr < mSize));
+        assert (addr < mSize);
 
         if(cmd == tlm::TLM_WRITE_COMMAND) {
             write_data(addr, ptr, len);

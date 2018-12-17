@@ -148,7 +148,7 @@ int32_t& RegFile::operator [](const uint32_t idx) {
 #elif defined(COLOR_THEME_DARK)
 	#define COLORFRMT "\e[38;5;%um%s\e[39m"
 #else
-	#define COLORFRMT "%s"
+	#define COLORFRMT "%s"	//TODO: This does not work that easy
 #endif
 
 

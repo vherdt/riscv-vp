@@ -47,7 +47,7 @@ struct SimpleMemory : public sc_core::sc_module {
         auto *ptr = trans.get_data_ptr();
         auto len = trans.get_data_length();
 
-        assert ((addr >= 0) && (addr < size));
+        assert (addr < size);
 
         if(cmd == tlm::TLM_WRITE_COMMAND) {
             write_data(addr, ptr, len);
@@ -61,6 +61,7 @@ struct SimpleMemory : public sc_core::sc_module {
     }
 
     bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi) {
+    	(void) trans;
         dmi.allow_read_write();
         dmi.set_start_address(0);
         dmi.set_end_address(size);

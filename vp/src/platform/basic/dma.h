@@ -138,6 +138,8 @@ struct SimpleDMA : public sc_core::sc_module {
         if ((cmd == tlm::TLM_WRITE_COMMAND) && (addr == OP_ADDR)) {
             run_event.notify(sc_core::sc_time(10, sc_core::SC_NS));
         }
+
+        (void) delay;	//zero delay
     }
 
     void do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {

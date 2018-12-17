@@ -167,10 +167,10 @@ struct Flashcontroller : public sc_core::sc_module {
         auto *ptr = trans.get_data_ptr();
         auto len = trans.get_data_length();
 
-        assert ((addr >= 0) && (addr < DATA_ADDR + BLOCKSIZE) && "Access flashcontroller out of bounds");
+        assert ((addr < DATA_ADDR + BLOCKSIZE) && "Access flashcontroller out of bounds");
         assert (mFiledescriptor >= 0);
 
-        if(addr >= FLASH_ADDR_REG && addr < FLASH_SIZE_REG)
+        if(/*addr >= FLASH_ADDR_REG &&*/ addr < FLASH_SIZE_REG)
         {	//Address register
         	if(cmd == tlm::TLM_WRITE_COMMAND)
         	{

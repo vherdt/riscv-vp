@@ -68,7 +68,6 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
     case ETH_P_IP:
     {
     	cout << "IP ";
-    	unsigned short iphdrlen;
     	struct in_addr source;
     	struct in_addr  dest;
     	struct iphdr *ip = (struct iphdr*)readbuf;
@@ -187,7 +186,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
     }
 printHex:
     ios_base::fmtflags f( cout.flags() );
-    for (int i=0; i<size; ++i) {
+    for (unsigned i = 0; i < size; ++i) {
         cout << hex << setw(2) << setfill('0') << (int)buf[i] << " ";
     }
     cout.flags( f );
@@ -279,7 +278,7 @@ void EthernetDevice::send_raw_frame() {
     assert (ans == send_size);
 }
 
-bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
+bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t )
 {
     ether_header *eh = reinterpret_cast<ether_header*>(packet);
     bool virtual_match = memcmp(eh->ether_dhost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0;
@@ -337,7 +336,6 @@ bool EthernetDevice::isPacketForUs(uint8_t* packet, ssize_t size)
 }
 
 bool EthernetDevice::try_recv_raw_frame() {
-    socklen_t addrlen;
     ssize_t ans;
 
 	ans = read(sockfd, recv_frame_buf, FRAME_SIZE);

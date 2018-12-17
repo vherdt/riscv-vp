@@ -50,7 +50,6 @@ bool GpioServer::setupConnection(const char* port)
 {
     struct addrinfo hints, *servinfo, *p;
     int yes=1;
-    char s[INET6_ADDRSTRLEN];
     int rv;
 
     memset(&hints, 0, sizeof hints);
