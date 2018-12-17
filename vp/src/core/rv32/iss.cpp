@@ -41,39 +41,76 @@ const char* regnames[] =
 };
 
 
-int regcolors_dark[] = {
-	0,
-	1,
-	2,
-	3,
-	4,
-	5,
-	6,
-	52,
-	8,
-	9,
-	53,
-	54,
-	55,
-	56,
-	57,
-	58,
-	16,
-	17,
-	18,
-	19,
-	20,
-	21,
-	22,
-	23,
-	24,
-	25,
-	26,
-	27,
-	28,
-	29,
-	30,
-	31,
+int regcolors[] = {
+#if defined(COLOR_THEME_LIGHT)
+		0,
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		52,
+		8,
+		9,
+		53,
+		54,
+		55,
+		56,
+		57,
+		58,
+		16,
+		17,
+		18,
+		19,
+		20,
+		21,
+		22,
+		23,
+		24,
+		25,
+		26,
+		27,
+		28,
+		29,
+		30,
+		31,
+#elif defined(COLOR_THEME_DARK)
+		100,
+		101,
+		102,
+		103,
+		104,
+		105,
+		106,
+		107,
+		108,
+		109,
+		153,
+		154,
+		155,
+		156,
+		157,
+		158,
+		116,
+		117,
+		118,
+		119,
+		120,
+		121,
+		122,
+		123,
+		124,
+		125,
+		126,
+		127,
+		128,
+		129,
+		130,
+		131,
+#else
+
+#endif
 };
 
 
@@ -105,9 +142,25 @@ int32_t& RegFile::operator [](const uint32_t idx) {
 	return regs[idx];
 }
 
+
+#if defined(COLOR_THEME_LIGHT)
+	#define COLORFRMT "\e[38;5;%um%s\e[39m"
+#elif defined(COLOR_THEME_DARK)
+	#define COLORFRMT "\e[38;5;%um%s\e[39m"
+#else
+	#define COLORFRMT "%s"
+#endif
+
+
+
 void RegFile::show() {
-	for (int i=0; i<NUM_REGS; ++i) {
-		printf("\e[38;5;%um%s\e[39m = %8x\n", regcolors_dark[i], regnames[i], regs[i]);
+	for (int i=0; i<NUM_REGS; ++i)
+	{
+#if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
+		printf(COLORFRMT " = %8x\n", regcolors[i], regnames[i], regs[i]);
+#else
+		printf(COLORFRMT " = %8x\n", regnames[i], regs[i]);
+#endif
 	}
 }
 
@@ -157,33 +210,34 @@ Opcode::Mapping ISS::exec_step() {
 		pc += 4;
 	}
 
+
 	if(debug)
 	{
 		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch(Opcode::getType(op))
 		{
 		case Opcode::Type::R:
-				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m",
-						regcolors_dark[instr.rd()], regnames[instr.rd()], regcolors_dark[instr.rs1()], regnames[instr.rs1()],
-						regcolors_dark[instr.rs2()], regnames[instr.rs2()]);
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT,
+						regcolors[instr.rd()], regnames[instr.rd()], regcolors[instr.rs1()], regnames[instr.rs1()],
+						regcolors[instr.rs2()], regnames[instr.rs2()]);
 				break;
 		case Opcode::Type::I:
-				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						regcolors_dark[instr.rd()], regnames[instr.rd()], regcolors_dark[instr.rs1()], regnames[instr.rs1()], instr.I_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x",
+						regcolors[instr.rd()], regnames[instr.rd()], regcolors[instr.rs1()], regnames[instr.rs1()], instr.I_imm());
 				break;
 		case Opcode::Type::S:
-				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						regcolors_dark[instr.rs1()], regnames[instr.rs1()], regcolors_dark[instr.rs2()], regnames[instr.rs2()], instr.S_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x",
+						regcolors[instr.rs1()], regnames[instr.rs1()], regcolors[instr.rs2()], regnames[instr.rs2()], instr.S_imm());
 				break;
 		case Opcode::Type::B:
-				printf("\e[38;5;%um%s\e[39m, \e[38;5;%um%s\e[39m, 0x%x",
-						regcolors_dark[instr.rs1()], regnames[instr.rs1()], regcolors_dark[instr.rs2()], regnames[instr.rs2()], instr.B_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x",
+						regcolors[instr.rs1()], regnames[instr.rs1()], regcolors[instr.rs2()], regnames[instr.rs2()], instr.B_imm());
 				break;
 		case Opcode::Type::U:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", regcolors_dark[instr.rd()], regnames[instr.rd()], instr.U_imm());
+				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.U_imm());
 				break;
 		case Opcode::Type::J:
-				printf("\e[38;5;%um%s\e[39m, 0x%x", regcolors_dark[instr.rd()], regnames[instr.rd()], instr.J_imm());
+				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.J_imm());
 				break;
 		default:
 			;

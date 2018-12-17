@@ -92,18 +92,6 @@ namespace Opcode {
 			F3_CSRRSI  = 0b110,
 			F3_CSRRCI  = 0b111,
 
-		OP_CUST1  = 0b0101011,
-			F3_C1F0   = 0b000,	//settaint.i
-			F3_C1F1   = 0b001,	//settaint.r
-			F3_C1F2   = 0b010,	//gettaint
-			/*...*/
-		OP_CUST0  = 0b0001011,
-			F3_C0F0   = 0b000,
-			F3_C0F1   = 0b001,
-			F3_C0F2   = 0b010,
-			F3_C0F3   = 0b011,
-			F3_C0F4   = 0b100,
-
 		OP_AMO    = 0b0101111,
 			F5_LR_W       = 0b00010,
 			F5_SC_W       = 0b00011,
@@ -116,10 +104,20 @@ namespace Opcode {
 			F5_AMOMAX_W   = 0b10100,
 			F5_AMOMINU_W  = 0b11000,
 			F5_AMOMAXU_W  = 0b11100,
+
+		// reserved opcodes for custom instructions
+		OP_CUST1  = 0b0101011,
+			/*
+			F3_C1F0   = 0b000,	//settaint.i
+			F3_C1F1   = 0b001,	//settaint.r
+			F3_C1F2   = 0b010,	//gettaint
+			...
+			*/
+		OP_CUST0  = 0b0001011,
     };
 
 	// each instruction is mapped by the decoder to the following mapping
-    enum Mapping : uint16_t{
+    enum Mapping {
         UNDEF = 0,
 
         // RV32I Base Instruction Set
@@ -204,7 +202,7 @@ namespace Opcode {
     };
 
 	// type denotes the instruction format
-    enum class Type : uint8_t
+    enum class Type
     {
     	UNKNOWN = 0,
     	R,
