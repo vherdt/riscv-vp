@@ -22,7 +22,8 @@ struct GpioCommon
 	enum Operation : uint8_t
 	{
 		GET_BANK = 1,
-		SET_BIT
+		SET_BIT,
+		SET_PWM
 	};
 
 	struct Request
@@ -35,6 +36,13 @@ struct GpioCommon
 				uint8_t pos : 6;
 				Tristate val : 2;
 			} setBit;
+			/*
+			struct
+			{
+				uint8_t pos;
+				uint8_t percent;
+			} setPWM;
+			*/
 		};
 	};
 
