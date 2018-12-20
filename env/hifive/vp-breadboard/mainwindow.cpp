@@ -73,6 +73,7 @@ void RGBLed::draw(QPainter& p)
 
 VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget *mparent)
     : QWidget(mparent),
+      host(host), port(port),
       sevensegment(QPoint(312, 353), QPoint(36, 50), 7),
       rgbLed(QPoint(89, 161), 15),
       button(QPoint(373, 343), QSize(55, 55))
@@ -85,15 +86,22 @@ VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget *mparent)
     palette.setBrush(QPalette::Background, bkgnd);
     this->setPalette(palette);
     setFixedSize(size());
-    while(!gpio.setupConnection(host, port))
-    {
-        cerr << "Could not setup Connection" << endl;
-        usleep(250000);
-    }
 }
 
 VPBreadboard::~VPBreadboard()
 {
+}
+
+void VPBreadboard::showConnectionErrorOverlay(QPainter& p)
+{
+	p.save();
+    p.setBrush(QBrush(QColor("black")));
+    p.drawRect(QRect(QPoint(150, 100), QSize(350, 200)));
+    p.setFont(QFont("Arial", 25, QFont::Bold));
+	QPen penHText(QColor("red"));
+	p.setPen(penHText);
+    p.drawText(QPoint(210, 210), QString("No connection"));
+    p.restore();
 }
 
 uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg)
@@ -170,11 +178,14 @@ void printBin(char* buf, uint8_t len)
 void VPBreadboard::paintEvent(QPaintEvent *){
     QPainter painter(this);
 
-    if(!gpio.update())
+    if(!inited || !gpio.update())
     {
-        cerr << "Could not update values" << endl;
-        //todo: Try to reconnect
-        QApplication::quit();
+    	inited  = gpio.setupConnection(host, port);
+        showConnectionErrorOverlay(painter);
+        if(!inited)
+        	usleep(500000);
+        this->update();
+        return;
     }
 
     painter.setRenderHint(QPainter::Antialiasing);
@@ -204,7 +215,6 @@ void VPBreadboard::notifyChange(bool success)
     assert(success);
     update();
 }
-
 
 void VPBreadboard::keyPressEvent(QKeyEvent *e)
 {

@@ -37,8 +37,11 @@ class VPBreadboard : public QWidget
     Sevensegment sevensegment;
     RGBLed rgbLed;
     QRect button;
+    const char* host;
+    const char* port;
 
     bool debugmode = false;
+    bool inited = false;
 
     uint64_t translateGpioToExtPin(GpioCommon::Reg reg);
     uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
@@ -49,6 +52,7 @@ class VPBreadboard : public QWidget
 public:
     VPBreadboard(const char* host, const char* port, QWidget *mparent = 0);
     ~VPBreadboard();
+    void showConnectionErrorOverlay(QPainter &p);
     void paintEvent(QPaintEvent *) override;
     void keyPressEvent(QKeyEvent *e) override;
     void mousePressEvent(QMouseEvent *e) override;
