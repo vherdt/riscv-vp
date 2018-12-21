@@ -5,14 +5,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
-#include <fcntl.h>
 
 #include <iostream>
 #include <stdexcept>
 
 #include <boost/lexical_cast.hpp>
-
-
 
 //see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
@@ -48,6 +45,18 @@ struct rv32g_stat
     rv32g_timespec st_ctim;
     int32_t __glibc_reserved[2];
 };
+
+int translateRVFlagsToHost(const int flags)
+{
+	int ret = 0;
+	ret |= flags & O_RDONLY ? rv_sc::RDONLY : 0;
+	ret |= flags & O_WRONLY ? rv_sc::WRONLY : 0;
+	ret |= flags & O_RDWR   ? rv_sc::RDWR   : 0;
+	ret |= flags & O_APPEND ? rv_sc::APPEND : 0;
+	ret |= flags & O_CREAT  ? rv_sc::CREAT  : 0;
+	ret |= flags & O_TRUNC  ? rv_sc::TRUNC  : 0;
+	return ret;
+}
 
 
 void _copy_timespec(rv32g_timespec *dst, timespec *src) {
@@ -144,7 +153,7 @@ int sys_lseek(int fd, off_t offset, int whence) {
 int sys_open(SyscallHandler *sys, const char *pathname, int flags, mode_t mode) {
     const char *host_pathname = (char *)sys->guest_to_host_pointer((void *)pathname);
 
-    auto ans = open(host_pathname, flags, mode);
+    auto ans = open(host_pathname, translateRVFlagsToHost(flags), mode);
 
     std::cout << "[sys_open] " << host_pathname << ", " << flags << ", " << mode << std::endl;
 

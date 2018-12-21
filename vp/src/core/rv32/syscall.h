@@ -1,8 +1,8 @@
-#ifndef RISCV_ISA_SYSCALL_H
-#define RISCV_ISA_SYSCALL_H
+#pragma once
 
 #include <stdint.h>
 #include <assert.h>
+#include <fcntl.h>
 
 //see: newlib/libgloss/riscv @ https://github.com/riscv/riscv-newlib/tree/riscv-newlib-2.5.0/libgloss/riscv
 
@@ -53,6 +53,17 @@
 #define SYS_host_test_pass 2    // RISC-V test execution successfully completed
 #define SYS_host_test_fail 3    // RISC-V test execution failed
 
+namespace rv_sc
+{	//from riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+	constexpr uint32_t RDONLY = 0x0000;		/* +1 == FREAD */
+	constexpr uint32_t WRONLY = 0x0001;		/* +1 == FWRITE */
+	constexpr uint32_t RDWR   = 0x0002;		/* +1 == FREAD|FWRITE */
+	constexpr uint32_t APPEND = 0x0008;
+	constexpr uint32_t CREAT  = 0x0200;
+	constexpr uint32_t TRUNC  = 0x0400;
+}
+
+int translateRVFlagsToHost(const int flags);
 
 
 struct SyscallHandler {
@@ -68,7 +79,6 @@ struct SyscallHandler {
     uint32_t get_max_heap_memory_consumption() {
         return max_heap - start_heap;
     }
-
 
     void init(uint8_t *host_memory_pointer, uint32_t mem_start_address, uint32_t heap_pointer_address) {
         mem = host_memory_pointer;
@@ -97,6 +107,3 @@ struct SyscallHandler {
      */
     int execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2, ulong _a3);
 };
-
-
-#endif //RISCV_ISA_SYSCALL_H
