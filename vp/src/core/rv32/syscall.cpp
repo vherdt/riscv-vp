@@ -46,15 +46,30 @@ struct rv32g_stat
     int32_t __glibc_reserved[2];
 };
 
+namespace rv_sc
+{	//from riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+	constexpr uint32_t RDONLY = 0x0000;		/* +1 == FREAD */
+	constexpr uint32_t WRONLY = 0x0001;		/* +1 == FWRITE */
+	constexpr uint32_t RDWR   = 0x0002;		/* +1 == FREAD|FWRITE */
+	constexpr uint32_t APPEND = 0x0008;
+	constexpr uint32_t CREAT  = 0x0200;
+	constexpr uint32_t TRUNC  = 0x0400;
+}
+
 int translateRVFlagsToHost(const int flags)
 {
 	int ret = 0;
-	ret |= flags & O_RDONLY ? rv_sc::RDONLY : 0;
-	ret |= flags & O_WRONLY ? rv_sc::WRONLY : 0;
-	ret |= flags & O_RDWR   ? rv_sc::RDWR   : 0;
-	ret |= flags & O_APPEND ? rv_sc::APPEND : 0;
-	ret |= flags & O_CREAT  ? rv_sc::CREAT  : 0;
-	ret |= flags & O_TRUNC  ? rv_sc::TRUNC  : 0;
+	ret |= flags & rv_sc::RDONLY ? O_RDONLY : 0;
+	ret |= flags & rv_sc::WRONLY ? O_WRONLY : 0;
+	ret |= flags & rv_sc::RDWR   ? O_RDWR   : 0;
+	ret |= flags & rv_sc::APPEND ? O_APPEND : 0;
+	ret |= flags & rv_sc::CREAT  ? O_CREAT  : 0;
+	ret |= flags & rv_sc::TRUNC  ? O_TRUNC  : 0;
+
+	if (ret == 0 && flags != 0) {
+		throw std::runtime_error("unsupported flag");
+	}
+
 	return ret;
 }
 
@@ -155,7 +170,7 @@ int sys_open(SyscallHandler *sys, const char *pathname, int flags, mode_t mode) 
 
     auto ans = open(host_pathname, translateRVFlagsToHost(flags), mode);
 
-    std::cout << "[sys_open] " << host_pathname << ", " << flags << ", " << mode << std::endl;
+    std::cout << "[sys_open] " << host_pathname << ", " << flags << " (translated to " << translateRVFlagsToHost(flags) << "), " << mode << std::endl;
 
     return ans;
 }
