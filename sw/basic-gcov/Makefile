@@ -2,7 +2,7 @@ all : main.c
 	riscv32-unknown-elf-gcc main.c --coverage -o main -march=rv32ima
 	
 main.gcda : all
-	../../vp/build/lib/riscv-vp main
+	riscv-vp main
 	
 # use -b option to display branch coverage too
 dump-coverage: main.gcda

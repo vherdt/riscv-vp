@@ -1,8 +1,8 @@
-#ifndef RISCV_ISA_SYSCALL_H
-#define RISCV_ISA_SYSCALL_H
+#pragma once
 
 #include <stdint.h>
 #include <assert.h>
+#include <fcntl.h>
 
 //see: newlib/libgloss/riscv @ https://github.com/riscv/riscv-newlib/tree/riscv-newlib-2.5.0/libgloss/riscv
 
@@ -53,8 +53,6 @@
 #define SYS_host_test_pass 2    // RISC-V test execution successfully completed
 #define SYS_host_test_fail 3    // RISC-V test execution failed
 
-
-
 struct SyscallHandler {
     uint8_t *mem = 0;       // direct pointer to start of guest memory in host memory
     uint32_t mem_offset;    // start address of the memory as mapped into the address space
@@ -68,7 +66,6 @@ struct SyscallHandler {
     uint32_t get_max_heap_memory_consumption() {
         return max_heap - start_heap;
     }
-
 
     void init(uint8_t *host_memory_pointer, uint32_t mem_start_address, uint32_t heap_pointer_address) {
         mem = host_memory_pointer;
@@ -97,6 +94,3 @@ struct SyscallHandler {
      */
     int execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2, ulong _a3);
 };
-
-
-#endif //RISCV_ISA_SYSCALL_H

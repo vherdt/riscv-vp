@@ -5,14 +5,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
-#include <fcntl.h>
 
 #include <iostream>
 #include <stdexcept>
 
 #include <boost/lexical_cast.hpp>
-
-
 
 //see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
@@ -48,6 +45,33 @@ struct rv32g_stat
     rv32g_timespec st_ctim;
     int32_t __glibc_reserved[2];
 };
+
+namespace rv_sc
+{	//from riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+	constexpr uint32_t RDONLY = 0x0000;		/* +1 == FREAD */
+	constexpr uint32_t WRONLY = 0x0001;		/* +1 == FWRITE */
+	constexpr uint32_t RDWR   = 0x0002;		/* +1 == FREAD|FWRITE */
+	constexpr uint32_t APPEND = 0x0008;
+	constexpr uint32_t CREAT  = 0x0200;
+	constexpr uint32_t TRUNC  = 0x0400;
+}
+
+int translateRVFlagsToHost(const int flags)
+{
+	int ret = 0;
+	ret |= flags & rv_sc::RDONLY ? O_RDONLY : 0;
+	ret |= flags & rv_sc::WRONLY ? O_WRONLY : 0;
+	ret |= flags & rv_sc::RDWR   ? O_RDWR   : 0;
+	ret |= flags & rv_sc::APPEND ? O_APPEND : 0;
+	ret |= flags & rv_sc::CREAT  ? O_CREAT  : 0;
+	ret |= flags & rv_sc::TRUNC  ? O_TRUNC  : 0;
+
+	if (ret == 0 && flags != 0) {
+		throw std::runtime_error("unsupported flag");
+	}
+
+	return ret;
+}
 
 
 void _copy_timespec(rv32g_timespec *dst, timespec *src) {
@@ -144,9 +168,9 @@ int sys_lseek(int fd, off_t offset, int whence) {
 int sys_open(SyscallHandler *sys, const char *pathname, int flags, mode_t mode) {
     const char *host_pathname = (char *)sys->guest_to_host_pointer((void *)pathname);
 
-    auto ans = open(host_pathname, flags, mode);
+    auto ans = open(host_pathname, translateRVFlagsToHost(flags), mode);
 
-    std::cout << "[sys_open] " << host_pathname << ", " << flags << ", " << mode << std::endl;
+    std::cout << "[sys_open] " << host_pathname << ", " << flags << " (translated to " << translateRVFlagsToHost(flags) << "), " << mode << std::endl;
 
     return ans;
 }
