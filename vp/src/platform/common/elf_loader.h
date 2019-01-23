@@ -116,18 +116,33 @@ struct ELFLoader {
 
 
     void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset, bool use_vaddr=true) {
-        for (auto p : get_load_sections()) {
+        for (auto section : get_load_sections()) {
 
             if (use_vaddr) {
-                assert ((p->p_vaddr >= offset) && (p->p_vaddr + p->p_memsz < offset + size));
+                assert ((section->p_vaddr >= offset) && (section->p_vaddr + section->p_memsz < offset + size));
 
                 //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
-                memcpy(dst + p->p_vaddr - offset, elf.data() + p->p_offset, p->p_filesz);
+                memcpy(dst + section->p_vaddr - offset, elf.data() + section->p_offset, section->p_filesz);
             } else {
-                assert ((p->p_paddr >= offset) && (p->p_paddr + p->p_memsz < offset + size));
+            	if(section->p_filesz == 0)
+            	{
+            		//skipping empty sections, we are 0 initialized
+            		continue;
+            	}
+            	if(section->p_paddr < offset)
+            	{
+	            	std::cerr << "Section physical address 0x" << std::hex << section->p_paddr << " not in local offset (0x" << std::hex << offset << ")!" << std::endl;
+	            	//raise(std::runtime_error("elf cant be loaded"));
+            	}
+            	if(section->p_paddr + section->p_memsz >= offset + size)
+            	{
+	            	std::cerr << "Section would overlap memory (0x" << std::hex << section->p_paddr << " + 0x" << std::hex << section->p_memsz << ") >= 0x" << std::hex << offset + size << std::endl;
+	            	//raise(std::runtime_error("elf cant be loaded"));
+            	}
+                assert ((section->p_paddr >= offset) && (section->p_paddr + section->p_memsz < offset + size));
 
                 //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
-                memcpy(dst + p->p_paddr - offset, elf.data() + p->p_offset, p->p_filesz);
+                memcpy(dst + section->p_paddr - offset, elf.data() + section->p_offset, section->p_filesz);
             }
         }
     }
