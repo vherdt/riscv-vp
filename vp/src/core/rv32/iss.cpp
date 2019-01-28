@@ -811,7 +811,7 @@ void ISS::switch_to_trap_handler() {
 void ISS::run_step() {
 	assert (regs.read(0) == 0);
 
-	//std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
+	std::cout << "pc: " << std::hex << pc << " sp: " << regs.read(regs.sp) << std::endl;
 	last_pc = pc;
 	Opcode::Mapping op = exec_step();
 

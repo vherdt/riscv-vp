@@ -373,7 +373,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
             send_packet(conn, "");  //NOTE: empty string means unsupported here, use OK to say it is supported
             break;
         } else {
-            std::cout << "unsupported message detected, terminating ..." << std::endl;
+            std::cout << "unsupported message '" << msg << "' detected, terminating ..." << std::endl;
             break;
         }
     }

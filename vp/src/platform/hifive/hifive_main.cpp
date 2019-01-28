@@ -12,6 +12,7 @@
 #include "prci.h"
 #include "spi.h"
 #include "uart.h"
+#include "gdb_stub.h"
 
 #include <iostream>
 #include <iomanip>
@@ -65,6 +66,7 @@ struct Options {
     addr_t dram_end_addr      = dram_start_addr + dram_size - 1;
 
 
+    bool use_debug_runner = false;
     bool use_instr_dmi = false;
     bool use_data_dmi = false;
 
@@ -91,6 +93,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
         desc.add_options()
                 ("help", "produce help message")
+                ("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
                 ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
                 ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
                 ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
@@ -199,7 +202,13 @@ int sc_main(int argc, char **argv) {
     gpio0.plic = &plic;
 
 
-    new DirectCoreRunner(core);
+    if (opt.use_debug_runner) {
+		core.debug = true;				//Debug switch for printing instructions
+        debug_memory_mapping dmm({dram.data, opt.dram_start_addr, dram.size});
+        new DebugCoreRunner(core, dmm);
+    } else {
+        new DirectCoreRunner(core);
+    }
 
     sc_core::sc_start();
 

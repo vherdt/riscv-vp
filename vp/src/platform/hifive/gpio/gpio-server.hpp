@@ -13,7 +13,7 @@
 class GpioServer: public GpioCommon
 {
 	int fd;
-	bool stop;
+	volatile bool stop;
 	std::function<void(uint8_t bit, Tristate val)> fun;
 	void handleConnection(int conn);
 public:

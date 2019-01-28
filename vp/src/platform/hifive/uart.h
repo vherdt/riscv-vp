@@ -115,6 +115,7 @@ struct UART : public sc_core::sc_module {
         if (r.write && r.vptr == &txdata)
         {
         	std::cout << static_cast<char>(txdata & 0xff);
+        	fflush(stdout);
         }
     }
 
