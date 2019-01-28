@@ -74,7 +74,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r)
 			//cout << "[GPIO] pullup changed" << endl;
 			//bitPrint(reinterpret_cast<unsigned char*>(&pullup_en), sizeof(uint32_t));
 			value |= reg_bak ^ pullup_en;
-			server.state |= reg_bak ^ pullup_en;
+            server.state |= reg_bak ^ pullup_en;
 		}
 		else if(r.vptr == &fall_intr_en)
 		{

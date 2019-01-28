@@ -176,8 +176,8 @@ int sc_main(int argc, char **argv) {
     bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
     bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
     bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-    bus.ports[8] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
-    bus.ports[9] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
+    bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
+    bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
 
     loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
     core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(), opt.dram_end_addr-4); // -4 to not overlap with the next region
@@ -193,8 +193,8 @@ int sc_main(int argc, char **argv) {
     bus.isocks[5].bind(prci.tsock);
     bus.isocks[6].bind(spi0.tsock);
     bus.isocks[7].bind(uart0.tsock);
-    bus.isocks[8].bind(gpio0.tsock);
-    bus.isocks[9].bind(maskROM.tsock);
+    bus.isocks[8].bind(maskROM.tsock);
+    bus.isocks[9].bind(gpio0.tsock);
 
     // connect interrupt signals/communication
     plic.target_hart = &core;

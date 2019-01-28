@@ -124,18 +124,15 @@ struct ELFLoader {
                 //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
                 memcpy(dst + section->p_vaddr - offset, elf.data() + section->p_offset, section->p_filesz);
             } else {
-            	if(section->p_filesz == 0)
-            	{
+            	if(section->p_filesz == 0) {
             		//skipping empty sections, we are 0 initialized
             		continue;
             	}
-            	if(section->p_paddr < offset)
-            	{
+            	if(section->p_paddr < offset) {
 	            	std::cerr << "Section physical address 0x" << std::hex << section->p_paddr << " not in local offset (0x" << std::hex << offset << ")!" << std::endl;
 	            	//raise(std::runtime_error("elf cant be loaded"));
             	}
-            	if(section->p_paddr + section->p_memsz >= offset + size)
-            	{
+            	if(section->p_paddr + section->p_memsz >= offset + size) {
 	            	std::cerr << "Section would overlap memory (0x" << std::hex << section->p_paddr << " + 0x" << std::hex << section->p_memsz << ") >= 0x" << std::hex << offset + size << std::endl;
 	            	//raise(std::runtime_error("elf cant be loaded"));
             	}
