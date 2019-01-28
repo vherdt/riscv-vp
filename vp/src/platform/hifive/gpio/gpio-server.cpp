@@ -40,7 +40,7 @@ GpioServer::~GpioServer()
 {
 	if(fd >= 0)
 	{
-		cout << "closing server socket " << fd << endl;
+		cout << "closing gpio-server socket " << fd << endl;
 		close(fd);
 		fd = -1;
 	}
@@ -66,7 +66,7 @@ bool GpioServer::setupConnection(const char* port)
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((fd = socket(p->ai_family, p->ai_socktype,
                 p->ai_protocol)) == -1) {
-            perror("server: socket");
+            perror("gpio-server: socket");
             continue;
         }
 
@@ -78,7 +78,7 @@ bool GpioServer::setupConnection(const char* port)
 
         if (bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
             close(fd);
-            perror("server: bind");
+            perror("gpio-server: bind");
             continue;
         }
 
@@ -88,7 +88,7 @@ bool GpioServer::setupConnection(const char* port)
     freeaddrinfo(servinfo); // all done with this structure
 
     if (p == NULL)  {
-        fprintf(stderr, "server: failed to bind\n");
+        fprintf(stderr, "gpio-server: failed to bind\n");
         return false;
     }
 
@@ -119,7 +119,7 @@ void GpioServer::startListening()
         stop = true;
         return;
     }
-    printf("server: waiting for connections (%d)\n", fd);
+    //printf("gpio-server: accepting connections (%d)\n", fd);
 
 	struct sockaddr_storage their_addr; // connector's address information
 	socklen_t sin_size = sizeof their_addr;
@@ -128,7 +128,8 @@ void GpioServer::startListening()
 	while(!stop)	//this would block a bit
 	{
 		int new_fd = accept(fd, (struct sockaddr *)&their_addr, &sin_size);
-		if (new_fd == -1) {
+		if (new_fd < 0) {
+			cerr << "gpio-server accept return " << new_fd << endl;
 			perror("accept");
 			stop = true;
 			return;
@@ -137,7 +138,7 @@ void GpioServer::startListening()
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("server: got connection from %s\n", s);
+		printf("gpio-server: got connection from %s\n", s);
 		handleConnection(new_fd);
 	}
 }
@@ -195,6 +196,6 @@ void GpioServer::handleConnection(int conn)
 			return;
 		}
 	}
-	cout << "client disconnected. (" << bytes << ")" << endl;
+	cout << "gpio-client disconnected. (" << bytes << ")" << endl;
 	close(conn);
 }
