@@ -251,5 +251,6 @@ int SyscallHandler::execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2, ul
             return 0;
     }
 
+    std::cerr << "unsupported syscall '" << n << "'" << std::endl;
     throw std::runtime_error("unsupported syscall '" + std::to_string(n) + "'");
 }
