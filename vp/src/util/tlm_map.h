@@ -197,7 +197,7 @@ namespace vp { namespace map {
                     //*new_vptr = r.bus_read();
                 } else if (cmd == tlm::TLM_WRITE_COMMAND) {
                     uint32_t n = r.value();
-                    memcpy(&n+off, trans.get_data_ptr(), trans.get_data_length());
+                    memcpy(((uint8_t*)&n)+off, trans.get_data_ptr(), trans.get_data_length());
                     r.bus_write(n);
                     //r.bus_write(*new_vptr);
                 } else {
