@@ -11,17 +11,17 @@
 #include "gpiocommon.hpp"
 
 class GpioServer : public GpioCommon {
-  int fd;
-  volatile bool stop;
-  std::function<void(uint8_t bit, Tristate val)> fun;
-  void handleConnection(int conn);
+	int fd;
+	volatile bool stop;
+	std::function<void(uint8_t bit, Tristate val)> fun;
+	void handleConnection(int conn);
 
- public:
-  GpioServer();
-  ~GpioServer();
-  bool setupConnection(const char* port);
-  void quit();
-  bool isStopped();
-  void registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun);
-  void startListening();
+   public:
+	GpioServer();
+	~GpioServer();
+	bool setupConnection(const char* port);
+	void quit();
+	bool isStopped();
+	void registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun);
+	void startListening();
 };

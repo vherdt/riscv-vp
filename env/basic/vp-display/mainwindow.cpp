@@ -5,40 +5,44 @@
 #include "ui_mainwindow.h"
 
 VPDisplay::VPDisplay(QWidget* mparent) : QWidget(mparent) {
-  framebuffer = server.createSM();
-  frame = new QImage(screenWidth, screenHeight, QImage::Format_RGB444);  // two bytes per pixel
-  resize(800, 600);
-  setFixedSize(size());
-  server.startListening(std::bind(&VPDisplay::notifyChange, this, std::placeholders::_1));
+	framebuffer = server.createSM();
+	frame = new QImage(screenWidth, screenHeight,
+	                   QImage::Format_RGB444);  // two bytes per pixel
+	resize(800, 600);
+	setFixedSize(size());
+	server.startListening(
+	    std::bind(&VPDisplay::notifyChange, this, std::placeholders::_1));
 }
 
 VPDisplay::~VPDisplay() { delete frame; }
 
 void VPDisplay::drawMainPage(QImage* mem) {
-  Frame activeFrame = framebuffer->getActiveFrame();
-  Frame background = framebuffer->getBackground();
-  for (int row = 0; row < mem->height(); row++) {
-    uint16_t* line = reinterpret_cast<uint16_t*>(mem->scanLine(row));  // Two bytes per pixel
-    for (int x = 0; x < mem->width(); x++) {
-      line[x] = activeFrame.raw[row][x] == 0 ? background.raw[row][x] : activeFrame.raw[row][x];
-    }
-  }
+	Frame activeFrame = framebuffer->getActiveFrame();
+	Frame background = framebuffer->getBackground();
+	for (int row = 0; row < mem->height(); row++) {
+		uint16_t* line = reinterpret_cast<uint16_t*>(
+		    mem->scanLine(row));  // Two bytes per pixel
+		for (int x = 0; x < mem->width(); x++) {
+			line[x] = activeFrame.raw[row][x] == 0 ? background.raw[row][x]
+			                                       : activeFrame.raw[row][x];
+		}
+	}
 }
 
 void VPDisplay::paintEvent(QPaintEvent*) {
-  QPainter painter(this);
+	QPainter painter(this);
 
-  // painter.scale(size_factor, size_factor);
+	// painter.scale(size_factor, size_factor);
 
-  // Draw Header
-  // QPainter mempaint(&memory);
+	// Draw Header
+	// QPainter mempaint(&memory);
 
-  drawMainPage(frame);
-  painter.drawImage(QPoint(0, 0), *frame);
-  painter.end();
+	drawMainPage(frame);
+	painter.drawImage(QPoint(0, 0), *frame);
+	painter.end();
 }
 
 void VPDisplay::notifyChange(bool success) {
-  assert(success);
-  update();
+	assert(success);
+	update();
 }

@@ -10,64 +10,66 @@ static constexpr uint16_t screenHeight = 600;
 typedef uint16_t Color;
 
 struct Point {
-  uint32_t x;
-  uint32_t y;
-  inline Point() : x(0), y(0){};
-  inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
+	uint32_t x;
+	uint32_t y;
+	inline Point() : x(0), y(0){};
+	inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
 };
 
 struct PointF {
-  float x;
-  float y;
-  inline PointF() : x(0), y(0){};
-  inline PointF(float x, float y) : x(x), y(y){};
-  inline PointF(Point p) : x(p.x), y(p.y){};
+	float x;
+	float y;
+	inline PointF() : x(0), y(0){};
+	inline PointF(float x, float y) : x(x), y(y){};
+	inline PointF(Point p) : x(p.x), y(p.y){};
 };
 
-inline PointF operator+(const PointF l, PointF const r) { return PointF(l.x + r.x, l.y + r.y); }
+inline PointF operator+(const PointF l, PointF const r) {
+	return PointF(l.x + r.x, l.y + r.y);
+}
 
 struct Frame {
-  Color raw[screenHeight][screenWidth];  // Notice: Screen is on side
+	Color raw[screenHeight][screenWidth];  // Notice: Screen is on side
 };
 
 struct Framebuffer {
-  enum class Type : uint8_t { foreground, background };
-  uint8_t activeFrame;
-  enum class Command : uint8_t {
-    none = 0,
-    clearAll,
-    fillFrame,
-    applyFrame,
-    drawLine,
-  } volatile command;
-  union Parameter {
-    struct {
-      Type frame;
-      Color color;
-    } fill;
-    struct {
-      Type frame;
-      PointF from;
-      PointF to;
-      Color color;
-    } line;
-    inline Parameter(){};
-  } parameter;
-  Frame frames[2];
-  Frame background;
+	enum class Type : uint8_t { foreground, background };
+	uint8_t activeFrame;
+	enum class Command : uint8_t {
+		none = 0,
+		clearAll,
+		fillFrame,
+		applyFrame,
+		drawLine,
+	} volatile command;
+	union Parameter {
+		struct {
+			Type frame;
+			Color color;
+		} fill;
+		struct {
+			Type frame;
+			PointF from;
+			PointF to;
+			Color color;
+		} line;
+		inline Parameter(){};
+	} parameter;
+	Frame frames[2];
+	Frame background;
 
-  Framebuffer() : activeFrame(0), command(Command::none){};
+	Framebuffer() : activeFrame(0), command(Command::none){};
 
-  Frame& getActiveFrame() { return frames[activeFrame % 2]; }
-  Frame& getInactiveFrame() { return frames[(activeFrame + 1) % 2]; }
-  Frame& getBackground() { return background; }
-  Frame& getFrame(Type type) {
-    if (type == Type::foreground)
-      return getInactiveFrame();
-    else if (type == Type::background)
-      return getBackground();
+	Frame& getActiveFrame() { return frames[activeFrame % 2]; }
+	Frame& getInactiveFrame() { return frames[(activeFrame + 1) % 2]; }
+	Frame& getBackground() { return background; }
+	Frame& getFrame(Type type) {
+		if (type == Type::foreground)
+			return getInactiveFrame();
+		else if (type == Type::background)
+			return getBackground();
 
-    assert(false && "Get invalid frame type");
-    return background;
-  }
+		assert(false && "Get invalid frame type");
+		return background;
+	}
 };
