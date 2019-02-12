@@ -73,8 +73,7 @@ struct Options {
 		std::cout << "options {" << std::endl;
 		std::cout << "  use instr dmi = " << use_instr_dmi << std::endl;
 		std::cout << "  use data dmi = " << use_data_dmi << std::endl;
-		std::cout << "  tlm global quantum = " << tlm_global_quantum
-		          << std::endl;
+		std::cout << "  tlm global quantum = " << tlm_global_quantum << std::endl;
 		std::cout << "}" << std::endl;
 	}
 };
@@ -89,30 +88,19 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")(
-		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
-		    "start execution in debugger (using gdb rsp interface)")(
-		    "tlm-global-quantum",
-		    po::value<unsigned int>(&opt.tlm_global_quantum),
-		    "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi),
-		    "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi),
-		    "use dmi to execute load/store operations")(
+		desc.add_options()("help", "produce help message")("debug-mode", po::bool_switch(&opt.use_debug_runner),
+		                                                   "start execution in debugger (using gdb rsp interface)")(
+		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
+		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
+		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
 		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file",
-		    po::value<std::string>(&opt.input_program)->required(),
-		    "input file to use for execution");
+		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
 
 		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv)
-		              .options(desc)
-		              .positional(pos)
-		              .run(),
-		          vm);
+		po::store(po::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
 
 		if (vm.count("help")) {
 			std::cout << desc << std::endl;
@@ -128,8 +116,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		return opt.check_and_post_process();
 	} catch (boost::program_options::error &e) {
-		std::cerr << "Error parsing command line options: " << e.what()
-		          << std::endl;
+		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
 		exit(-1);
 	}
 }
@@ -137,11 +124,9 @@ Options parse_command_line_arguments(int argc, char **argv) {
 int sc_main(int argc, char **argv) {
 	Options opt = parse_command_line_arguments(argc, argv);
 
-	std::srand(
-	    std::time(nullptr));  // use current time as seed for random generator
+	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
-	tlm::tlm_global_quantum::instance().set(
-	    sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
+	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	ISS core;
 	SimpleMemory dram("DRAM", opt.dram_size);
@@ -160,10 +145,8 @@ int sc_main(int argc, char **argv) {
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
 
-	direct_memory_interface dram_dmi(
-	    {dram.data, opt.dram_start_addr, dram.size});
-	direct_memory_interface flash_dmi(
-	    {flash.data, opt.flash_start_addr, flash.size});
+	direct_memory_interface dram_dmi({dram.data, opt.dram_start_addr, dram.size});
+	direct_memory_interface flash_dmi({flash.data, opt.flash_start_addr, flash.size});
 	InstrMemoryProxy instr_mem(flash_dmi, core.quantum_keeper);
 	DataMemoryProxy data_mem(dram_dmi, &iss_mem_if, core.quantum_keeper);
 
@@ -180,12 +163,10 @@ int sc_main(int argc, char **argv) {
 	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
 	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
 	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-	bus.ports[8] =
-	    new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
+	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
 	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
 
-	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr,
-	                             false);
+	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
 	core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(),
 	          opt.dram_end_addr - 4);  // -4 to not overlap with the next region
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());

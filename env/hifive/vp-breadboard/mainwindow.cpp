@@ -11,8 +11,7 @@ using namespace std;
 
 void Sevensegment::draw(QPainter& p) {
 	p.save();
-	QPen segment(QColor("#f72727"), linewidth, Qt::PenStyle::SolidLine,
-	             Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
+	QPen segment(QColor("#f72727"), linewidth, Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
 	p.setPen(segment);
 
 	//  0
@@ -36,26 +35,19 @@ void Sevensegment::draw(QPainter& p) {
 	int xrow3 = 0;
 
 	if (map & 0b00000001)  // 0
-		p.drawLine(offs + QPoint(xcol1 + xrow1, yrow1),
-		           offs + QPoint(xcol2 + xrow1, yrow1));
+		p.drawLine(offs + QPoint(xcol1 + xrow1, yrow1), offs + QPoint(xcol2 + xrow1, yrow1));
 	if (map & 0b00000010)  // 1
-		p.drawLine(offs + QPoint(xcol2 + xrow1, yrow1),
-		           offs + QPoint(xcol2 + xrow2, yrow2));
+		p.drawLine(offs + QPoint(xcol2 + xrow1, yrow1), offs + QPoint(xcol2 + xrow2, yrow2));
 	if (map & 0b00000100)  // 2
-		p.drawLine(offs + QPoint(xcol2 + xrow2, yrow2),
-		           offs + QPoint(xcol2 + xrow3, yrow3));
+		p.drawLine(offs + QPoint(xcol2 + xrow2, yrow2), offs + QPoint(xcol2 + xrow3, yrow3));
 	if (map & 0b00001000)  // 3
-		p.drawLine(offs + QPoint(xcol2 + xrow3, yrow3),
-		           offs + QPoint(xcol1 + xrow3, yrow3));
+		p.drawLine(offs + QPoint(xcol2 + xrow3, yrow3), offs + QPoint(xcol1 + xrow3, yrow3));
 	if (map & 0b00010000)  // 4
-		p.drawLine(offs + QPoint(xcol1 + xrow3, yrow3),
-		           offs + QPoint(xcol1 + xrow2, yrow2));
+		p.drawLine(offs + QPoint(xcol1 + xrow3, yrow3), offs + QPoint(xcol1 + xrow2, yrow2));
 	if (map & 0b00100000)  // 5
-		p.drawLine(offs + QPoint(xcol1 + xrow2, yrow2),
-		           offs + QPoint(xcol1 + xrow1, yrow1));
+		p.drawLine(offs + QPoint(xcol1 + xrow2, yrow2), offs + QPoint(xcol1 + xrow1, yrow1));
 	if (map & 0b01000000)  // 6
-		p.drawLine(offs + QPoint(xcol1 + xrow2, yrow2),
-		           offs + QPoint(xcol2 + xrow2, yrow2));
+		p.drawLine(offs + QPoint(xcol1 + xrow2, yrow2), offs + QPoint(xcol2 + xrow2, yrow2));
 	if (map & 0b10000000)  // 7
 		p.drawPoint(offs + extent);
 
@@ -67,10 +59,8 @@ void RGBLed::draw(QPainter& p) {
 		return;
 	}
 	p.save();
-	QPen led(QColor(map & 1 ? 255 : 0, map & (1 << 1) ? 255 : 0,
-	                map & (1 << 2) ? 255 : 0, 0xC0),
-	         linewidth, Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap,
-	         Qt::RoundJoin);
+	QPen led(QColor(map & 1 ? 255 : 0, map & (1 << 1) ? 255 : 0, map & (1 << 2) ? 255 : 0, 0xC0), linewidth,
+	         Qt::PenStyle::SolidLine, Qt::PenCapStyle::RoundCap, Qt::RoundJoin);
 	p.setPen(led);
 
 	p.drawPoint(offs);
@@ -129,9 +119,7 @@ uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg) {
 	return ext;
 }
 
-uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
-	return (pinmap >> 2);
-}
+uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) { return (pinmap >> 2); }
 
 uint8_t VPBreadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
 	uint8_t ret = 0;
@@ -177,8 +165,7 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setRenderHint(QPainter::HighQualityAntialiasing);
 
-	sevensegment.map =
-	    translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
+	sevensegment.map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
 	sevensegment.draw(painter);
 
 	rgbLed.map = translatePinNumberToRGBLed(translateGpioToExtPin(gpio.state));
@@ -187,9 +174,7 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	if (debugmode) {
 		// painter.setBrush(QBrush(QColor("black")));
 		painter.drawRect(button);
-		painter.drawRect(
-		    QRect(sevensegment.offs,
-		          QSize(sevensegment.extent.x(), sevensegment.extent.y())));
+		painter.drawRect(QRect(sevensegment.offs, QSize(sevensegment.extent.x(), sevensegment.extent.y())));
 	}
 	painter.end();
 	// intentional slow down
@@ -226,44 +211,36 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 		}
 		case Qt::Key_I:
 			rgbLed.offs = rgbLed.offs - QPoint(0, 1);
-			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y()
-			     << endl;
+			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
 			break;
 		case Qt::Key_J:
 			rgbLed.offs = rgbLed.offs - QPoint(1, 0);
-			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y()
-			     << endl;
+			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
 			break;
 		case Qt::Key_K:
 			rgbLed.offs = rgbLed.offs + QPoint(0, 1);
-			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y()
-			     << endl;
+			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
 			break;
 		case Qt::Key_L:
 			rgbLed.offs = rgbLed.offs + QPoint(1, 0);
-			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y()
-			     << endl;
+			cout << "E X: " << rgbLed.offs.x() << " Y: " << rgbLed.offs.y() << endl;
 			break;
 
 		case Qt::Key_W:
 			button.moveTopLeft(button.topLeft() - QPoint(0, 1));
-			cout << "E X: " << button.topLeft().x()
-			     << " Y: " << button.topLeft().y() << endl;
+			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
 			break;
 		case Qt::Key_A:
 			button.moveTopLeft(button.topLeft() - QPoint(1, 0));
-			cout << "E X: " << button.topLeft().x()
-			     << " Y: " << button.topLeft().y() << endl;
+			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
 			break;
 		case Qt::Key_S:
 			button.moveTopLeft(button.topLeft() + QPoint(0, 1));
-			cout << "E X: " << button.topLeft().x()
-			     << " Y: " << button.topLeft().y() << endl;
+			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
 			break;
 		case Qt::Key_D:
 			button.moveTopLeft(button.topLeft() + QPoint(1, 0));
-			cout << "BR X: " << button.topLeft().x()
-			     << " Y: " << button.topLeft().y() << endl;
+			cout << "BR X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
 			break;
 		case Qt::Key_Up:
 			button.setHeight(button.height() - 1);

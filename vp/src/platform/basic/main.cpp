@@ -27,12 +27,10 @@ struct Options {
 
 	Options &check_and_post_process() {
 		mem_end_addr = mem_start_addr + mem_size - 1;
-		assert((mem_end_addr < clint_start_addr ||
-		        mem_start_addr > display_end_addr) &&
+		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
 		       "RAM too big, would overlap memory");
 		mram_end_addr = mram_start_addr + mram_size - 1;
-		assert(mram_end_addr < dma_start_addr &&
-		       "MRAM too big, would overlap memory");
+		assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
 		return *this;
 	}
 
@@ -42,10 +40,8 @@ struct Options {
 	std::string network_device;
 	std::string test_signature;
 
-	addr_t mem_size =
-	    1024 * 1024 *
-	    32;  // 32 MB ram, to place it before the CLINT and run the base
-	         // examples (assume memory start at zero) without modifications
+	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base
+	                                     // examples (assume memory start at zero) without modifications
 	addr_t mem_start_addr = 0x00000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
@@ -66,8 +62,7 @@ struct Options {
 	addr_t dma_start_addr = 0x70000000;
 	addr_t dma_end_addr = 0x70001000;
 	addr_t flash_start_addr = 0x71000000;
-	addr_t flash_end_addr =
-	    flash_start_addr + Flashcontroller::ADDR_SPACE;  // Usually 528 Byte
+	addr_t flash_end_addr = flash_start_addr + Flashcontroller::ADDR_SPACE;  // Usually 528 Byte
 	addr_t display_start_addr = 0x72000000;
 	addr_t display_end_addr = display_start_addr + Display::addressRange;
 
@@ -81,8 +76,7 @@ struct Options {
 		std::cout << "options {" << std::endl;
 		std::cout << "  use instr dmi = " << use_instr_dmi << std::endl;
 		std::cout << "  use data dmi = " << use_data_dmi << std::endl;
-		std::cout << "  tlm global quantum = " << tlm_global_quantum
-		          << std::endl;
+		std::cout << "  tlm global quantum = " << tlm_global_quantum << std::endl;
 		std::cout << "}" << std::endl;
 	}
 };
@@ -97,46 +91,30 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")(
-		    "memory-start", po::value<unsigned int>(&opt.mem_start_addr),
-		    "set memory start address")(
+		desc.add_options()("help", "produce help message")("memory-start", po::value<unsigned int>(&opt.mem_start_addr),
+		                                                   "set memory start address")(
 		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
 		    "start execution in debugger (using gdb rsp interface)")(
-		    "tlm-global-quantum",
-		    po::value<unsigned int>(&opt.tlm_global_quantum),
-		    "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi),
-		    "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi),
-		    "use dmi to execute load/store operations")(
+		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
+		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
+		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
 		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file",
-		    po::value<std::string>(&opt.input_program)->required(),
-		    "input file to use for execution")(
-		    "mram-image",
-		    po::value<std::string>(&opt.mram_image)->default_value(""),
-		    "MRAM image file for persistency")(
-		    "mram-image-size", po::value<unsigned int>(&opt.mram_size),
-		    "MRAM image size")(
-		    "flash-device",
-		    po::value<std::string>(&opt.flash_device)->default_value(""),
-		    "blockdevice for flash emulation")(
-		    "network-device",
-		    po::value<std::string>(&opt.network_device)->default_value(""),
-		    "name of the tap network adapter, e.g. /dev/tap6")(
-		    "signature",
-		    po::value<std::string>(&opt.test_signature)->default_value(""),
+		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
+		    "mram-image", po::value<std::string>(&opt.mram_image)->default_value(""),
+		    "MRAM image file for persistency")("mram-image-size", po::value<unsigned int>(&opt.mram_size),
+		                                       "MRAM image size")(
+		    "flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),
+		    "blockdevice for flash emulation")("network-device",
+		                                       po::value<std::string>(&opt.network_device)->default_value(""),
+		                                       "name of the tap network adapter, e.g. /dev/tap6")(
+		    "signature", po::value<std::string>(&opt.test_signature)->default_value(""),
 		    "output filename for the test execution signature");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
 
 		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv)
-		              .options(desc)
-		              .positional(pos)
-		              .run(),
-		          vm);
+		po::store(po::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
 
 		if (vm.count("help")) {
 			std::cout << desc << std::endl;
@@ -152,8 +130,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		return opt.check_and_post_process();
 	} catch (boost::program_options::error &e) {
-		std::cerr << "Error parsing command line options: " << e.what()
-		          << std::endl;
+		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
 		exit(-1);
 	}
 }
@@ -161,11 +138,9 @@ Options parse_command_line_arguments(int argc, char **argv) {
 int sc_main(int argc, char **argv) {
 	Options opt = parse_command_line_arguments(argc, argv);
 
-	std::srand(
-	    std::time(nullptr));  // use current time as seed for random generator
+	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
-	tlm::tlm_global_quantum::instance().set(
-	    sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
+	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	ISS core;
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
@@ -200,14 +175,11 @@ int sc_main(int argc, char **argv) {
 	bus.ports[3] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr);
 	bus.ports[4] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
-	bus.ports[6] =
-	    new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
+	bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
 	bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
 	bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-	bus.ports[9] =
-	    new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
-	bus.ports[10] =
-	    new PortMapping(opt.display_start_addr, opt.display_end_addr);
+	bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
+	bus.ports[10] = new PortMapping(opt.display_start_addr, opt.display_end_addr);
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
 	core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(),
@@ -259,8 +231,7 @@ int sc_main(int argc, char **argv) {
 			std::cout << std::hex;
 			std::cout << "begin_signature: " << begin_sig << std::endl;
 			std::cout << "end_signature: " << end_sig << std::endl;
-			std::cout << "signature output file: " << opt.test_signature
-			          << std::endl;
+			std::cout << "signature output file: " << opt.test_signature << std::endl;
 		}
 
 		assert(end_sig >= begin_sig);
@@ -273,8 +244,7 @@ int sc_main(int argc, char **argv) {
 
 		auto n = begin;
 		while (n < end) {
-			sigfile << std::hex << std::setw(2) << std::setfill('0')
-			        << (unsigned)mem.data[n];
+			sigfile << std::hex << std::setw(2) << std::setfill('0') << (unsigned)mem.data[n];
 			++n;
 		}
 	}

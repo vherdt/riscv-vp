@@ -30,6 +30,5 @@ void fillRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color);
 
 void applyFrame();
 
-void fillFrame(Framebuffer::Type frame = Framebuffer::Type::foreground,
-               Color color = 0);
+void fillFrame(Framebuffer::Type frame = Framebuffer::Type::foreground, Color color = 0);
 };  // namespace display

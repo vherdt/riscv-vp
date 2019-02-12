@@ -36,9 +36,8 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	// sw a0, mtimecmp    # New value.
 	//
 
-	static constexpr uint64_t scaler =
-	    2000000;  // scale from PS resolution (default in SystemC) to US
-	              // resolution (apparently required by FreeRTOS)
+	static constexpr uint64_t scaler = 2000000;  // scale from PS resolution (default in SystemC) to US
+	                                             // resolution (apparently required by FreeRTOS)
 
 	tlm_utils::simple_target_socket<CLINT> tsock;
 
@@ -115,8 +114,7 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 
 			*((uint32_t *)trans.get_data_ptr()) = *it->second;
 		} else if (trans.get_command() == tlm::TLM_WRITE_COMMAND) {
-			assert(trans.get_address() != 0xbff8 &&
-			       trans.get_address() != 0xbffc);  // mtime is readonly
+			assert(trans.get_address() != 0xbff8 && trans.get_address() != 0xbffc);  // mtime is readonly
 
 			*it->second = *((uint32_t *)trans.get_data_ptr());
 

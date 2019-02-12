@@ -32,8 +32,7 @@ struct SimpleSensor : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(SimpleSensor);
 
-	SimpleSensor(sc_core::sc_module_name, uint32_t irq_number)
-	    : irq_number(irq_number) {
+	SimpleSensor(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
 		tsock.register_b_transport(this, &SimpleSensor::transport);
 		SC_THREAD(run);
 

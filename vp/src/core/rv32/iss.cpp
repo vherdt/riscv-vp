@@ -4,13 +4,10 @@
 #include <boost/io/ios_state.hpp>
 
 const char *regnames[] = {
-    "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)",
-    "t0   (x5)", "t1   (x6)", "t2   (x7)", "s0/sp(x8)", "s1   (x9)",
-    "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)",
-    "a5  (x15)", "a6  (x16)", "a7  (x17)", "s2  (x18)", "s3  (x19)",
-    "s4  (x20)", "s5  (x21)", "s6  (x22)", "s7  (x23)", "s8  (x24)",
-    "s9  (x25)", "s10 (x26)", "s11 (x27)", "t3  (x28)", "t4  (x29)",
-    "t5  (x30)", "t6  (x31)",
+    "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
+    "s0/sp(x8)", "s1   (x9)", "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)", "a5  (x15)",
+    "a6  (x16)", "a7  (x17)", "s2  (x18)", "s3  (x19)", "s4  (x20)", "s5  (x21)", "s6  (x22)", "s7  (x23)",
+    "s8  (x24)", "s9  (x25)", "s10 (x26)", "s11 (x27)", "t3  (x28)", "t4  (x29)", "t5  (x30)", "t6  (x31)",
 };
 
 int regcolors[] = {
@@ -18,9 +15,8 @@ int regcolors[] = {
     0,  1,  2,  3,  4,  5,  6,  52, 8,  9,  53, 54, 55, 56, 57, 58,
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
 #elif defined(COLOR_THEME_DARK)
-    100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 153,
-    154, 155, 156, 157, 158, 116, 117, 118, 119, 120, 121,
-    122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
+    100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 153, 154, 155, 156, 157, 158,
+    116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
 #else
 
 #endif
@@ -28,9 +24,7 @@ int regcolors[] = {
 
 RegFile::RegFile() { memset(regs, 0, sizeof(regs)); }
 
-RegFile::RegFile(const RegFile &other) {
-	memcpy(regs, other.regs, sizeof(regs));
-}
+RegFile::RegFile(const RegFile &other) { memcpy(regs, other.regs, sizeof(regs)); }
 
 void RegFile::write(uint32_t index, int32_t value) {
 	assert(index <= x31);
@@ -75,8 +69,7 @@ ISS::ISS() : sc_module(sc_core::sc_module_name("ISS")) {
 	assert(qt >= cycle_time);
 	assert(qt % cycle_time == sc_core::SC_ZERO_TIME);
 
-	for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i)
-		instr_cycles[i] = cycle_time;
+	for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i) instr_cycles[i] = cycle_time;
 
 	const sc_core::sc_time memory_access_cycles = 4 * cycle_time;
 	const sc_core::sc_time mul_div_cycles = 8 * cycle_time;
@@ -116,35 +109,26 @@ Opcode::Mapping ISS::exec_step() {
 		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
-				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT,
-				       regcolors[instr.rd()], regnames[instr.rd()],
-				       regcolors[instr.rs1()], regnames[instr.rs1()],
-				       regcolors[instr.rs2()], regnames[instr.rs2()]);
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, regcolors[instr.rd()], regnames[instr.rd()],
+				       regcolors[instr.rs1()], regnames[instr.rs1()], regcolors[instr.rs2()], regnames[instr.rs2()]);
 				break;
 			case Opcode::Type::I:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rd()],
-				       regnames[instr.rd()], regcolors[instr.rs1()],
-				       regnames[instr.rs1()], instr.I_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()],
+				       regcolors[instr.rs1()], regnames[instr.rs1()], instr.I_imm());
 				break;
 			case Opcode::Type::S:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x",
-				       regcolors[instr.rs1()], regnames[instr.rs1()],
-				       regcolors[instr.rs2()], regnames[instr.rs2()],
-				       instr.S_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rs1()], regnames[instr.rs1()],
+				       regcolors[instr.rs2()], regnames[instr.rs2()], instr.S_imm());
 				break;
 			case Opcode::Type::B:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x",
-				       regcolors[instr.rs1()], regnames[instr.rs1()],
-				       regcolors[instr.rs2()], regnames[instr.rs2()],
-				       instr.B_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rs1()], regnames[instr.rs1()],
+				       regcolors[instr.rs2()], regnames[instr.rs2()], instr.B_imm());
 				break;
 			case Opcode::Type::U:
-				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()],
-				       regnames[instr.rd()], instr.U_imm());
+				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.U_imm());
 				break;
 			case Opcode::Type::J:
-				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()],
-				       regnames[instr.rd()], instr.J_imm());
+				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.J_imm());
 				break;
 			default:;
 		}
@@ -164,8 +148,7 @@ Opcode::Mapping ISS::exec_step() {
 			break;
 
 		case Opcode::SLTIU:
-			regs[instr.rd()] =
-			    ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm());
+			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm());
 			break;
 
 		case Opcode::XORI:
@@ -197,13 +180,11 @@ Opcode::Mapping ISS::exec_step() {
 			break;
 
 		case Opcode::SLTU:
-			regs[instr.rd()] =
-			    ((uint32_t)regs[instr.rs1()]) < ((uint32_t)regs[instr.rs2()]);
+			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)regs[instr.rs2()]);
 			break;
 
 		case Opcode::SRL:
-			regs[instr.rd()] =
-			    ((uint32_t)regs[instr.rs1()]) >> regs.shamt(instr.rs2());
+			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) >> regs.shamt(instr.rs2());
 			break;
 
 		case Opcode::SRA:
@@ -294,33 +275,27 @@ Opcode::Mapping ISS::exec_step() {
 		} break;
 
 		case Opcode::BEQ:
-			if (regs[instr.rs1()] == regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] == regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BNE:
-			if (regs[instr.rs1()] != regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] != regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BLT:
-			if (regs[instr.rs1()] < regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] < regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BGE:
-			if (regs[instr.rs1()] >= regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] >= regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BLTU:
-			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BGEU:
-			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::FENCE: {
@@ -331,10 +306,9 @@ Opcode::Mapping ISS::exec_step() {
 		case Opcode::ECALL: {
 			// NOTE: cast to unsigned value to avoid sign extension, since
 			// execute_syscall expects a native 64 bit value
-			int ans = sys->execute_syscall(
-			    (uint32_t)regs[RegFile::a7], (uint32_t)regs[RegFile::a0],
-			    (uint32_t)regs[RegFile::a1], (uint32_t)regs[RegFile::a2],
-			    (uint32_t)regs[RegFile::a3]);
+			int ans = sys->execute_syscall((uint32_t)regs[RegFile::a7], (uint32_t)regs[RegFile::a0],
+			                               (uint32_t)regs[RegFile::a1], (uint32_t)regs[RegFile::a2],
+			                               (uint32_t)regs[RegFile::a3]);
 			regs[RegFile::a0] = ans;
 		} break;
 
@@ -396,26 +370,22 @@ Opcode::Mapping ISS::exec_step() {
 		} break;
 
 		case Opcode::MUL: {
-			int64_t ans =
-			    (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
+			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = ans & 0xFFFFFFFF;
 		} break;
 
 		case Opcode::MULH: {
-			int64_t ans =
-			    (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
+			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHU: {
-			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) *
-			              (uint64_t)((uint32_t)regs[instr.rs2()]);
+			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHSU: {
-			int64_t ans = (int64_t)regs[instr.rs1()] *
-			              (uint64_t)((uint32_t)regs[instr.rs2()]);
+			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
@@ -533,8 +503,7 @@ Opcode::Mapping ISS::exec_step() {
 		case Opcode::AMOMINU_W: {
 			uint32_t addr = regs[instr.rs1()];
 			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::min((uint32_t)regs[instr.rd()],
-			                        (uint32_t)regs[instr.rs2()]);
+			uint32_t val = std::min((uint32_t)regs[instr.rd()], (uint32_t)regs[instr.rs2()]);
 			mem->store_word(addr, val);
 		} break;
 
@@ -548,8 +517,7 @@ Opcode::Mapping ISS::exec_step() {
 		case Opcode::AMOMAXU_W: {
 			uint32_t addr = regs[instr.rs1()];
 			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::max((uint32_t)regs[instr.rd()],
-			                        (uint32_t)regs[instr.rs2()]);
+			uint32_t val = std::max((uint32_t)regs[instr.rd()], (uint32_t)regs[instr.rs2()]);
 			mem->store_word(addr, val);
 		} break;
 
@@ -630,9 +598,8 @@ csr_base &ISS::csr_update_and_get(uint32_t addr) {
 	return csrs.at(addr);
 }
 
-void ISS::init(instr_memory_interface *instr_mem,
-               data_memory_interface *data_mem, clint_if *clint,
-               SyscallHandler *sys, uint32_t entrypoint, uint32_t sp) {
+void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint, SyscallHandler *sys,
+               uint32_t entrypoint, uint32_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
@@ -671,11 +638,9 @@ void ISS::return_from_trap_handler() {
 }
 
 bool ISS::has_pending_enabled_interrupts() {
-	assert(!csrs.mip->msip &&
-	       "traps and syscalls are handled in the simulator");
+	assert(!csrs.mip->msip && "traps and syscalls are handled in the simulator");
 
-	return csrs.mstatus->mie && ((csrs.mie->meie && csrs.mip->meip) ||
-	                             (csrs.mie->mtie && csrs.mip->mtip));
+	return csrs.mstatus->mie && ((csrs.mie->meie && csrs.mip->meip) || (csrs.mie->mtie && csrs.mip->mtip));
 }
 
 void ISS::switch_to_trap_handler() {
@@ -735,8 +700,7 @@ void ISS::run_step() {
 
 	// speeds up the execution performance (non debug mode) significantly by
 	// checking the additional flag first
-	if (debug_mode && (breakpoints.find(pc) != breakpoints.end()))
-		status = CoreExecStatus::HitBreakpoint;
+	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) status = CoreExecStatus::HitBreakpoint;
 
 	performance_and_sync_update(op);
 }
@@ -757,14 +721,11 @@ void ISS::show() {
 	std::cout << "simulation time: " << sc_core::sc_time_stamp() << std::endl;
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
-	std::cout << "num-instr = " << std::dec << csrs.instret_root->reg
-	          << std::endl;
-	std::cout << "max-heap (c-lib malloc, bytes) = "
-	          << sys->get_max_heap_memory_consumption() << std::endl;
+	std::cout << "num-instr = " << std::dec << csrs.instret_root->reg << std::endl;
+	std::cout << "max-heap (c-lib malloc, bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
 }
 
-DirectCoreRunner::DirectCoreRunner(ISS &core)
-    : sc_module(sc_core::sc_module_name("DirectCoreRunner")), core(core) {
+DirectCoreRunner::DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name("DirectCoreRunner")), core(core) {
 	SC_THREAD(run);
 }
 

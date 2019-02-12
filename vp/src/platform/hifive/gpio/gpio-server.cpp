@@ -92,10 +92,7 @@ void GpioServer::quit() { stop = true; }
 
 bool GpioServer::isStopped() { return stop; }
 
-void GpioServer::registerOnChange(
-    std::function<void(uint8_t bit, Tristate val)> fun) {
-	this->fun = fun;
-}
+void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun) { this->fun = fun; }
 
 void GpioServer::startListening() {
 	if (listen(fd, 1) == -1) {
@@ -120,8 +117,7 @@ void GpioServer::startListening() {
 			return;
 		}
 
-		inet_ntop(their_addr.ss_family,
-		          get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
+		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
 		printf("gpio-server: got connection from %s\n", s);
 		handleConnection(new_fd);
 	}
@@ -160,8 +156,7 @@ void GpioServer::handleConnection(int conn) {
 					else if (req.setBit.val == 1)
 						state |= 1l << req.setBit.pos;
 					else if (req.setBit.val == 2)
-						cout << "set bit " << req.setBit.pos << " unset"
-						     << endl;
+						cout << "set bit " << req.setBit.pos << " unset" << endl;
 				}
 
 				break;

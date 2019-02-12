@@ -40,26 +40,21 @@ constexpr access_mode write_only = {false, true};
 struct AbstractMapping {
 	virtual ~AbstractMapping() {}
 
-	virtual bool try_handle(tlm::tlm_generic_payload &trans,
-	                        sc_core::sc_time &delay) = 0;
+	virtual bool try_handle(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) = 0;
 };
 
-inline void execute_memory_access(tlm::tlm_generic_payload &trans,
-                                  uint8_t *local_memory) {
+inline void execute_memory_access(tlm::tlm_generic_payload &trans, uint8_t *local_memory) {
 	if (trans.get_command() == tlm::TLM_WRITE_COMMAND) {
-		memcpy(&local_memory[trans.get_address()], trans.get_data_ptr(),
-		       trans.get_data_length());
+		memcpy(&local_memory[trans.get_address()], trans.get_data_ptr(), trans.get_data_length());
 	} else if (trans.get_command() == tlm::TLM_READ_COMMAND) {
-		memcpy(trans.get_data_ptr(), &local_memory[trans.get_address()],
-		       trans.get_data_length());
+		memcpy(trans.get_data_ptr(), &local_memory[trans.get_address()], trans.get_data_length());
 	} else {
 		throw std::runtime_error("unsupported TLM command detected");
 	}
 }
 
 struct AddressMapping : public AbstractMapping {
-	typedef std::function<void(tlm::tlm_generic_payload &, sc_core::sc_time &)>
-	    fn_transport_t;
+	typedef std::function<void(tlm::tlm_generic_payload &, sc_core::sc_time &)> fn_transport_t;
 
 	uint64_t start;
 	uint64_t end;
@@ -69,8 +64,7 @@ struct AddressMapping : public AbstractMapping {
 	template <typename Module, typename MemberFun>
 	AddressMapping &register_handler(Module *this_, MemberFun fn) {
 		assert(!handler);
-		handler =
-		    std::bind(fn, this_, std::placeholders::_1, std::placeholders::_2);
+		handler = std::bind(fn, this_, std::placeholders::_1, std::placeholders::_2);
 		return *this;
 	}
 
@@ -165,12 +159,10 @@ struct RegisterMapping : public AbstractMapping {
 		auto len = trans.get_data_length();
 		auto cmd = trans.get_command();
 
-		auto it =
-		    addr_to_reg.find(addr - addr % 4);  // clamp to nearest register
+		auto it = addr_to_reg.find(addr - addr % 4);  // clamp to nearest register
 		if (it == addr_to_reg.end()) return false;
 
-		assert(len + (addr % 4) <=
-		       4);  // do not allow access beyond the register
+		assert(len + (addr % 4) <= 4);  // do not allow access beyond the register
 		assert(cmd == tlm::TLM_READ_COMMAND || cmd == tlm::TLM_WRITE_COMMAND);
 
 		reg_mapping_t &r = it->second;
@@ -182,13 +174,11 @@ struct RegisterMapping : public AbstractMapping {
 			auto off = trans.get_address() % 4;
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				uint32_t n = r.bus_read();
-				memcpy(trans.get_data_ptr(), ((uint8_t *)&n) + off,
-				       trans.get_data_length());
+				memcpy(trans.get_data_ptr(), ((uint8_t *)&n) + off, trans.get_data_length());
 				//*new_vptr = r.bus_read();
 			} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 				uint32_t n = r.value();
-				memcpy(((uint8_t *)&n) + off, trans.get_data_ptr(),
-				       trans.get_data_length());
+				memcpy(((uint8_t *)&n) + off, trans.get_data_ptr(), trans.get_data_length());
 				r.bus_write(n);
 				// r.bus_write(*new_vptr);
 			} else {
@@ -198,8 +188,7 @@ struct RegisterMapping : public AbstractMapping {
 
 		assert(handler && "no callback function provided");
 
-		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND,
-		         r.vptr, *new_vptr, fn, delay});
+		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND, r.vptr, *new_vptr, fn, delay});
 		return true;
 	}
 };
@@ -221,24 +210,21 @@ struct LocalRouter {
 		for (auto &m : maps) {
 			if (m->try_handle(trans, delay)) return;
 		}
-		throw std::runtime_error(
-		    "access of unmapped address (local TLM router): name=" + name +
-		    ", addr=0x" + (boost::format("%X") % trans.get_address()).str());
+		throw std::runtime_error("access of unmapped address (local TLM router): name=" + name + ", addr=0x" +
+		                         (boost::format("%X") % trans.get_address()).str());
 	}
 
 	RegisterMapping &add_register_bank(const std::vector<reg_mapping_t> &regs) {
 		auto p = new RegisterMapping();
 		for (auto &m : regs) {
-			assert(p->addr_to_reg.find(m.addr) == p->addr_to_reg.end() &&
-			       "register at this address already available");
+			assert(p->addr_to_reg.find(m.addr) == p->addr_to_reg.end() && "register at this address already available");
 			p->addr_to_reg.insert(std::make_pair(m.addr, m));
 		}
 		maps.push_back(p);
 		return *p;
 	}
 
-	AddressMapping &add_start_end_mapping(uint64_t start, uint64_t end,
-	                                      const access_mode &m) {
+	AddressMapping &add_start_end_mapping(uint64_t start, uint64_t end, const access_mode &m) {
 		auto p = new AddressMapping();
 		p->start = start;
 		p->end = end;
@@ -247,8 +233,7 @@ struct LocalRouter {
 		return *p;
 	}
 
-	AddressMapping &add_start_size_mapping(uint64_t start, uint32_t size,
-	                                       const access_mode &m) {
+	AddressMapping &add_start_size_mapping(uint64_t start, uint32_t size, const access_mode &m) {
 		return add_start_end_mapping(start, start + size, m);
 	}
 };

@@ -58,8 +58,7 @@ std::string debug_memory_mapping::zero_memory(int nbytes) {
 	return stream.str();
 }
 
-void debug_memory_mapping::write_memory(unsigned start, int nbytes,
-                                        const std::string &data) {
+void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
 	// assert (start >= 0);
 	assert(nbytes > 0);
 	assert(data.length() % 2 == 0);
@@ -97,8 +96,7 @@ enum target_signal {
 	TARGET_SIGNAL_SEGV = 11,
 };
 
-char nibble_to_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                          '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+char nibble_to_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 std::string compute_checksum_string(const std::string &msg) {
 	unsigned sum = 0;
@@ -214,16 +212,11 @@ breakpoint_t parse_breakpoint(const std::string &msg) {
 }
 
 bool is_any_watchpoint_or_hw_breakpoint(const std::string &msg) {
-	bool is_hw_breakpoint =
-	    boost::starts_with(msg, "Z1") || boost::starts_with(msg, "z1");
-	bool is_read_watchpoint =
-	    boost::starts_with(msg, "Z2") || boost::starts_with(msg, "z2");
-	bool is_write_watchpoint =
-	    boost::starts_with(msg, "Z3") || boost::starts_with(msg, "z3");
-	bool is_access_watchpoint =
-	    boost::starts_with(msg, "Z4") || boost::starts_with(msg, "z4");
-	return is_hw_breakpoint || is_read_watchpoint || is_write_watchpoint ||
-	       is_access_watchpoint;
+	bool is_hw_breakpoint = boost::starts_with(msg, "Z1") || boost::starts_with(msg, "z1");
+	bool is_read_watchpoint = boost::starts_with(msg, "Z2") || boost::starts_with(msg, "z2");
+	bool is_write_watchpoint = boost::starts_with(msg, "Z3") || boost::starts_with(msg, "z3");
+	bool is_access_watchpoint = boost::starts_with(msg, "Z4") || boost::starts_with(msg, "z4");
+	return is_hw_breakpoint || is_read_watchpoint || is_write_watchpoint || is_access_watchpoint;
 }
 
 uint32_t swap_byte_order(uint32_t n) { return htonl(n); }
@@ -232,8 +225,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 	while (true) {
 		std::string msg = receive_packet(conn);
 		if (msg.size() == 0) {
-			std::cout << "remote connection seems to be closed, terminating ..."
-			          << std::endl;
+			std::cout << "remote connection seems to be closed, terminating ..." << std::endl;
 			break;
 		} else if (msg == "+") {
 			// NOTE: just ignore this message, nothing to do in this case
@@ -292,8 +284,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			}
 
 			std::stringstream stream;
-			stream << std::setfill('0') << std::hex << std::setw(8)
-			       << swap_byte_order(reg_value);
+			stream << std::setfill('0') << std::hex << std::setw(8) << swap_byte_order(reg_value);
 			send_packet(conn, stream.str());
 		} else if (boost::starts_with(msg, "m")) {
 			memory_access_t m = parse_memory_access(msg);
@@ -309,9 +300,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			send_packet(conn, ans);
 		} else if (boost::starts_with(msg, "M")) {
 			memory_access_t m = parse_memory_access(msg);
-			assert((m.start + m.nbytes) <=
-			       (memory.mem_offset +
-			        memory.mem_size));  // NOTE: out of bound memory access
+			assert((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size));  // NOTE: out of bound memory access
 			std::string data = msg.substr(msg.find(":") + 1);
 			memory.write_memory(m.start, m.nbytes, data);
 			send_packet(conn, "OK");
@@ -369,8 +358,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			                        // here, use OK to say it is supported
 			break;
 		} else {
-			std::cout << "unsupported message '" << msg
-			          << "' detected, terminating ..." << std::endl;
+			std::cout << "unsupported message '" << msg << "' detected, terminating ..." << std::endl;
 			break;
 		}
 	}
@@ -383,8 +371,7 @@ void DebugCoreRunner::run() {
 	int sock = ::socket(AF_INET, SOCK_STREAM, 0);
 
 	int optval = 1;
-	int ans =
-	    ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+	int ans = ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 	assert(ans == 0);
 
 	sockaddr_in addr;

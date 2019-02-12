@@ -182,142 +182,115 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 }
 
 unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
-	return (BIT_SLICE(n, 12, 11) << 4) | (BIT_SLICE(n, 10, 7) << 6) |
-	       (BIT_SINGLE_P1(n, 6) << 2) | (BIT_SINGLE_P1(n, 5) << 3);
+	return (BIT_SLICE(n, 12, 11) << 4) | (BIT_SLICE(n, 10, 7) << 6) | (BIT_SINGLE_P1(n, 6) << 2) |
+	       (BIT_SINGLE_P1(n, 5) << 3);
 }
 
 unsigned C_LW_UIMM(uint32_t n) {
-	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SINGLE_P1(n, 6) << 2) |
-	       (BIT_SINGLE_P1(n, 5) << 6);
+	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SINGLE_P1(n, 6) << 2) | (BIT_SINGLE_P1(n, 5) << 6);
 }
 
 unsigned C_SW_UIMM(uint32_t n) { return C_LW_UIMM(n); }
 
 int32_t C_JAL_IMM(int32_t n) {
-	return EXTRACT_SIGN_BIT(n, 12, 11) | BIT_SINGLE_PN(n, 11, 4) |
-	       (BIT_SLICE(n, 10, 9) << 8) | BIT_SINGLE_PN(n, 8, 10) |
-	       BIT_SINGLE_PN(n, 7, 6) | BIT_SINGLE_PN(n, 6, 7) |
-	       (BIT_SLICE(n, 5, 3) << 1) | BIT_SINGLE_PN(n, 2, 5);
-}
-
-int32_t C_ADDI16SP_NZIMM(int32_t n) {
-	return EXTRACT_SIGN_BIT(n, 12, 9) | BIT_SINGLE_PN(n, 6, 4) |
-	       BIT_SINGLE_PN(n, 5, 6) | (BIT_SLICE(n, 4, 3) << 7) |
+	return EXTRACT_SIGN_BIT(n, 12, 11) | BIT_SINGLE_PN(n, 11, 4) | (BIT_SLICE(n, 10, 9) << 8) |
+	       BIT_SINGLE_PN(n, 8, 10) | BIT_SINGLE_PN(n, 7, 6) | BIT_SINGLE_PN(n, 6, 7) | (BIT_SLICE(n, 5, 3) << 1) |
 	       BIT_SINGLE_PN(n, 2, 5);
 }
 
-int32_t C_LUI_NZIMM(int32_t n) {
-	return EXTRACT_SIGN_BIT(n, 12, 17) | (BIT_SLICE(n, 6, 2) << 12);
+int32_t C_ADDI16SP_NZIMM(int32_t n) {
+	return EXTRACT_SIGN_BIT(n, 12, 9) | BIT_SINGLE_PN(n, 6, 4) | BIT_SINGLE_PN(n, 5, 6) | (BIT_SLICE(n, 4, 3) << 7) |
+	       BIT_SINGLE_PN(n, 2, 5);
 }
+
+int32_t C_LUI_NZIMM(int32_t n) { return EXTRACT_SIGN_BIT(n, 12, 17) | (BIT_SLICE(n, 6, 2) << 12); }
 
 int32_t C_J_IMM(int32_t n) { return C_JAL_IMM(n); }
 
 int32_t C_BRANCH_IMM(int32_t n) {
-	return EXTRACT_SIGN_BIT(n, 12, 8) | (BIT_SLICE(n, 11, 10) << 3) |
-	       (BIT_SLICE(n, 6, 5) << 6) | (BIT_SLICE(n, 4, 3) << 1) |
-	       BIT_SINGLE_PN(n, 2, 5);
+	return EXTRACT_SIGN_BIT(n, 12, 8) | (BIT_SLICE(n, 11, 10) << 3) | (BIT_SLICE(n, 6, 5) << 6) |
+	       (BIT_SLICE(n, 4, 3) << 1) | BIT_SINGLE_PN(n, 2, 5);
 }
 
 uint32_t C_LWSP_UIMM(uint32_t n) {
-	return BIT_SINGLE_PN(n, 12, 5) | (BIT_SLICE(n, 6, 4) << 2) |
-	       (BIT_SLICE(n, 3, 2) << 6);
+	return BIT_SINGLE_PN(n, 12, 5) | (BIT_SLICE(n, 6, 4) << 2) | (BIT_SLICE(n, 3, 2) << 6);
 }
 
-uint32_t C_SWSP_UIMM(uint32_t n) {
-	return (BIT_SLICE(n, 12, 9) << 2) | (BIT_SLICE(n, 8, 7) << 6);
-}
+uint32_t C_SWSP_UIMM(uint32_t n) { return (BIT_SLICE(n, 12, 9) << 2) | (BIT_SLICE(n, 8, 7) << 6); }
 
 struct InstructionFactory {
 	typedef Instruction T;
 
 	static T ADD(unsigned rd, unsigned rs1, unsigned rs2) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((rs2 & 0x1f) << 20) | 51 | (0 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (0 << 12) | (0 << 25));
 	}
 
 	static T AND(unsigned rd, unsigned rs1, unsigned rs2) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((rs2 & 0x1f) << 20) | 51 | (7 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (7 << 12) | (0 << 25));
 	}
 
 	static T OR(unsigned rd, unsigned rs1, unsigned rs2) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((rs2 & 0x1f) << 20) | 51 | (6 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (6 << 12) | (0 << 25));
 	}
 
 	static T XOR(unsigned rd, unsigned rs1, unsigned rs2) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((rs2 & 0x1f) << 20) | 51 | (4 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (4 << 12) | (0 << 25));
 	}
 
 	static T SUB(unsigned rd, unsigned rs1, unsigned rs2) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((rs2 & 0x1f) << 20) | 51 | (0 << 12) | (32 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 51 | (0 << 12) | (32 << 25));
 	}
 
 	static T LW(unsigned rd, unsigned rs1, int I_imm) {
-		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) |
-		         ((rs1 & 0x1f) << 15) | 3 | (2 << 12));
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 3 | (2 << 12));
 	}
 
 	static T SW(unsigned rs1, unsigned rs2, int S_imm) {
-		return T(
-		    (((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) |
-		    ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 35 | (2 << 12));
+		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
+		         ((rs2 & 0x1f) << 20) | 35 | (2 << 12));
 	}
 
-	static T LUI(unsigned rd, int U_imm) {
-		return T((U_imm & (1048575 << 12)) | ((rd & 0x1f) << 7) | 55);
-	}
+	static T LUI(unsigned rd, int U_imm) { return T((U_imm & (1048575 << 12)) | ((rd & 0x1f) << 7) | 55); }
 
 	static T ADDI(unsigned rd, unsigned rs1, int I_imm) {
-		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) |
-		         ((rs1 & 0x1f) << 15) | 19 | (0 << 12));
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 19 | (0 << 12));
 	}
 
 	static T ANDI(unsigned rd, unsigned rs1, int I_imm) {
-		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) |
-		         ((rs1 & 0x1f) << 15) | 19 | (7 << 12));
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 19 | (7 << 12));
 	}
 
 	static T SRLI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((shamt & 31) << 20) | 19 | (5 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (5 << 12) | (0 << 25));
 	}
 
 	static T SRAI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((shamt & 31) << 20) | 19 | (5 << 12) | (32 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (5 << 12) | (32 << 25));
 	}
 
 	static T SLLI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) |
-		         ((shamt & 31) << 20) | 19 | (1 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (1 << 12) | (0 << 25));
 	}
 
 	static T JAL(unsigned rd, int J_imm) {
 		return T(111 | ((rd & 0x1f) << 7) |
-		         ((J_imm & (0b11111111 << 12)) | ((J_imm & (1 << 11)) << 9) |
-		          ((J_imm & 0b11111111110) << 20) |
+		         ((J_imm & (0b11111111 << 12)) | ((J_imm & (1 << 11)) << 9) | ((J_imm & 0b11111111110) << 20) |
 		          ((J_imm & (1 << 20)) << 11)));
 	}
 
 	static T JALR(unsigned rd, unsigned rs1, int I_imm) {
-		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) |
-		         ((rs1 & 0x1f) << 15) | 103 | (0 << 12));
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 103 | (0 << 12));
 	}
 
 	static T BEQ(unsigned rs1, unsigned rs2, int B_imm) {
 		return T(((((B_imm & 0b11110) << 7) | ((B_imm & (1 << 11)) >> 4)) |
-		          (((B_imm & (0b111111 << 5)) << 20) |
-		           ((B_imm & (1 << 12)) << 19))) |
+		          (((B_imm & (0b111111 << 5)) << 20) | ((B_imm & (1 << 12)) << 19))) |
 		         ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 99 | (0 << 12));
 	}
 
 	static T BNE(unsigned rs1, unsigned rs2, int B_imm) {
 		return T(((((B_imm & 0b11110) << 7) | ((B_imm & (1 << 11)) >> 4)) |
-		          (((B_imm & (0b111111 << 5)) << 20) |
-		           ((B_imm & (1 << 12)) << 19))) |
+		          (((B_imm & (0b111111 << 5)) << 20) | ((B_imm & (1 << 12)) << 19))) |
 		         ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 99 | (1 << 12));
 	}
 
@@ -444,8 +417,7 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 			break;
 
 		case 3:
-			throw std::runtime_error(
-			    "compressed instruction expected, but uncompressed found");
+			throw std::runtime_error("compressed instruction expected, but uncompressed found");
 	}
 
 	throw std::runtime_error("unknown compressed instruction");
@@ -460,16 +432,14 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			return UNDEF;
 
 		case C_Reserved:
-			throw std::runtime_error(
-			    "Reserved compressed instruction detected");
+			throw std::runtime_error("Reserved compressed instruction detected");
 
 		case C_NOP:
 			instr = InstructionFactory::ADD(0, 0, 0);
 			return ADD;
 
 		case C_ADD:
-			instr = InstructionFactory::ADD(instr.c_rd(), instr.c_rd(),
-			                                instr.c_rs2());
+			instr = InstructionFactory::ADD(instr.c_rd(), instr.c_rd(), instr.c_rs2());
 			return ADD;
 
 		case C_MV:
@@ -477,35 +447,27 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			return ADD;
 
 		case C_AND:
-			instr = InstructionFactory::AND(
-			    instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			instr = InstructionFactory::AND(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return AND;
 
 		case C_OR:
-			instr = InstructionFactory::OR(
-			    instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			instr = InstructionFactory::OR(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return OR;
 
 		case C_XOR:
-			instr = InstructionFactory::XOR(
-			    instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			instr = InstructionFactory::XOR(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return XOR;
 
 		case C_SUB:
-			instr = InstructionFactory::SUB(
-			    instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			instr = InstructionFactory::SUB(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return SUB;
 
 		case C_LW:
-			instr =
-			    InstructionFactory::LW(instr.c_rs2_small(), instr.c_rd_small(),
-			                           C_LW_UIMM(instr.data()));
+			instr = InstructionFactory::LW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
 			return LW;
 
 		case C_SW:
-			instr =
-			    InstructionFactory::SW(instr.c_rd_small(), instr.c_rs2_small(),
-			                           C_SW_UIMM(instr.data()));
+			instr = InstructionFactory::SW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
 			return SW;
 
 		case C_ADDI4SPN: {
@@ -516,8 +478,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 		}
 
 		case C_ADDI:
-			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(),
-			                                 instr.c_imm());
+			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
 			return ADDI;
 
 		case C_JAL:
@@ -547,22 +508,19 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 		case C_SRLI: {
 			auto n = instr.c_uimm();
 			if (n > 31) return UNDEF;
-			instr = InstructionFactory::SRLI(instr.c_rd_small(),
-			                                 instr.c_rd_small(), n);
+			instr = InstructionFactory::SRLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRLI;
 		}
 
 		case C_SRAI: {
 			auto n = instr.c_uimm();
 			if (n > 31) return UNDEF;
-			instr = InstructionFactory::SRAI(instr.c_rd_small(),
-			                                 instr.c_rd_small(), n);
+			instr = InstructionFactory::SRAI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRAI;
 		}
 
 		case C_ANDI:
-			instr = InstructionFactory::ANDI(instr.c_rd_small(),
-			                                 instr.c_rd_small(), instr.c_imm());
+			instr = InstructionFactory::ANDI(instr.c_rd_small(), instr.c_rd_small(), instr.c_imm());
 			return ANDI;
 
 		case C_J:
@@ -570,31 +528,26 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			return JAL;
 
 		case C_BEQZ:
-			instr = InstructionFactory::BEQ(instr.c_rd_small(), 0,
-			                                C_BRANCH_IMM(instr.data()));
+			instr = InstructionFactory::BEQ(instr.c_rd_small(), 0, C_BRANCH_IMM(instr.data()));
 			return BEQ;
 
 		case C_BNEZ:
-			instr = InstructionFactory::BNE(instr.c_rd_small(), 0,
-			                                C_BRANCH_IMM(instr.data()));
+			instr = InstructionFactory::BNE(instr.c_rd_small(), 0, C_BRANCH_IMM(instr.data()));
 			return BNE;
 
 		case C_SLLI: {
 			auto n = instr.c_uimm();
 			if (n > 31) return UNDEF;
-			instr = InstructionFactory::SLLI(instr.c_rd_small(),
-			                                 instr.c_rd_small(), n);
+			instr = InstructionFactory::SLLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SLLI;
 		}
 
 		case C_LWSP:
-			instr = InstructionFactory::LW(instr.c_rd(), 2,
-			                               C_LWSP_UIMM(instr.data()));
+			instr = InstructionFactory::LW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return LW;
 
 		case C_SWSP:
-			instr = InstructionFactory::SW(2, instr.c_rs2(),
-			                               C_SWSP_UIMM(instr.data()));
+			instr = InstructionFactory::SW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
 			return SW;
 
 		case C_EBREAK:
@@ -808,8 +761,7 @@ Opcode::Mapping Instruction::decode_normal() {
 						case F12_WFI:
 							return WFI;
 						default:
-							assert(instr.funct7() == F7_SFENCE_VMA &&
-							       "invalid instruction detected");
+							assert(instr.funct7() == F7_SFENCE_VMA && "invalid instruction detected");
 							return SFENCE_VMA;
 					}
 					break;

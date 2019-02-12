@@ -24,9 +24,7 @@ struct PointF {
 	inline PointF(Point p) : x(p.x), y(p.y){};
 };
 
-inline PointF operator+(const PointF l, PointF const r) {
-	return PointF(l.x + r.x, l.y + r.y);
-}
+inline PointF operator+(const PointF l, PointF const r) { return PointF(l.x + r.x, l.y + r.y); }
 
 struct Frame {
 	Color raw[screenHeight][screenWidth];  // Notice: Screen is on side

@@ -5,24 +5,21 @@
 #include <cstring>
 #include <iostream>
 
-Framebuffer* volatile const framebuffer =
-    (Framebuffer * volatile const)(0x72000000);
+Framebuffer* volatile const framebuffer = (Framebuffer * volatile const)(0x72000000);
 
 void activeWait(float factor = 0.5) {
 	for (uint16_t i = 0; i < UINT16_MAX * factor; i++) {
 	};
 }
 
-Point getRandomPoint() {
-	return Point(rand() % screenWidth, rand() % screenHeight);
-}
+Point getRandomPoint() { return Point(rand() % screenWidth, rand() % screenHeight); }
 
 Color getRandomColor() { return rand() % SHRT_MAX; }
 
 void drawBackground() {
 	for (uint32_t i = 0; i < screenHeight - 1; i++) {
-		display::drawLine(Framebuffer::Type::background, Point(0, i),
-		                  Point(screenWidth, i), fromRGB(i & 0x7, 0, i >> 3));
+		display::drawLine(Framebuffer::Type::background, Point(0, i), Point(screenWidth, i),
+		                  fromRGB(i & 0x7, 0, i >> 3));
 		if (i % 5 == 0) display::applyFrame();
 	}
 }
@@ -32,10 +29,8 @@ void drawFunnyRects() {
 	for (uint16_t i = 0; i < 400; i++) {
 		// drawLine(framebuffer->getInactiveFrame(), getRandomPoint(),
 		// getRandomPoint(), getRandomColor());
-		display::drawRect(Framebuffer::Type::foreground,
-		                  Point(m % screenWidth, m % screenHeight),
-		                  Point((screenWidth - (m + 1) % screenWidth),
-		                        (screenHeight - (m + 1) % screenHeight)),
+		display::drawRect(Framebuffer::Type::foreground, Point(m % screenWidth, m % screenHeight),
+		                  Point((screenWidth - (m + 1) % screenWidth), (screenHeight - (m + 1) % screenHeight)),
 		                  fromRGB(255 - (m % 255), (m % 255), i % 255));
 		display::applyFrame();
 		activeWait(.005);
@@ -46,14 +41,11 @@ void drawFunnyRects() {
 /**
  * @param completion Values between 0..1
  */
-void progressBar(bool horizontal, PointF base, PointF extent, Color fg,
-                 Color bg, float completion) {
-	PointF progress = horizontal ? PointF(extent.x * completion, extent.y)
-	                             : PointF(extent.x, extent.y * completion);
+void progressBar(bool horizontal, PointF base, PointF extent, Color fg, Color bg, float completion) {
+	PointF progress = horizontal ? PointF(extent.x * completion, extent.y) : PointF(extent.x, extent.y * completion);
 
 	display::fillRect(Framebuffer::Type::foreground, base, base + progress, fg);
-	display::fillRect(Framebuffer::Type::foreground, base + progress,
-	                  base + extent, bg);
+	display::fillRect(Framebuffer::Type::foreground, base + progress, base + extent, bg);
 }
 
 void drawFunnyBar(bool horizontal = false) {
@@ -76,18 +68,14 @@ void drawFunnyBar(bool horizontal = false) {
 	Point barExtent((baseUR.x - baseOL.x) - 20, (baseUR.y - baseOL.y) - 20);
 
 	for (float progress = 0; progress <= 1; progress += 0.01) {
-		display::fillRect(Framebuffer::Type::foreground, baseOL, baseUR,
-		                  bgColor);
-		progressBar(horizontal, barBase, barExtent, progressColor, bgColor,
-		            progress);
+		display::fillRect(Framebuffer::Type::foreground, baseOL, baseUR, bgColor);
+		progressBar(horizontal, barBase, barExtent, progressColor, bgColor, progress);
 		display::applyFrame();
 		activeWait(.005);
 	}
 	for (float progress = 1; progress >= 0; progress -= 0.01) {
-		display::fillRect(Framebuffer::Type::foreground, baseOL, baseUR,
-		                  bgColor);
-		progressBar(horizontal, barBase, barExtent, progressColor, bgColor,
-		            progress);
+		display::fillRect(Framebuffer::Type::foreground, baseOL, baseUR, bgColor);
+		progressBar(horizontal, barBase, barExtent, progressColor, bgColor, progress);
 		display::applyFrame();
 		activeWait(.005);
 	}

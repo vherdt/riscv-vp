@@ -6,8 +6,7 @@
 #include <sys/types.h>
 #include <iostream>
 
-VPDisplayserver::VPDisplayserver(unsigned int sharedMemoryKey)
-    : mSharedMemoryKey(sharedMemoryKey), stop(false) {}
+VPDisplayserver::VPDisplayserver(unsigned int sharedMemoryKey) : mSharedMemoryKey(sharedMemoryKey), stop(false) {}
 
 VPDisplayserver::~VPDisplayserver() {
 	stop.store(true);

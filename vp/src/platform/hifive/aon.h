@@ -93,52 +93,26 @@ struct AON : public sc_core::sc_module {
 
 		router
 		    .add_register_bank({
-		        {LFROSCCFG_REG_ADDR, &lfrosccfg},
-		        {PMUCAUSE_REG_ADDR, &pmucause},
+		        {LFROSCCFG_REG_ADDR, &lfrosccfg}, {PMUCAUSE_REG_ADDR, &pmucause},
 
-		        {BACKUP0_REG_ADDR, &backup0},
-		        {BACKUP1_REG_ADDR, &backup1},
-		        {BACKUP2_REG_ADDR, &backup2},
-		        {BACKUP3_REG_ADDR, &backup3},
-		        {BACKUP4_REG_ADDR, &backup4},
-		        {BACKUP5_REG_ADDR, &backup5},
-		        {BACKUP6_REG_ADDR, &backup6},
-		        {BACKUP7_REG_ADDR, &backup7},
-		        {BACKUP8_REG_ADDR, &backup8},
-		        {BACKUP9_REG_ADDR, &backup9},
-		        {BACKUP10_REG_ADDR, &backup10},
-		        {BACKUP11_REG_ADDR, &backup11},
-		        {BACKUP12_REG_ADDR, &backup12},
-		        {BACKUP13_REG_ADDR, &backup13},
-		        {BACKUP14_REG_ADDR, &backup14},
-		        {BACKUP15_REG_ADDR, &backup15},
-		        {BACKUP16_REG_ADDR, &backup16},
-		        {BACKUP17_REG_ADDR, &backup17},
-		        {BACKUP18_REG_ADDR, &backup18},
-		        {BACKUP19_REG_ADDR, &backup19},
-		        {BACKUP20_REG_ADDR, &backup20},
-		        {BACKUP21_REG_ADDR, &backup21},
-		        {BACKUP22_REG_ADDR, &backup22},
-		        {BACKUP23_REG_ADDR, &backup23},
-		        {BACKUP24_REG_ADDR, &backup24},
-		        {BACKUP25_REG_ADDR, &backup25},
-		        {BACKUP26_REG_ADDR, &backup26},
-		        {BACKUP27_REG_ADDR, &backup27},
-		        {BACKUP28_REG_ADDR, &backup28},
-		        {BACKUP29_REG_ADDR, &backup29},
-		        {BACKUP30_REG_ADDR, &backup30},
-		        {BACKUP31_REG_ADDR, &backup31},
+		        {BACKUP0_REG_ADDR, &backup0},     {BACKUP1_REG_ADDR, &backup1},   {BACKUP2_REG_ADDR, &backup2},
+		        {BACKUP3_REG_ADDR, &backup3},     {BACKUP4_REG_ADDR, &backup4},   {BACKUP5_REG_ADDR, &backup5},
+		        {BACKUP6_REG_ADDR, &backup6},     {BACKUP7_REG_ADDR, &backup7},   {BACKUP8_REG_ADDR, &backup8},
+		        {BACKUP9_REG_ADDR, &backup9},     {BACKUP10_REG_ADDR, &backup10}, {BACKUP11_REG_ADDR, &backup11},
+		        {BACKUP12_REG_ADDR, &backup12},   {BACKUP13_REG_ADDR, &backup13}, {BACKUP14_REG_ADDR, &backup14},
+		        {BACKUP15_REG_ADDR, &backup15},   {BACKUP16_REG_ADDR, &backup16}, {BACKUP17_REG_ADDR, &backup17},
+		        {BACKUP18_REG_ADDR, &backup18},   {BACKUP19_REG_ADDR, &backup19}, {BACKUP20_REG_ADDR, &backup20},
+		        {BACKUP21_REG_ADDR, &backup21},   {BACKUP22_REG_ADDR, &backup22}, {BACKUP23_REG_ADDR, &backup23},
+		        {BACKUP24_REG_ADDR, &backup24},   {BACKUP25_REG_ADDR, &backup25}, {BACKUP26_REG_ADDR, &backup26},
+		        {BACKUP27_REG_ADDR, &backup27},   {BACKUP28_REG_ADDR, &backup28}, {BACKUP29_REG_ADDR, &backup29},
+		        {BACKUP30_REG_ADDR, &backup30},   {BACKUP31_REG_ADDR, &backup31},
 		    })
 		    .register_handler(this, &AON::register_access_callback);
 	}
 
-	void register_access_callback(const vp::map::register_access_t &r) {
-		r.fn();
-	}
+	void register_access_callback(const vp::map::register_access_t &r) { r.fn(); }
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
-	}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 };
 
 #endif  // RISCV_VP_AON_H

@@ -217,15 +217,12 @@ extern const char* mappingStr[];
 Type getType(Mapping mapping);
 }  // namespace Opcode
 
-#define BIT_RANGE(instr, upper, lower) \
-	(instr & (((1 << (upper - lower + 1)) - 1) << lower))
+#define BIT_RANGE(instr, upper, lower) (instr & (((1 << (upper - lower + 1)) - 1) << lower))
 #define BIT_SLICE(instr, upper, lower) (BIT_RANGE(instr, upper, lower) >> lower)
 #define BIT_SINGLE(instr, pos) (instr & (1 << pos))
 #define BIT_SINGLE_P1(instr, pos) (BIT_SINGLE(instr, pos) >> pos)
-#define BIT_SINGLE_PN(instr, pos, new_pos) \
-	((BIT_SINGLE(instr, pos) >> pos) << new_pos)
-#define EXTRACT_SIGN_BIT(instr, pos, new_pos) \
-	((BIT_SINGLE_P1(instr, pos) << 31) >> (31 - new_pos))
+#define BIT_SINGLE_PN(instr, pos, new_pos) ((BIT_SINGLE(instr, pos) >> pos) << new_pos)
+#define EXTRACT_SIGN_BIT(instr, pos, new_pos) ((BIT_SINGLE_P1(instr, pos) << 31) >> (31 - new_pos))
 
 struct Instruction {
 	Instruction(uint32_t instr) : instr(instr) {}
@@ -248,13 +245,9 @@ struct Instruction {
 
 	inline uint32_t c_rs2() { return BIT_SLICE(instr, 6, 2); }
 
-	inline uint32_t c_imm() {
-		return BIT_SLICE(instr, 6, 2) | EXTRACT_SIGN_BIT(instr, 12, 5);
-	}
+	inline uint32_t c_imm() { return BIT_SLICE(instr, 6, 2) | EXTRACT_SIGN_BIT(instr, 12, 5); }
 
-	inline uint32_t c_uimm() {
-		return BIT_SLICE(instr, 6, 2) | (BIT_SINGLE_P1(instr, 12) << 5);
-	}
+	inline uint32_t c_uimm() { return BIT_SLICE(instr, 6, 2) | (BIT_SINGLE_P1(instr, 12) << 5); }
 
 	inline uint32_t c_f2_high() { return BIT_SLICE(instr, 11, 10); }
 
@@ -297,20 +290,16 @@ struct Instruction {
 	inline int32_t opcode() { return BIT_RANGE(instr, 6, 0); }
 
 	inline int32_t J_imm() {
-		return (BIT_SINGLE(instr, 31) >> 11) | BIT_RANGE(instr, 19, 12) |
-		       (BIT_SINGLE(instr, 20) >> 9) | (BIT_RANGE(instr, 30, 21) >> 20);
+		return (BIT_SINGLE(instr, 31) >> 11) | BIT_RANGE(instr, 19, 12) | (BIT_SINGLE(instr, 20) >> 9) |
+		       (BIT_RANGE(instr, 30, 21) >> 20);
 	}
 
 	inline int32_t I_imm() { return BIT_RANGE(instr, 31, 20) >> 20; }
 
-	inline int32_t S_imm() {
-		return (BIT_RANGE(instr, 31, 25) >> 20) |
-		       (BIT_RANGE(instr, 11, 7) >> 7);
-	}
+	inline int32_t S_imm() { return (BIT_RANGE(instr, 31, 25) >> 20) | (BIT_RANGE(instr, 11, 7) >> 7); }
 
 	inline int32_t B_imm() {
-		return (BIT_SINGLE(instr, 31) >> 19) | (BIT_SINGLE(instr, 7) << 4) |
-		       (BIT_RANGE(instr, 30, 25) >> 20) |
+		return (BIT_SINGLE(instr, 31) >> 19) | (BIT_SINGLE(instr, 7) << 4) | (BIT_RANGE(instr, 30, 25) >> 20) |
 		       (BIT_RANGE(instr, 11, 8) >> 7);
 	}
 

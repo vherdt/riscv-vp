@@ -9,8 +9,7 @@ static constexpr unsigned int FLASH_SIZE_REG = sizeof(uint64_t);
 static constexpr unsigned int DATA_ADDR = FLASH_SIZE_REG + sizeof(uint64_t);
 // static constexpr unsigned int ADDR_SPACE = DATA_ADDR + BLOCKSIZE;
 
-static uint8_t* volatile const FLASH_CONTROLLER =
-    (uint8_t * volatile const)(0x71000000);
+static uint8_t* volatile const FLASH_CONTROLLER = (uint8_t * volatile const)(0x71000000);
 
 using namespace std;
 
@@ -21,11 +20,9 @@ void writeFlash(const char* src, uint64_t addr, size_t len);
 int main() {
 	unsigned long counter = 0;
 	uint64_t flashNumOfBlocks = 0;
-	memcpy(&flashNumOfBlocks, FLASH_CONTROLLER + FLASH_SIZE_REG,
-	       sizeof(uint64_t));
+	memcpy(&flashNumOfBlocks, FLASH_CONTROLLER + FLASH_SIZE_REG, sizeof(uint64_t));
 
-	cout << "Flash size: " << flashNumOfBlocks * BLOCKSIZE << " ("
-	     << flashNumOfBlocks << " Blocks)" << endl;
+	cout << "Flash size: " << flashNumOfBlocks * BLOCKSIZE << " (" << flashNumOfBlocks << " Blocks)" << endl;
 
 	readFlash(reinterpret_cast<char*>(&counter), 0, sizeof(unsigned long));
 

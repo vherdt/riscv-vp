@@ -44,8 +44,7 @@ struct SimpleDMA : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(SimpleDMA);
 
-	SimpleDMA(sc_core::sc_module_name, uint32_t irq_number)
-	    : irq_number(irq_number) {
+	SimpleDMA(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
 		tsock.register_b_transport(this, &SimpleDMA::transport);
 
 		SC_THREAD(run);
@@ -140,8 +139,7 @@ struct SimpleDMA : public sc_core::sc_module {
 		(void)delay;  // zero delay
 	}
 
-	void do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
-	                    unsigned num_bytes) {
+	void do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		sc_core::sc_time delay = sc_core::SC_ZERO_TIME;
 
 		tlm::tlm_generic_payload trans;

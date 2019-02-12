@@ -20,13 +20,7 @@ struct csr_base {
 		Machine = 3,
 	};
 
-	enum AccessMode {
-		User = 1,
-		Supervisor = 2,
-		Machine = 4,
-		Read = 8,
-		Write = 16
-	};
+	enum AccessMode { User = 1, Supervisor = 2, Machine = 4, Read = 8, Write = 16 };
 
 	enum Internal {
 		RW_BITS = 0xc00,    // addr[11:10]
@@ -48,20 +42,17 @@ struct csr_base {
 		return unchecked_read();
 	}
 
-	void write(int32_t val,
-	           PrivilegeLevel access_level = PrivilegeLevel::Machine) {
+	void write(int32_t val, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
 		ensure(level <= access_level);
 		ensure(mode & Write);
 		unchecked_write(val);
 	}
 
-	void clear_bits(int32_t mask,
-	                PrivilegeLevel access_level = PrivilegeLevel::Machine) {
+	void clear_bits(int32_t mask, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
 		write(unchecked_read() & ~mask, access_level);
 	}
 
-	void set_bits(int32_t mask,
-	              PrivilegeLevel access_level = PrivilegeLevel::Machine) {
+	void set_bits(int32_t mask, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
 		write(unchecked_read() | mask, access_level);
 	}
 
@@ -69,10 +60,8 @@ struct csr_base {
 		mode = _get_access_mode();
 		level = (mode & User)
 		            ? PrivilegeLevel::User
-		            : (mode & Supervisor)
-		                  ? PrivilegeLevel::Supervisor
-		                  : (mode & Machine) ? PrivilegeLevel::Machine
-		                                     : PrivilegeLevel::Reserved;
+		            : (mode & Supervisor) ? PrivilegeLevel::Supervisor
+		                                  : (mode & Machine) ? PrivilegeLevel::Machine : PrivilegeLevel::Reserved;
 		ensure(level != PrivilegeLevel::Reserved && "invalid privilege level");
 	}
 
@@ -327,8 +316,7 @@ struct csr_64 {
 struct csr_64_low : public csr_base {
 	csr_64 &target;
 
-	csr_64_low(csr_64 &obj, uint32_t addr, const char *name)
-	    : csr_base(addr, name), target(obj) {}
+	csr_64_low(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
 
 	virtual int32_t unchecked_read() override { return target.low; }
 
@@ -338,8 +326,7 @@ struct csr_64_low : public csr_base {
 struct csr_64_high : public csr_base {
 	csr_64 &target;
 
-	csr_64_high(csr_64 &obj, uint32_t addr, const char *name)
-	    : csr_base(addr, name), target(obj) {}
+	csr_64_high(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
 
 	virtual int32_t unchecked_read() override { return target.high; }
 
@@ -434,8 +421,7 @@ struct csr_table {
 #define CSR_TABLE_ADD_COUNTER_64(basename, addr)                             \
 	basename##_root = new csr_64();                                          \
 	basename = _register(new csr_64_low(*basename##_root, addr, #basename)); \
-	basename##h =                                                            \
-	    _register(new csr_64_high(*basename##_root, addr + 0x80, #basename));
+	basename##h = _register(new csr_64_high(*basename##_root, addr + 0x80, #basename));
 
 	void setup() {
 		/* user csrs */

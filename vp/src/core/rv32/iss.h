@@ -117,8 +117,7 @@ struct ISS;
 struct timing_interface {
 	virtual ~timing_interface() {}
 
-	virtual void update_timing(Instruction instr, Opcode::Mapping op,
-	                           ISS &iss) = 0;
+	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
 
 struct instr_memory_interface {
@@ -154,8 +153,7 @@ struct InstrMemoryProxy : public instr_memory_interface {
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_time access_delay = clock_cycle * 2;
 
-	InstrMemoryProxy(direct_memory_interface &dmi,
-	                 tlm_utils::tlm_quantumkeeper &keeper)
+	InstrMemoryProxy(direct_memory_interface &dmi, tlm_utils::tlm_quantumkeeper &keeper)
 	    : dmi(dmi), quantum_keeper(keeper) {}
 
 	virtual int32_t load_instr(uint32_t pc) override {
@@ -181,8 +179,7 @@ struct DataMemoryProxy : public data_memory_interface {
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_time access_delay = clock_cycle * 4;
 
-	DataMemoryProxy(direct_memory_interface &dmi,
-	                data_memory_interface *next_memory,
+	DataMemoryProxy(direct_memory_interface &dmi, data_memory_interface *next_memory,
 	                tlm_utils::tlm_quantumkeeper &keeper)
 	    : dmi(dmi), next_memory(next_memory), quantum_keeper(keeper) {}
 
@@ -236,22 +233,12 @@ struct DataMemoryProxy : public data_memory_interface {
 	virtual int32_t load_word(addr_t addr) { return _load_data<int32_t>(addr); }
 	virtual int32_t load_half(addr_t addr) { return _load_data<int16_t>(addr); }
 	virtual int32_t load_byte(addr_t addr) { return _load_data<int8_t>(addr); }
-	virtual uint32_t load_uhalf(addr_t addr) {
-		return _load_data<uint16_t>(addr);
-	}
-	virtual uint32_t load_ubyte(addr_t addr) {
-		return _load_data<uint8_t>(addr);
-	}
+	virtual uint32_t load_uhalf(addr_t addr) { return _load_data<uint16_t>(addr); }
+	virtual uint32_t load_ubyte(addr_t addr) { return _load_data<uint8_t>(addr); }
 
-	virtual void store_word(addr_t addr, uint32_t value) {
-		_store_data(addr, value);
-	}
-	virtual void store_half(addr_t addr, uint16_t value) {
-		_store_data(addr, value);
-	}
-	virtual void store_byte(addr_t addr, uint8_t value) {
-		_store_data(addr, value);
-	}
+	virtual void store_word(addr_t addr, uint32_t value) { _store_data(addr, value); }
+	virtual void store_half(addr_t addr, uint16_t value) { _store_data(addr, value); }
+	virtual void store_byte(addr_t addr, uint8_t value) { _store_data(addr, value); }
 };
 
 struct CombinedMemoryInterface : public sc_core::sc_module,
@@ -262,12 +249,9 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	tlm_utils::simple_initiator_socket<CombinedMemoryInterface> isock;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 
-	CombinedMemoryInterface(sc_core::sc_module_name,
-	                        tlm_utils::tlm_quantumkeeper &keeper)
-	    : quantum_keeper(keeper) {}
+	CombinedMemoryInterface(sc_core::sc_module_name, tlm_utils::tlm_quantumkeeper &keeper) : quantum_keeper(keeper) {}
 
-	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr,
-	                            uint8_t *data, unsigned num_bytes) {
+	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		tlm::tlm_generic_payload trans;
 		trans.set_command(cmd);
 		trans.set_address(addr);
@@ -285,15 +269,13 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	template <typename T>
 	inline T _load_data(addr_t addr) {
 		T ans;
-		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans,
-		                sizeof(T));
+		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
 		return ans;
 	}
 
 	template <typename T>
 	inline void _store_data(addr_t addr, T value) {
-		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value,
-		                sizeof(T));
+		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
 	}
 
 	int32_t load_instr(addr_t addr) { return _load_data<int32_t>(addr); }
@@ -315,9 +297,7 @@ enum class CoreExecStatus {
 	Terminated,
 };
 
-struct ISS : public sc_core::sc_module,
-             public external_interrupt_target,
-             public timer_interrupt_target {
+struct ISS : public sc_core::sc_module, public external_interrupt_target, public timer_interrupt_target {
 	clint_if *clint = nullptr;
 	instr_memory_interface *instr_mem = nullptr;
 	data_memory_interface *mem = nullptr;
@@ -348,9 +328,8 @@ struct ISS : public sc_core::sc_module,
 
 	csr_base &csr_update_and_get(uint32_t addr);
 
-	void init(instr_memory_interface *instr_mem,
-	          data_memory_interface *data_mem, clint_if *clint,
-	          SyscallHandler *sys, uint32_t entrypoint, uint32_t sp);
+	void init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint, SyscallHandler *sys,
+	          uint32_t entrypoint, uint32_t sp);
 
 	virtual void trigger_external_interrupt() override;
 

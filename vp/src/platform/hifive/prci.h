@@ -47,9 +47,7 @@ struct PRCI : public sc_core::sc_module {
 		if ((r.vptr == &pllcfg) && r.nv) pllcfg |= 1 << 31;
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
-	}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 };
 
 #endif  // RISCV_VP_PRCI_H

@@ -35,8 +35,7 @@ struct SimpleSensor2 : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(SimpleSensor2);
 
-	SimpleSensor2(sc_core::sc_module_name, uint32_t irq_number)
-	    : irq_number(irq_number) {
+	SimpleSensor2(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
 		tsock.register_b_transport(this, &SimpleSensor2::transport);
 		SC_THREAD(run);
 
@@ -47,13 +46,11 @@ struct SimpleSensor2 : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &SimpleSensor2::register_access_callback);
 
-		router
-		    .add_start_size_mapping(0x00, data_frame.size(), vp::map::read_only)
+		router.add_start_size_mapping(0x00, data_frame.size(), vp::map::read_only)
 		    .register_handler(this, &SimpleSensor2::data_frame_access_callback);
 	}
 
-	void data_frame_access_callback(tlm::tlm_generic_payload &trans,
-	                                sc_core::sc_time) {
+	void data_frame_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time) {
 		// return last generated random data at requested address
 		vp::map::execute_memory_access(trans, data_frame.data());
 	}
@@ -74,9 +71,7 @@ struct SimpleSensor2 : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
-	}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 
 	void run() {
 		while (true) {

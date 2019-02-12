@@ -62,18 +62,12 @@ struct EthernetDevice : public sc_core::sc_module {
 	bool disabled;
 
 	static const uint16_t STATUS_REG_ADDR = 0x00;
-	static const uint16_t RECEIVE_SIZE_REG_ADDR =
-	    STATUS_REG_ADDR + sizeof(uint32_t);
-	static const uint16_t RECEIVE_DST_REG_ADDR =
-	    RECEIVE_SIZE_REG_ADDR + sizeof(uint32_t);
-	static const uint16_t SEND_SRC_REG_ADDR =
-	    RECEIVE_DST_REG_ADDR + sizeof(uint32_t);
-	static const uint16_t SEND_SIZE_REG_ADDR =
-	    SEND_SRC_REG_ADDR + sizeof(uint32_t);
-	static const uint16_t MAC_HIGH_REG_ADDR =
-	    SEND_SIZE_REG_ADDR + sizeof(uint32_t);
-	static const uint16_t MAC_LOW_REG_ADDR =
-	    MAC_HIGH_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t RECEIVE_DST_REG_ADDR = RECEIVE_SIZE_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t SEND_SRC_REG_ADDR = RECEIVE_DST_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t SEND_SIZE_REG_ADDR = SEND_SRC_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t MAC_HIGH_REG_ADDR = SEND_SIZE_REG_ADDR + sizeof(uint32_t);
+	static const uint16_t MAC_LOW_REG_ADDR = MAC_HIGH_REG_ADDR + sizeof(uint32_t);
 
 	enum : uint16_t {
 		RECV_OPERATION = 1,
@@ -82,8 +76,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(EthernetDevice);
 
-	EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem,
-	               std::string clonedev);
+	EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uint8_t *mem, std::string clonedev);
 
 	void init_network(std::string clonedev);
 	void add_all_if_ips();
@@ -101,8 +94,7 @@ struct EthernetDevice : public sc_core::sc_module {
 		if (r.write && r.vptr == &status) {
 			if (r.nv == RECV_OPERATION) {
 				assert(has_frame);
-				memcpy(&mem[receive_dst - 0x80000000], recv_frame_buf,
-				       receive_size);
+				memcpy(&mem[receive_dst - 0x80000000], recv_frame_buf, receive_size);
 				has_frame = false;
 				receive_size = 0;
 			} else if (r.nv == SEND_OPERATION) {
@@ -113,9 +105,7 @@ struct EthernetDevice : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
-	}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 
 	void run() {
 		while (!disabled) {

@@ -45,8 +45,8 @@ struct rv32g_stat {
 	int32_t __glibc_reserved[2];
 };
 
-namespace rv_sc {  // from
-	               // riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+namespace rv_sc {                   // from
+	                                // riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
 constexpr uint32_t RDONLY = 0x0000; /* +1 == FREAD */
 constexpr uint32_t WRONLY = 0x0001; /* +1 == FWRITE */
 constexpr uint32_t RDWR = 0x0002;   /* +1 == FREAD|FWRITE */
@@ -155,16 +155,13 @@ int sys_lseek(int fd, off_t offset, int whence) {
 	return ans;
 }
 
-int sys_open(SyscallHandler *sys, const char *pathname, int flags,
-             mode_t mode) {
-	const char *host_pathname =
-	    (char *)sys->guest_to_host_pointer((void *)pathname);
+int sys_open(SyscallHandler *sys, const char *pathname, int flags, mode_t mode) {
+	const char *host_pathname = (char *)sys->guest_to_host_pointer((void *)pathname);
 
 	auto ans = open(host_pathname, translateRVFlagsToHost(flags), mode);
 
-	std::cout << "[sys_open] " << host_pathname << ", " << flags
-	          << " (translated to " << translateRVFlagsToHost(flags) << "), "
-	          << mode << std::endl;
+	std::cout << "[sys_open] " << host_pathname << ", " << flags << " (translated to " << translateRVFlagsToHost(flags)
+	          << "), " << mode << std::endl;
 
 	return ans;
 }
@@ -192,8 +189,7 @@ int sys_time(SyscallHandler *sys, rv32g_time_t *tloc) {
 }
 
 // TODO: add support for additional syscalls if necessary
-int SyscallHandler::execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2,
-                                    ulong) {
+int SyscallHandler::execute_syscall(ulong n, ulong _a0, ulong _a1, ulong _a2, ulong) {
 	// NOTE: when linking with CRT, the most basic example only calls
 	// *gettimeofday* and finally *exit*
 

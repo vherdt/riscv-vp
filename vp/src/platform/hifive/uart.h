@@ -99,9 +99,7 @@ struct UART : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
-	}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 };
 
 #endif  // RISCV_VP_UART_H

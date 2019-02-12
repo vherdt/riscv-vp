@@ -4,24 +4,20 @@ PLIC::PLIC(sc_core::sc_module_name) {
 	clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	tsock.register_b_transport(this, &PLIC::transport);
 
-	auto &regs =
-	    router
-	        .add_register_bank({
-	            {PENDING_INTERRUPTS_1_ADDR, &pending_interrupts_1},
-	            {PENDING_INTERRUPTS_2_ADDR, &pending_interrupts_2},
-	            {HART_0_ENABLED_INTERRUPTS_1_ADDR,
-	             &hart_0_enabled_interrupts_1},
-	            {HART_0_ENABLED_INTERRUPTS_2_ADDR,
-	             &hart_0_enabled_interrupts_2},
-	            {HART_0_CLAIM_RESPONSE_ADDR, &hart_0_claim_response},
-	            {HART_0_PRIORITY_THRESHOLD_ADDR, &hart_0_priority_threshold},
-	        })
-	        .register_handler(this, &PLIC::register_access_callback);
+	auto &regs = router
+	                 .add_register_bank({
+	                     {PENDING_INTERRUPTS_1_ADDR, &pending_interrupts_1},
+	                     {PENDING_INTERRUPTS_2_ADDR, &pending_interrupts_2},
+	                     {HART_0_ENABLED_INTERRUPTS_1_ADDR, &hart_0_enabled_interrupts_1},
+	                     {HART_0_ENABLED_INTERRUPTS_2_ADDR, &hart_0_enabled_interrupts_2},
+	                     {HART_0_CLAIM_RESPONSE_ADDR, &hart_0_claim_response},
+	                     {HART_0_PRIORITY_THRESHOLD_ADDR, &hart_0_priority_threshold},
+	                 })
+	                 .register_handler(this, &PLIC::register_access_callback);
 
 	for (unsigned i = 0; i < NUM_INTERRUPTS; ++i) {
 		interrupt_priorities[i] = 1;
-		regs.add_register(
-		    {i * 4, &interrupt_priorities[i], vp::map::read_write, 0b111});
+		regs.add_register({i * 4, &interrupt_priorities[i], vp::map::read_write, 0b111});
 	}
 
 	SC_THREAD(run);
@@ -43,9 +39,8 @@ void PLIC::gateway_incoming_interrupt(uint32_t irq_id) {
 }
 
 void PLIC::clear_pending_interrupt(int irq_id) {
-	assert(irq_id >= 0 &&
-	       irq_id < NUM_INTERRUPTS);  // NOTE: ignore clear of zero interrupt
-	                                  // (zero is not available)
+	assert(irq_id >= 0 && irq_id < NUM_INTERRUPTS);  // NOTE: ignore clear of zero interrupt
+	                                                 // (zero is not available)
 	// std::cout << "[vp::plic] clear pending interrupt " << irq_id <<
 	// std::endl;
 
@@ -77,8 +72,7 @@ int PLIC::hart_0_get_next_pending_interrupt(bool consider_threshold) {
 		assert(i / 32 <= 1);
 		if (irqs[i / 32] & (1 << i)) {
 			auto prio = interrupt_priorities[i];
-			if (prio > 0 &&
-			    (!consider_threshold || (prio > hart_0_priority_threshold))) {
+			if (prio > 0 && (!consider_threshold || (prio > hart_0_priority_threshold))) {
 				if (prio > max_priority) {
 					max_priority = prio;
 					min_id = i;
@@ -91,8 +85,7 @@ int PLIC::hart_0_get_next_pending_interrupt(bool consider_threshold) {
 }
 
 void PLIC::register_access_callback(const vp::map::register_access_t &r) {
-	if (r.write &&
-	    (r.vptr == &pending_interrupts_1 || r.vptr == &pending_interrupts_2)) {
+	if (r.write && (r.vptr == &pending_interrupts_1 || r.vptr == &pending_interrupts_2)) {
 		assert(false && "pending interrupts registers are read only");
 		return;
 	}
@@ -101,8 +94,7 @@ void PLIC::register_access_callback(const vp::map::register_access_t &r) {
 		// NOTE: on claim request retrieve return and clear the interrupt with
 		// highest priority, priority threshold is ignored at this point
 		int min_id = hart_0_get_next_pending_interrupt(false);
-		hart_0_claim_response =
-		    min_id;  // zero means no more interrupt to claim
+		hart_0_claim_response = min_id;  // zero means no more interrupt to claim
 		clear_pending_interrupt(min_id);
 		// std::cout << "[vp::plic] claim interrupt " << min_id << std::endl;
 	}
@@ -126,13 +118,9 @@ void PLIC::register_access_callback(const vp::map::register_access_t &r) {
 	}
 }
 
-void PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-	router.transport(trans, delay);
-}
+void PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 
-bool PLIC::hart_0_has_pending_enabled_interrupts() {
-	return hart_0_get_next_pending_interrupt(true) > 0;
-}
+bool PLIC::hart_0_has_pending_enabled_interrupts() { return hart_0_get_next_pending_interrupt(true) > 0; }
 
 void PLIC::run() {
 	while (true) {

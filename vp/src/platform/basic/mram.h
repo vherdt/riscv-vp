@@ -21,8 +21,7 @@ struct SimpleMRAM : public sc_core::sc_module {
 	uint32_t mSize;
 	fstream file;
 
-	SimpleMRAM(sc_module_name, string &filepath, uint32_t size)
-	    : mFilepath(filepath), mSize(size) {
+	SimpleMRAM(sc_module_name, string &filepath, uint32_t size) : mFilepath(filepath), mSize(size) {
 		tsock.register_b_transport(this, &SimpleMRAM::transport);
 
 		if (filepath.size() == 0 || size == 0) {  // no file
@@ -32,8 +31,7 @@ struct SimpleMRAM : public sc_core::sc_module {
 		if (!file.is_open() || !file.good()) {
 			// cout << "Failed to open " << mFilepath << ": " << strerror(errno)
 			// << endl;
-			file.open(mFilepath, ofstream::in | ofstream::out |
-			                         ofstream::binary | ios_base::trunc);
+			file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary | ios_base::trunc);
 		}
 		truncate(mFilepath.c_str(), mSize);
 		assert(file.is_open() && file.good() && "File could not be opened");
@@ -46,8 +44,7 @@ struct SimpleMRAM : public sc_core::sc_module {
 		file.seekg(addr, file.beg);
 		file.write(reinterpret_cast<char *>(src), num_bytes);
 		if (!file.is_open() || !file.good()) {
-			cout << "Failed to write " << mFilepath << ": " << strerror(errno)
-			     << endl;
+			cout << "Failed to write " << mFilepath << ": " << strerror(errno) << endl;
 		}
 	}
 

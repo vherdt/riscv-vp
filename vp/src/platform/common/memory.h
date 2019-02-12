@@ -16,11 +16,9 @@ struct SimpleMemory : public sc_core::sc_module {
 	uint8_t *data;
 	uint32_t size;
 
-	SimpleMemory(sc_core::sc_module_name, uint32_t size)
-	    : data(new uint8_t[size]()), size(size) {
+	SimpleMemory(sc_core::sc_module_name, uint32_t size) : data(new uint8_t[size]()), size(size) {
 		tsock.register_b_transport(this, &SimpleMemory::transport);
-		tsock.register_get_direct_mem_ptr(this,
-		                                  &SimpleMemory::get_direct_mem_ptr);
+		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
 	}
 
 	void load_binary_file(const std::string &filename, unsigned addr) {
@@ -60,8 +58,7 @@ struct SimpleMemory : public sc_core::sc_module {
 		delay += sc_core::sc_time(10, sc_core::SC_NS);
 	}
 
-	bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans,
-	                        tlm::tlm_dmi &dmi) {
+	bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi) {
 		(void)trans;
 		dmi.allow_read_write();
 		dmi.set_start_address(0);

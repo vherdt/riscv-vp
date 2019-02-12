@@ -7,8 +7,7 @@ struct SimpleTimingDecorator : public timing_interface {
 	sc_core::sc_time cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
 
 	SimpleTimingDecorator() {
-		for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i)
-			instr_cycles[i] = cycle_time;
+		for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i) instr_cycles[i] = cycle_time;
 
 		const sc_core::sc_time memory_access_cycles = 4 * cycle_time;
 		const sc_core::sc_time mul_div_cycles = 8 * cycle_time;
@@ -31,8 +30,7 @@ struct SimpleTimingDecorator : public timing_interface {
 		instr_cycles[Opcode::REMU] = mul_div_cycles;
 	}
 
-	void on_begin_exec_step(Instruction instr, Opcode::mapping op,
-	                        ISS &iss) override {
+	void on_begin_exec_step(Instruction instr, Opcode::mapping op, ISS &iss) override {
 		auto new_cycles = instr_cycles[op];
 
 		iss.quantum_keeper.inc(new_cycles);

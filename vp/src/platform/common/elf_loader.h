@@ -67,15 +67,7 @@ typedef struct {
 	Elf32_Half st_shndx;
 } Elf32_Sym;
 
-enum Elf32_PhdrType {
-	PT_NULL = 0,
-	PT_LOAD = 1,
-	PT_DYNAMIC = 2,
-	PT_INTERP = 3,
-	PT_NOTE = 4,
-	PT_SHLIB = 5,
-	PT_PHDR = 6
-};
+enum Elf32_PhdrType { PT_NULL = 0, PT_LOAD = 1, PT_DYNAMIC = 2, PT_INTERP = 3, PT_NOTE = 4, PT_SHLIB = 5, PT_PHDR = 6 };
 
 struct ELFLoader {
 	const char *filename;
@@ -92,8 +84,8 @@ struct ELFLoader {
 		std::vector<const Elf32_Phdr *> sections;
 
 		for (int i = 0; i < hdr->e_phnum; ++i) {
-			const Elf32_Phdr *p = reinterpret_cast<const Elf32_Phdr *>(
-			    elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
+			const Elf32_Phdr *p =
+			    reinterpret_cast<const Elf32_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
 
 			if (p->p_type != PT_LOAD) continue;
 
@@ -103,49 +95,41 @@ struct ELFLoader {
 		return sections;
 	}
 
-	void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset,
-	                           bool use_vaddr = true) {
+	void load_executable_image(uint8_t *dst, uint32_t size, uint32_t offset, bool use_vaddr = true) {
 		for (auto section : get_load_sections()) {
 			if (use_vaddr) {
-				assert((section->p_vaddr >= offset) &&
-				       (section->p_vaddr + section->p_memsz < offset + size));
+				assert((section->p_vaddr >= offset) && (section->p_vaddr + section->p_memsz < offset + size));
 
 				// NOTE: if memsz is larger than filesz, the additional bytes
 				// are zero initialized (auto. done for memory)
-				memcpy(dst + section->p_vaddr - offset,
-				       elf.data() + section->p_offset, section->p_filesz);
+				memcpy(dst + section->p_vaddr - offset, elf.data() + section->p_offset, section->p_filesz);
 			} else {
 				if (section->p_filesz == 0) {
 					// skipping empty sections, we are 0 initialized
 					continue;
 				}
 				if (section->p_paddr < offset) {
-					std::cerr << "Section physical address 0x" << std::hex
-					          << section->p_paddr << " not in local offset (0x"
-					          << std::hex << offset << ")!" << std::endl;
+					std::cerr << "Section physical address 0x" << std::hex << section->p_paddr
+					          << " not in local offset (0x" << std::hex << offset << ")!" << std::endl;
 					// raise(std::runtime_error("elf cant be loaded"));
 				}
 				if (section->p_paddr + section->p_memsz >= offset + size) {
-					std::cerr << "Section would overlap memory (0x" << std::hex
-					          << section->p_paddr << " + 0x" << std::hex
-					          << section->p_memsz << ") >= 0x" << std::hex
-					          << offset + size << std::endl;
+					std::cerr << "Section would overlap memory (0x" << std::hex << section->p_paddr << " + 0x"
+					          << std::hex << section->p_memsz << ") >= 0x" << std::hex << offset + size << std::endl;
 					// raise(std::runtime_error("elf cant be loaded"));
 				}
-				assert((section->p_paddr >= offset) &&
-				       (section->p_paddr + section->p_memsz < offset + size));
+				assert((section->p_paddr >= offset) && (section->p_paddr + section->p_memsz < offset + size));
 
 				// NOTE: if memsz is larger than filesz, the additional bytes
 				// are zero initialized (auto. done for memory)
-				memcpy(dst + section->p_paddr - offset,
-				       elf.data() + section->p_offset, section->p_filesz);
+				memcpy(dst + section->p_paddr - offset, elf.data() + section->p_offset, section->p_filesz);
 			}
 		}
 	}
 
 	uint32_t get_memory_end() {
-		const Elf32_Phdr *last = reinterpret_cast<const Elf32_Phdr *>(
-		    elf.data() + hdr->e_phoff + hdr->e_phentsize * (hdr->e_phnum - 1));
+		const Elf32_Phdr *last =
+		    reinterpret_cast<const Elf32_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * (hdr->e_phnum - 1));
 
 		return last->p_vaddr + last->p_memsz;
 	}
@@ -161,8 +145,8 @@ struct ELFLoader {
 	const char *get_section_string_table() {
 		assert(hdr->e_shoff != 0 && "string table section not available");
 
-		const Elf32_Shdr *s = reinterpret_cast<const Elf32_Shdr *>(
-		    elf.data() + hdr->e_shoff + hdr->e_shentsize * hdr->e_shstrndx);
+		const Elf32_Shdr *s =
+		    reinterpret_cast<const Elf32_Shdr *>(elf.data() + hdr->e_shoff + hdr->e_shentsize * hdr->e_shstrndx);
 		const char *start = elf.data() + s->sh_offset;
 		return start;
 	}
@@ -180,8 +164,7 @@ struct ELFLoader {
 
 		auto num_entries = s->sh_size / sizeof(Elf32_Sym);
 		for (unsigned i = 0; i < num_entries; ++i) {
-			const Elf32_Sym *p = reinterpret_cast<const Elf32_Sym *>(
-			    elf.data() + s->sh_offset + i * sizeof(Elf32_Sym));
+			const Elf32_Sym *p = reinterpret_cast<const Elf32_Sym *>(elf.data() + s->sh_offset + i * sizeof(Elf32_Sym));
 
 			// std::cout << "check symbol: " << strings + p->st_name <<
 			// std::endl;
@@ -206,15 +189,14 @@ struct ELFLoader {
 
 	const Elf32_Shdr *get_section(const char *section_name) {
 		if (hdr->e_shoff == 0) {
-			throw std::runtime_error(
-			    "unable to find section address, section table not available");
+			throw std::runtime_error("unable to find section address, section table not available");
 		}
 
 		const char *strings = get_section_string_table();
 
 		for (unsigned i = 0; i < hdr->e_shnum; ++i) {
-			const Elf32_Shdr *s = reinterpret_cast<const Elf32_Shdr *>(
-			    elf.data() + hdr->e_shoff + hdr->e_shentsize * i);
+			const Elf32_Shdr *s =
+			    reinterpret_cast<const Elf32_Shdr *>(elf.data() + hdr->e_shoff + hdr->e_shentsize * i);
 
 			// std::cout << "check section: " << strings + s->sh_name <<
 			// std::endl;
@@ -224,8 +206,7 @@ struct ELFLoader {
 			}
 		}
 
-		throw std::runtime_error(
-		    "unable to find section address, seems not available");
+		throw std::runtime_error("unable to find section address, seems not available");
 	}
 };
 

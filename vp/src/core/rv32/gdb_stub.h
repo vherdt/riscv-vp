@@ -26,10 +26,7 @@ struct DebugCoreRunner : public sc_core::sc_module {
 	SC_HAS_PROCESS(DebugCoreRunner);
 
 	DebugCoreRunner(ISS &core, const debug_memory_mapping &mm)
-	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")),
-	      core(core),
-	      regfile(core.regs),
-	      memory(mm) {
+	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")), core(core), regfile(core.regs), memory(mm) {
 		SC_THREAD(run);
 		core.debug_mode = true;
 		iobuf = new char[bufsize];

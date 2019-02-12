@@ -26,21 +26,13 @@ struct ExternalTimingDecorator : public timing_interface {
 
 	void initialize() {
 		lib_handle = dlopen(RISCV_TIMING_SIM_LIB.c_str(), RTLD_LAZY);
-		if (!lib_handle)
-			throw std::runtime_error("unable to open shared library '" +
-			                         RISCV_TIMING_SIM_LIB + "'");
+		if (!lib_handle) throw std::runtime_error("unable to open shared library '" + RISCV_TIMING_SIM_LIB + "'");
 
-		create = (SimTimingInterface * (*)(const char *))
-		    dlsym(lib_handle, "create_riscv_vp_timing_interface");
-		if (!create)
-			throw std::runtime_error(
-			    "unable to load 'create_riscv_vp_timing_interface' function");
+		create = (SimTimingInterface * (*)(const char *)) dlsym(lib_handle, "create_riscv_vp_timing_interface");
+		if (!create) throw std::runtime_error("unable to load 'create_riscv_vp_timing_interface' function");
 
-		destroy = (void (*)(SimTimingInterface *))dlsym(
-		    lib_handle, "destroy_riscv_vp_timing_interface");
-		if (!destroy)
-			throw std::runtime_error(
-			    "unable to load 'destroy_riscv_vp_timing_interface' function");
+		destroy = (void (*)(SimTimingInterface *))dlsym(lib_handle, "destroy_riscv_vp_timing_interface");
+		if (!destroy) throw std::runtime_error("unable to load 'destroy_riscv_vp_timing_interface' function");
 
 		timing_sim = (SimTimingInterface *)create(RISCV_TIMING_DB.c_str());
 	}
@@ -54,8 +46,7 @@ struct ExternalTimingDecorator : public timing_interface {
 		dlclose(lib_handle);
 	}
 
-	void on_begin_exec_step(Instruction instr, Opcode::mapping op,
-	                        ISS &iss) override {
+	void on_begin_exec_step(Instruction instr, Opcode::mapping op, ISS &iss) override {
 		uint64_t cycles = timing_sim->get_cycles_for_instruction(iss.last_pc);
 
 		assert(timing_sim->get_magic_number() == 0x5E5E5E5E5E5E5E5E);

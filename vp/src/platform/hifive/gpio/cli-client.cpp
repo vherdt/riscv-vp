@@ -14,8 +14,7 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
-		cout << "usage: " << argv[0] << " host port (e.g. localhost 1339)"
-		     << endl;
+		cout << "usage: " << argv[0] << " host port (e.g. localhost 1339)" << endl;
 		exit(-1);
 	}
 
@@ -31,8 +30,7 @@ int main(int argc, char* argv[]) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state),
-		         sizeof(GpioCommon::Reg));
+		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
 		usleep(125000);
 	}
 
@@ -45,8 +43,7 @@ int main(int argc, char* argv[]) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state),
-		         sizeof(GpioCommon::Reg));
+		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
 		usleep(750);
 	}
 
@@ -59,8 +56,7 @@ int main(int argc, char* argv[]) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state),
-		         sizeof(GpioCommon::Reg));
+		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
 		usleep(750);
 	}
 }

@@ -2,8 +2,7 @@
 
 using namespace std;
 
-GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base)
-    : int_gpio_base(int_gpio_base) {
+GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_gpio_base) {
 	tsock.register_b_transport(this, &GPIO::transport);
 
 	router
@@ -33,8 +32,7 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base)
 	dont_initialize();
 
 	server.setupConnection("1339");
-	server.registerOnChange(
-	    bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
+	server.registerOnChange(bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
 	serverThread = thread(bind(&GpioServer::startListening, &server));
 }
 
@@ -82,9 +80,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	}
 }
 
-void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-	router.transport(trans, delay);
-}
+void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
 
 void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val) {
 	if (((server.state & (1l << bit)) >> bit) == val) {

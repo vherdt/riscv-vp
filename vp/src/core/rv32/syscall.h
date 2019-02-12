@@ -57,7 +57,7 @@
 #define SYS_host_test_fail 3  // RISC-V test execution failed
 
 struct SyscallHandler {
-	uint8_t *mem = 0;  // direct pointer to start of guest memory in host memory
+	uint8_t *mem = 0;     // direct pointer to start of guest memory in host memory
 	uint32_t mem_offset;  // start address of the memory as mapped into the
 	                      // address space
 	uint32_t hp = 0;      // heap pointer
@@ -69,8 +69,7 @@ struct SyscallHandler {
 
 	uint32_t get_max_heap_memory_consumption() { return max_heap - start_heap; }
 
-	void init(uint8_t *host_memory_pointer, uint32_t mem_start_address,
-	          uint32_t heap_pointer_address) {
+	void init(uint8_t *host_memory_pointer, uint32_t mem_start_address, uint32_t heap_pointer_address) {
 		mem = host_memory_pointer;
 		mem_offset = mem_start_address;
 		hp = heap_pointer_address;
@@ -85,9 +84,7 @@ struct SyscallHandler {
 		return mem + (addr - mem_offset);
 	}
 
-	uint8_t *guest_to_host_pointer(void *p) {
-		return guest_address_to_host_pointer((uintptr_t)p);
-	}
+	uint8_t *guest_to_host_pointer(void *p) { return guest_address_to_host_pointer((uintptr_t)p); }
 
 	typedef unsigned long int ulong;
 

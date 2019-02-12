@@ -56,8 +56,7 @@ int main(int argc, char* argv[]) {
 
 	signal(SIGINT, signalHandler);
 
-	gpio.registerOnChange(
-	    bind(onChangeCallback, &gpio, placeholders::_1, placeholders::_2));
+	gpio.registerOnChange(bind(onChangeCallback, &gpio, placeholders::_1, placeholders::_2));
 	thread server(bind(&GpioServer::startListening, &gpio));
 
 	while (!stop && !gpio.isStopped()) {

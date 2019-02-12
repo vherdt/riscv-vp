@@ -103,8 +103,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 		return false;
 	}
 
-	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,
-	          sizeof s);
+	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
 	printf("client: connecting to %s\n", s);
 
 	freeaddrinfo(servinfo);  // all done with this structure
