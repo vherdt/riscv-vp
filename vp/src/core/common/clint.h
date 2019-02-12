@@ -1,6 +1,8 @@
 #ifndef RISCV_ISA_CLINT_H
 #define RISCV_ISA_CLINT_H
 
+
+#include "irq_if.h"
 #include <unordered_map>
 
 #include <tlm_utils/simple_target_socket.h>
