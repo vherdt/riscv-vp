@@ -27,36 +27,30 @@
 #pragma once
 #include <systemc>
 
-class AsyncEvent
-  : public  sc_core::sc_prim_channel
-{
-  sc_core::sc_time  m_delay;
+class AsyncEvent : public sc_core::sc_prim_channel {
+  sc_core::sc_time m_delay;
   sc_core::sc_event m_event;
 
-public:
+ public:
   AsyncEvent(const char* name = sc_core::sc_gen_unique_name("async_event"))
-    : sc_core::sc_prim_channel(name)
-    , m_event((std::string(this->basename())+"_event").c_str())
-  {
+      : sc_core::sc_prim_channel(name), m_event((std::string(this->basename()) + "_event").c_str()) {
     // register this channel as "suspending", to not end the simulation
     // when we're running out of internal events
     async_attach_suspending();
   }
 
   // THREADSAFE METHOD:
-  void notify(sc_core::sc_time delay = sc_core::SC_ZERO_TIME)
-    {
-      m_delay = delay;
-      async_request_update();
-    }
+  void notify(sc_core::sc_time delay = sc_core::SC_ZERO_TIME) {
+    m_delay = delay;
+    async_request_update();
+  }
 
   // only allow waiting for the event
   operator const sc_core::sc_event&() const { return m_event; }
 
-protected:
-  void update(void)
-    {
-      // we're in the update phase of the SystemC kernel (thread)
-      m_event.notify(m_delay);
-    }
+ protected:
+  void update(void) {
+    // we're in the update phase of the SystemC kernel (thread)
+    m_event.notify(m_delay);
+  }
 };

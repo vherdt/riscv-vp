@@ -37,3 +37,6 @@ sysc-clean:
 clean-all: vp-clean qt-clean sysc-clean
 
 clean: vp-clean
+
+codestyle:
+	find . -name "*.h*" -o -name "*.cpp" | xargs clang-format -i -style="{BasedOnStyle: google, ColumnLimit: 120}" 
