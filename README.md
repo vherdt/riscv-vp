@@ -1,7 +1,19 @@
-RISC-V based Virtual Prototype
-==============================
+RISC-V based Virtual Prototype (VP)
+===================================
 
-The RISC-V based Virtual Prototype (VP) integrates a RISC-V RV32IM core, a PLIC-based interrupt controller and an essential set of peripherals together with SW debug capabilities. The VP is designed as extensible and configurable platform with a generic bus system and implemented in standard-compliant SystemC and TLM-2.0. For more information please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. In the following we provide build instructions and how to compile and run software on the VP.
+Key features of our VP:
+
+ - RV32IMAC core + machine mode CSRs
+ - Implemented in SystemC and TLM-2.0
+ - SW debug capabilities (GDB RSP interface) with Eclipse
+ - FreeRTOS support
+ - Generic and configurable bus
+ - CLINT and PLIC-based interrupt controller + additional peripherals
+ - Instruction-based timing model + annotated TLM 2.0 transaction delays
+ - New: Compressed instructions (C)
+ - New: SiFive HiFive1 board configuration
+
+For more information please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. In the following we provide build instructions and how to compile and run software on the VP.
 
 
 1) Build the RISC-V GNU Toolchain:
