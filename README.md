@@ -1,23 +1,25 @@
-RISC-V based Virtual Prototype (VP)
-===================================
+# RISC-V based Virtual Prototype (VP)
 
-Key features of our VP:
+### Key features of our VP:
 
  - RV32IMAC core + machine mode CSRs
- - Implemented in SystemC and TLM-2.0
+ - Implemented in SystemC TLM-2.0
  - SW debug capabilities (GDB RSP interface) with Eclipse
  - FreeRTOS support
  - Generic and configurable bus
  - CLINT and PLIC-based interrupt controller + additional peripherals
  - Instruction-based timing model + annotated TLM 2.0 transaction delays
- - New: Compressed instructions (C)
- - New: SiFive HiFive1 board configuration
+ - **New:** Compressed instructions (C)
+ - **New:** Peripherals, e.g. display, flash controller, preliminary ethernet
+ - **New:** Example configuration for the SiFive HiFive1 board available
 
-For more information please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. In the following we provide build instructions and how to compile and run software on the VP.
+For related information, e.g. verification, please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. 
+We accept pull requests and in general contributions are very welcome. 
+
+In the following we provide build instructions and how to compile and run software on the VP.
 
 
-1) Build the RISC-V GNU Toolchain:
-----------------------------------
+#### 1) Build the RISC-V GNU Toolchain:
 
 (Cross-)Compiling the software examples, in order to run them on the VP, requires the RISC-V GNU toolchain to be available in PATH. Several standard packages are required to build the toolchain. On Ubuntu the required packages can be installed as follows:
 
@@ -46,8 +48,7 @@ make
 ```
 
 
-2) Build this RISC-V Virtual Prototype:
----------------------------------------
+#### 2) Build this RISC-V Virtual Prototype:
 
 i) in *vp/dependencies* folder (will download and compile SystemC):
 
@@ -66,8 +67,7 @@ make
 ```
 
 
-3) Compile and run some Software:
----------------------------------
+#### 3) Compile and run some Software:
 
 In *sw*:
 
@@ -80,8 +80,7 @@ make                                    # (requires RISC-V GNU toolchain in PATH
 Add the *riscv-vp* executable to PATH to simplify execution of SW examples.
 
 
-4) Optional Makefile:
----------------------
+#### 4) Optional Makefile:
 
 The toplevel Makefile can alternatively be used to build the VP including its dependencies (i.e. step 2 in this README), from the toplevel folder call:
 
