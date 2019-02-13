@@ -66,3 +66,15 @@ make                                    # (requires RISC-V GNU toolchain in PATH
 ```
 
 Add the *riscv-vp* executable to PATH to simplify execution of SW examples.
+
+
+4) Optional Makefile:
+---------------------
+
+The toplevel Makefile can alternatively be used to build the VP including its dependencies (i.e. step 2 in this README), from the toplevel folder call:
+
+```bash
+make
+```
+
+This will also copy the VP binaries into the *vp/build/bin* folder.
