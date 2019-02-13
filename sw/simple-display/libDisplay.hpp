@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../vp-display/framebuffer.h"
+#include "../../env/basic/vp-display/framebuffer.h"
 
 extern Framebuffer* volatile const framebuffer;
 
