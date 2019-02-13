@@ -72,9 +72,9 @@ make
 In *sw*:
 
 ```bash
-cd simple-sensor                        # can be replaced with different example
-make                                    # (requires RISC-V GNU toolchain in PATH)
-../../vp/build/lib/riscv-vp main        # shows final simulation time as well as register and pc contents
+cd simple-sensor                                   # can be replaced with different example
+make                                               # (requires RISC-V GNU toolchain in PATH)
+../../vp/build/src/platform/basic/riscv-vp main    # shows final simulation time as well as register and pc contents
 ```
 
 Add the *riscv-vp* executable to PATH to simplify execution of SW examples.
