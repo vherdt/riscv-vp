@@ -11,10 +11,10 @@ const char *regnames[] = {
 };
 
 int regcolors[] = {
-#if defined(COLOR_THEME_LIGHT)
+#if defined(COLOR_THEME_DARK)
     0,  1,  2,  3,  4,  5,  6,  52, 8,  9,  53, 54, 55, 56, 57, 58,
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-#elif defined(COLOR_THEME_DARK)
+#elif defined(COLOR_THEME_LIGHT)
     100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 153, 154, 155, 156, 157, 158,
     116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
 #else
