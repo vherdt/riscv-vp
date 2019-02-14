@@ -7,6 +7,6 @@ add_library(rv32
 		syscall.cpp
         ${HEADERS})
 
-target_compile_definitions(rv32 PRIVATE COLOR_THEME_DARK)
+#target_compile_definitions(rv32 PRIVATE COLOR_THEME_LIGHT)
 
 target_include_directories(rv32 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

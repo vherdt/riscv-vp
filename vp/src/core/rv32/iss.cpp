@@ -44,21 +44,17 @@ uint32_t RegFile::shamt(uint32_t index) {
 
 int32_t &RegFile::operator[](const uint32_t idx) { return regs[idx]; }
 
-#if defined(COLOR_THEME_LIGHT)
+#if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
 #define COLORFRMT "\e[38;5;%um%s\e[39m"
-#elif defined(COLOR_THEME_DARK)
-#define COLORFRMT "\e[38;5;%um%s\e[39m"
+#define COLORPRINT(fmt,data) fmt,data
 #else
-#define COLORFRMT "%s"  // TODO: This does not work that easy
+#define COLORFRMT "%s"
+#define COLORPRINT(fmt,data) data
 #endif
 
 void RegFile::show() {
 	for (int i = 0; i < NUM_REGS; ++i) {
-#if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
-		printf(COLORFRMT " = %8x\n", regcolors[i], regnames[i], regs[i]);
-#else
-		printf(COLORFRMT " = %8x\n", regnames[i], regs[i]);
-#endif
+		printf(COLORFRMT " = %8x\n", COLORPRINT(regcolors[i], regnames[i]), regs[i]);
 	}
 }
 
@@ -109,26 +105,26 @@ Opcode::Mapping ISS::exec_step() {
 		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
-				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, regcolors[instr.rd()], regnames[instr.rd()],
-				       regcolors[instr.rs1()], regnames[instr.rs1()], regcolors[instr.rs2()], regnames[instr.rs2()]);
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+                       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
 			case Opcode::Type::I:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()],
-				       regcolors[instr.rs1()], regnames[instr.rs1()], instr.I_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+                       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), instr.I_imm());
 				break;
 			case Opcode::Type::S:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rs1()], regnames[instr.rs1()],
-				       regcolors[instr.rs2()], regnames[instr.rs2()], instr.S_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+                       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.S_imm());
 				break;
 			case Opcode::Type::B:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", regcolors[instr.rs1()], regnames[instr.rs1()],
-				       regcolors[instr.rs2()], regnames[instr.rs2()], instr.B_imm());
+				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+                        COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.B_imm());
 				break;
 			case Opcode::Type::U:
-				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.U_imm());
+				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.U_imm());
 				break;
 			case Opcode::Type::J:
-				printf(COLORFRMT ", 0x%x", regcolors[instr.rd()], regnames[instr.rd()], instr.J_imm());
+				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
 				break;
 			default:;
 		}
