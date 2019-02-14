@@ -22,15 +22,25 @@ struct access_mode {
 	bool allow_read = true;
 	bool allow_write = true;
 
-	static access_mode make_writeonly() { return access_mode({false, true}); }
+	static access_mode make_writeonly() {
+		return access_mode({false, true});
+	}
 
-	static access_mode make_readonly() { return access_mode({true, false}); }
+	static access_mode make_readonly() {
+		return access_mode({true, false});
+	}
 
-	bool can_read() { return allow_read; }
+	bool can_read() {
+		return allow_read;
+	}
 
-	bool can_write() { return allow_write; }
+	bool can_write() {
+		return allow_write;
+	}
 
-	bool is_readonly() { return allow_read && !allow_write; }
+	bool is_readonly() {
+		return allow_read && !allow_write;
+	}
 };
 
 constexpr access_mode read_write = {true, true};
@@ -99,7 +109,9 @@ struct reg_mapping_t {
 	access_mode mode = read_write;
 	uint32_t mask = 0xffffffff;
 
-	uint32_t value() { return *vptr; }
+	uint32_t value() {
+		return *vptr;
+	}
 
 	void bus_write(uint32_t new_value) {
 		assert(mode.can_write());
@@ -160,7 +172,8 @@ struct RegisterMapping : public AbstractMapping {
 		auto cmd = trans.get_command();
 
 		auto it = addr_to_reg.find(addr - addr % 4);  // clamp to nearest register
-		if (it == addr_to_reg.end()) return false;
+		if (it == addr_to_reg.end())
+			return false;
 
 		assert(len + (addr % 4) <= 4);  // do not allow access beyond the register
 		assert(cmd == tlm::TLM_READ_COMMAND || cmd == tlm::TLM_WRITE_COMMAND);
@@ -208,7 +221,8 @@ struct LocalRouter {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		for (auto &m : maps) {
-			if (m->try_handle(trans, delay)) return;
+			if (m->try_handle(trans, delay))
+				return;
 		}
 		throw std::runtime_error("access of unmapped address (local TLM router): name=" + name + ", addr=0x" +
 		                         (boost::format("%X") % trans.get_address()).str());

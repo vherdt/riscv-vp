@@ -12,11 +12,17 @@ struct PortMapping {
 	uint64_t start;
 	uint64_t end;
 
-	PortMapping(uint64_t start, uint64_t end) : start(start), end(end) { assert(end > start); }
+	PortMapping(uint64_t start, uint64_t end) : start(start), end(end) {
+		assert(end > start);
+	}
 
-	bool contains(uint64_t addr) { return addr >= start && addr < end; }
+	bool contains(uint64_t addr) {
+		return addr >= start && addr < end;
+	}
 
-	uint64_t global_to_local(uint64_t addr) { return addr - start; }
+	uint64_t global_to_local(uint64_t addr) {
+		return addr - start;
+	}
 };
 
 template <unsigned int NR_OF_INITIATORS, unsigned int NR_OF_TARGETS>
@@ -32,7 +38,8 @@ struct SimpleBus : sc_core::sc_module {
 
 	unsigned decode(uint64_t addr) {
 		for (unsigned i = 0; i < NR_OF_TARGETS; ++i) {
-			if (ports[i]->contains(addr)) return i;
+			if (ports[i]->contains(addr))
+				return i;
 		}
 		throw std::runtime_error("unable to find target port for address " + std::to_string(addr));
 	}

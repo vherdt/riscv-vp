@@ -12,15 +12,20 @@ void activeWait(float factor = 0.5) {
 	};
 }
 
-Point getRandomPoint() { return Point(rand() % screenWidth, rand() % screenHeight); }
+Point getRandomPoint() {
+	return Point(rand() % screenWidth, rand() % screenHeight);
+}
 
-Color getRandomColor() { return rand() % SHRT_MAX; }
+Color getRandomColor() {
+	return rand() % SHRT_MAX;
+}
 
 void drawBackground() {
 	for (uint32_t i = 0; i < screenHeight - 1; i++) {
 		display::drawLine(Framebuffer::Type::background, Point(0, i), Point(screenWidth, i),
 		                  fromRGB(i & 0x7, 0, i >> 3));
-		if (i % 5 == 0) display::applyFrame();
+		if (i % 5 == 0)
+			display::applyFrame();
 	}
 }
 

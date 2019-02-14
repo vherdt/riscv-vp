@@ -150,7 +150,8 @@ struct SimpleDMA : public sc_core::sc_module {
 
 		isock->b_transport(trans, delay);
 
-		if (delay != sc_core::SC_ZERO_TIME) sc_core::wait(delay);
+		if (delay != sc_core::SC_ZERO_TIME)
+			sc_core::wait(delay);
 	}
 };
 

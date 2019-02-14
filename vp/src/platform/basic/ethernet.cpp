@@ -116,7 +116,8 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 				}
 				case IPPROTO_TCP:
 					cout << "TCP ";
-					if (verbose) cout << endl;
+					if (verbose)
+						cout << endl;
 					return;
 				case IPPROTO_ICMP:
 					cout << "ICMP ";
@@ -133,7 +134,8 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 						default:
 							cout << "Sonstiges";
 					}
-					if (verbose) cout << endl;
+					if (verbose)
+						cout << endl;
 				default:
 					return;
 			}

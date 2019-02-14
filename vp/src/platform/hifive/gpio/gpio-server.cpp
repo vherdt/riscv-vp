@@ -88,11 +88,17 @@ bool GpioServer::setupConnection(const char *port) {
 	return true;
 }
 
-void GpioServer::quit() { stop = true; }
+void GpioServer::quit() {
+	stop = true;
+}
 
-bool GpioServer::isStopped() { return stop; }
+bool GpioServer::isStopped() {
+	return stop;
+}
 
-void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun) { this->fun = fun; }
+void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun) {
+	this->fun = fun;
+}
 
 void GpioServer::startListening() {
 	if (listen(fd, 1) == -1) {

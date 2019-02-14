@@ -37,7 +37,9 @@ struct SimpleMRAM : public sc_core::sc_module {
 		assert(file.is_open() && file.good() && "File could not be opened");
 	}
 
-	~SimpleMRAM() { file.close(); }
+	~SimpleMRAM() {
+		file.close();
+	}
 
 	void write_data(unsigned addr, uint8_t *src, unsigned num_bytes) {
 		assert(addr + num_bytes <= mSize);

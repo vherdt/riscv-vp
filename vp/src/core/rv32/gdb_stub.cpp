@@ -219,7 +219,9 @@ bool is_any_watchpoint_or_hw_breakpoint(const std::string &msg) {
 	return is_hw_breakpoint || is_read_watchpoint || is_write_watchpoint || is_access_watchpoint;
 }
 
-uint32_t swap_byte_order(uint32_t n) { return htonl(n); }
+uint32_t swap_byte_order(uint32_t n) {
+	return htonl(n);
+}
 
 void DebugCoreRunner::handle_gdb_loop(int conn) {
 	while (true) {

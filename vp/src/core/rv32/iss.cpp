@@ -22,9 +22,13 @@ int regcolors[] = {
 #endif
 };
 
-RegFile::RegFile() { memset(regs, 0, sizeof(regs)); }
+RegFile::RegFile() {
+	memset(regs, 0, sizeof(regs));
+}
 
-RegFile::RegFile(const RegFile &other) { memcpy(regs, other.regs, sizeof(regs)); }
+RegFile::RegFile(const RegFile &other) {
+	memcpy(regs, other.regs, sizeof(regs));
+}
 
 void RegFile::write(uint32_t index, int32_t value) {
 	assert(index <= x31);
@@ -42,14 +46,16 @@ uint32_t RegFile::shamt(uint32_t index) {
 	return BIT_RANGE(regs[index], 4, 0);
 }
 
-int32_t &RegFile::operator[](const uint32_t idx) { return regs[idx]; }
+int32_t &RegFile::operator[](const uint32_t idx) {
+	return regs[idx];
+}
 
 #if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
 #define COLORFRMT "\e[38;5;%um%s\e[39m"
-#define COLORPRINT(fmt,data) fmt,data
+#define COLORPRINT(fmt, data) fmt, data
 #else
 #define COLORFRMT "%s"
-#define COLORPRINT(fmt,data) data
+#define COLORPRINT(fmt, data) data
 #endif
 
 void RegFile::show() {
@@ -108,19 +114,20 @@ Opcode::Mapping ISS::exec_step() {
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
-                       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
+				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
 			case Opcode::Type::I:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
-                       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), instr.I_imm());
+				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), instr.I_imm());
 				break;
 			case Opcode::Type::S:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
-                       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.S_imm());
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.S_imm());
 				break;
 			case Opcode::Type::B:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
-                        COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.B_imm());
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.B_imm());
 				break;
 			case Opcode::Type::U:
 				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.U_imm());
@@ -222,14 +229,16 @@ Opcode::Mapping ISS::exec_step() {
 			break;
 
 		case Opcode::JAL:
-			if (instr.rd() != RegFile::zero) regs[instr.rd()] = pc;
+			if (instr.rd() != RegFile::zero)
+				regs[instr.rd()] = pc;
 			pc = last_pc + instr.J_imm();
 			break;
 
 		case Opcode::JALR: {
 			uint32_t link = pc;
 			pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
-			if (instr.rd() != RegFile::zero) regs[instr.rd()] = link;
+			if (instr.rd() != RegFile::zero)
+				regs[instr.rd()] = link;
 		} break;
 
 		case Opcode::SB: {
@@ -273,27 +282,33 @@ Opcode::Mapping ISS::exec_step() {
 		} break;
 
 		case Opcode::BEQ:
-			if (regs[instr.rs1()] == regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] == regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BNE:
-			if (regs[instr.rs1()] != regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] != regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BLT:
-			if (regs[instr.rs1()] < regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] < regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BGE:
-			if (regs[instr.rs1()] >= regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] >= regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BLTU:
-			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::BGEU:
-			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()])
+				pc = last_pc + instr.B_imm();
 			break;
 
 		case Opcode::FENCE: {
@@ -329,8 +344,10 @@ Opcode::Mapping ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto rs1_val = regs[instr.rs1()];
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) regs[rd] = csr.read();
-			if (rs1 != RegFile::zero) csr.set_bits(rs1_val);
+			if (rd != RegFile::zero)
+				regs[rd] = csr.read();
+			if (rs1 != RegFile::zero)
+				csr.set_bits(rs1_val);
 		} break;
 
 		case Opcode::CSRRC: {
@@ -338,8 +355,10 @@ Opcode::Mapping ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto rs1_val = regs[instr.rs1()];
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) regs[rd] = csr.read();
-			if (rs1 != RegFile::zero) csr.clear_bits(rs1_val);
+			if (rd != RegFile::zero)
+				regs[rd] = csr.read();
+			if (rs1 != RegFile::zero)
+				csr.clear_bits(rs1_val);
 		} break;
 
 		case Opcode::CSRRWI: {
@@ -355,16 +374,20 @@ Opcode::Mapping ISS::exec_step() {
 			auto rd = instr.rd();
 			auto zimm = instr.zimm();
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) regs[rd] = csr.read();
-			if (zimm != 0) csr.set_bits(zimm);
+			if (rd != RegFile::zero)
+				regs[rd] = csr.read();
+			if (zimm != 0)
+				csr.set_bits(zimm);
 		} break;
 
 		case Opcode::CSRRCI: {
 			auto rd = instr.rd();
 			auto zimm = instr.zimm();
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) regs[rd] = csr.read();
-			if (zimm != 0) csr.clear_bits(zimm);
+			if (rd != RegFile::zero)
+				regs[rd] = csr.read();
+			if (zimm != 0)
+				csr.clear_bits(zimm);
 		} break;
 
 		case Opcode::MUL: {
@@ -523,7 +546,8 @@ Opcode::Mapping ISS::exec_step() {
 			// NOTE: only a hint, can be implemented as NOP
 			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie <<
 			// std::endl;
-			if (!has_pending_enabled_interrupts()) sc_core::wait(wfi_event);
+			if (!has_pending_enabled_interrupts())
+				sc_core::wait(wfi_event);
 			break;
 
 		case Opcode::SFENCE_VMA:
@@ -613,7 +637,9 @@ void ISS::trigger_external_interrupt() {
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
-void ISS::clear_external_interrupt() { csrs.mip->meip = false; }
+void ISS::clear_external_interrupt() {
+	csrs.mip->meip = false;
+}
 
 void ISS::trigger_timer_interrupt(bool status) {
 	csrs.mip->mtip = status;
@@ -689,16 +715,19 @@ void ISS::run_step() {
 	last_pc = pc;
 	Opcode::Mapping op = exec_step();
 
-	if (has_pending_enabled_interrupts()) switch_to_trap_handler();
+	if (has_pending_enabled_interrupts())
+		switch_to_trap_handler();
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
 	// to *mepc*).
-	if (sys->shall_exit) status = CoreExecStatus::Terminated;
+	if (sys->shall_exit)
+		status = CoreExecStatus::Terminated;
 
 	// speeds up the execution performance (non debug mode) significantly by
 	// checking the additional flag first
-	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) status = CoreExecStatus::HitBreakpoint;
+	if (debug_mode && (breakpoints.find(pc) != breakpoints.end()))
+		status = CoreExecStatus::HitBreakpoint;
 
 	performance_and_sync_update(op);
 }

@@ -230,15 +230,31 @@ struct DataMemoryProxy : public data_memory_interface {
 		}
 	}
 
-	virtual int32_t load_word(addr_t addr) { return _load_data<int32_t>(addr); }
-	virtual int32_t load_half(addr_t addr) { return _load_data<int16_t>(addr); }
-	virtual int32_t load_byte(addr_t addr) { return _load_data<int8_t>(addr); }
-	virtual uint32_t load_uhalf(addr_t addr) { return _load_data<uint16_t>(addr); }
-	virtual uint32_t load_ubyte(addr_t addr) { return _load_data<uint8_t>(addr); }
+	virtual int32_t load_word(addr_t addr) {
+		return _load_data<int32_t>(addr);
+	}
+	virtual int32_t load_half(addr_t addr) {
+		return _load_data<int16_t>(addr);
+	}
+	virtual int32_t load_byte(addr_t addr) {
+		return _load_data<int8_t>(addr);
+	}
+	virtual uint32_t load_uhalf(addr_t addr) {
+		return _load_data<uint16_t>(addr);
+	}
+	virtual uint32_t load_ubyte(addr_t addr) {
+		return _load_data<uint8_t>(addr);
+	}
 
-	virtual void store_word(addr_t addr, uint32_t value) { _store_data(addr, value); }
-	virtual void store_half(addr_t addr, uint16_t value) { _store_data(addr, value); }
-	virtual void store_byte(addr_t addr, uint8_t value) { _store_data(addr, value); }
+	virtual void store_word(addr_t addr, uint32_t value) {
+		_store_data(addr, value);
+	}
+	virtual void store_half(addr_t addr, uint16_t value) {
+		_store_data(addr, value);
+	}
+	virtual void store_byte(addr_t addr, uint8_t value) {
+		_store_data(addr, value);
+	}
 };
 
 struct CombinedMemoryInterface : public sc_core::sc_module,
@@ -278,17 +294,35 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
 	}
 
-	int32_t load_instr(addr_t addr) { return _load_data<int32_t>(addr); }
+	int32_t load_instr(addr_t addr) {
+		return _load_data<int32_t>(addr);
+	}
 
-	int32_t load_word(addr_t addr) { return _load_data<int32_t>(addr); }
-	int32_t load_half(addr_t addr) { return _load_data<int16_t>(addr); }
-	int32_t load_byte(addr_t addr) { return _load_data<int8_t>(addr); }
-	uint32_t load_uhalf(addr_t addr) { return _load_data<uint16_t>(addr); }
-	uint32_t load_ubyte(addr_t addr) { return _load_data<uint8_t>(addr); }
+	int32_t load_word(addr_t addr) {
+		return _load_data<int32_t>(addr);
+	}
+	int32_t load_half(addr_t addr) {
+		return _load_data<int16_t>(addr);
+	}
+	int32_t load_byte(addr_t addr) {
+		return _load_data<int8_t>(addr);
+	}
+	uint32_t load_uhalf(addr_t addr) {
+		return _load_data<uint16_t>(addr);
+	}
+	uint32_t load_ubyte(addr_t addr) {
+		return _load_data<uint8_t>(addr);
+	}
 
-	void store_word(addr_t addr, uint32_t value) { _store_data(addr, value); }
-	void store_half(addr_t addr, uint16_t value) { _store_data(addr, value); }
-	void store_byte(addr_t addr, uint8_t value) { _store_data(addr, value); }
+	void store_word(addr_t addr, uint32_t value) {
+		_store_data(addr, value);
+	}
+	void store_half(addr_t addr, uint16_t value) {
+		_store_data(addr, value);
+	}
+	void store_byte(addr_t addr, uint8_t value) {
+		_store_data(addr, value);
+	}
 };
 
 enum class CoreExecStatus {

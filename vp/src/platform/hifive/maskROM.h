@@ -22,7 +22,9 @@ struct MaskROM : public sc_core::sc_module {
 	    "/include/ 0x20004;"
 	    "};";
 
-	MaskROM(sc_core::sc_module_name) { tsock.register_b_transport(this, &MaskROM::transport); }
+	MaskROM(sc_core::sc_module_name) {
+		tsock.register_b_transport(this, &MaskROM::transport);
+	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		tlm::tlm_command cmd = trans.get_command();

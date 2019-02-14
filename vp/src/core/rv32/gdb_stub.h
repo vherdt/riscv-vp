@@ -32,7 +32,9 @@ struct DebugCoreRunner : public sc_core::sc_module {
 		iobuf = new char[bufsize];
 	}
 
-	~DebugCoreRunner() { delete[] iobuf; }
+	~DebugCoreRunner() {
+		delete[] iobuf;
+	}
 
 	void run();
 	void send_packet(int conn, const std::string &msg);

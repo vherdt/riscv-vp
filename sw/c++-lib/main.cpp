@@ -11,13 +11,17 @@ struct A {
 
 	virtual int foo() = 0;
 
-	virtual int bar() { return a + b; }
+	virtual int bar() {
+		return a + b;
+	}
 };
 
 struct B : public A {
 	using A::A;
 
-	virtual int foo() override { return a - b; }
+	virtual int foo() override {
+		return a - b;
+	}
 };
 
 int main() {

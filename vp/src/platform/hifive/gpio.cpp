@@ -80,7 +80,9 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	}
 }
 
-void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+	router.transport(trans, delay);
+}
 
 void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val) {
 	if (((server.state & (1l << bit)) >> bit) == val) {

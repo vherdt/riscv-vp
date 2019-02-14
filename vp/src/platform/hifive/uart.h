@@ -64,7 +64,9 @@ struct UART : public sc_core::sc_module {
 		tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 	}
 
-	~UART() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
+	~UART() {
+		tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
 		if (r.read) {
@@ -99,7 +101,9 @@ struct UART : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		router.transport(trans, delay);
+	}
 };
 
 #endif  // RISCV_VP_UART_H

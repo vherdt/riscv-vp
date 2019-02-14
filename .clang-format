@@ -1,6 +1,9 @@
 ﻿---
 BasedOnStyle: Google
 ColumnLimit: '120'
+AllowShortCaseLabelsOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: 'false'
 IndentWidth: '4'
 TabWidth: '4'
 UseTab: ForIndentation

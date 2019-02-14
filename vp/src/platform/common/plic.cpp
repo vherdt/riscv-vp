@@ -118,9 +118,13 @@ void PLIC::register_access_callback(const vp::map::register_access_t &r) {
 	}
 }
 
-void PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+void PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+	router.transport(trans, delay);
+}
 
-bool PLIC::hart_0_has_pending_enabled_interrupts() { return hart_0_get_next_pending_interrupt(true) > 0; }
+bool PLIC::hart_0_has_pending_enabled_interrupts() {
+	return hart_0_get_next_pending_interrupt(true) > 0;
+}
 
 void PLIC::run() {
 	while (true) {

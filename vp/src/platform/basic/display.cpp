@@ -98,7 +98,8 @@ void Display::fillFrame(Framebuffer::Type type, Color color) {
 void Display::drawLine(Framebuffer::Type type, PointF from, PointF to, Color color) {
 	Frame &local = frame.buf->getFrame(type);
 	if (from.x == to.x) {  // vertical line
-		if (from.y > to.y) swap(from.y, to.y);
+		if (from.y > to.y)
+			swap(from.y, to.y);
 		uint16_t intFromX = from.x;
 		uint16_t intToY = to.y;
 		for (uint16_t y = from.y; y <= intToY; y++) {
@@ -107,7 +108,8 @@ void Display::drawLine(Framebuffer::Type type, PointF from, PointF to, Color col
 		return;
 	}
 	if (from.y == to.y) {  // horizontal line, the fastest
-		if (from.x > to.x) swap(from.x, to.x);
+		if (from.x > to.x)
+			swap(from.x, to.x);
 		uint16_t intFromY = from.y;
 		uint16_t intToX = to.x;
 		for (uint16_t x = from.x; x <= intToX; x++) {

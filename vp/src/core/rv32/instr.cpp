@@ -190,7 +190,9 @@ unsigned C_LW_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SINGLE_P1(n, 6) << 2) | (BIT_SINGLE_P1(n, 5) << 6);
 }
 
-unsigned C_SW_UIMM(uint32_t n) { return C_LW_UIMM(n); }
+unsigned C_SW_UIMM(uint32_t n) {
+	return C_LW_UIMM(n);
+}
 
 int32_t C_JAL_IMM(int32_t n) {
 	return EXTRACT_SIGN_BIT(n, 12, 11) | BIT_SINGLE_PN(n, 11, 4) | (BIT_SLICE(n, 10, 9) << 8) |
@@ -203,9 +205,13 @@ int32_t C_ADDI16SP_NZIMM(int32_t n) {
 	       BIT_SINGLE_PN(n, 2, 5);
 }
 
-int32_t C_LUI_NZIMM(int32_t n) { return EXTRACT_SIGN_BIT(n, 12, 17) | (BIT_SLICE(n, 6, 2) << 12); }
+int32_t C_LUI_NZIMM(int32_t n) {
+	return EXTRACT_SIGN_BIT(n, 12, 17) | (BIT_SLICE(n, 6, 2) << 12);
+}
 
-int32_t C_J_IMM(int32_t n) { return C_JAL_IMM(n); }
+int32_t C_J_IMM(int32_t n) {
+	return C_JAL_IMM(n);
+}
 
 int32_t C_BRANCH_IMM(int32_t n) {
 	return EXTRACT_SIGN_BIT(n, 12, 8) | (BIT_SLICE(n, 11, 10) << 3) | (BIT_SLICE(n, 6, 5) << 6) |
@@ -216,7 +222,9 @@ uint32_t C_LWSP_UIMM(uint32_t n) {
 	return BIT_SINGLE_PN(n, 12, 5) | (BIT_SLICE(n, 6, 4) << 2) | (BIT_SLICE(n, 3, 2) << 6);
 }
 
-uint32_t C_SWSP_UIMM(uint32_t n) { return (BIT_SLICE(n, 12, 9) << 2) | (BIT_SLICE(n, 8, 7) << 6); }
+uint32_t C_SWSP_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 12, 9) << 2) | (BIT_SLICE(n, 8, 7) << 6);
+}
 
 struct InstructionFactory {
 	typedef Instruction T;
@@ -250,7 +258,9 @@ struct InstructionFactory {
 		         ((rs2 & 0x1f) << 20) | 35 | (2 << 12));
 	}
 
-	static T LUI(unsigned rd, int U_imm) { return T((U_imm & (1048575 << 12)) | ((rd & 0x1f) << 7) | 55); }
+	static T LUI(unsigned rd, int U_imm) {
+		return T((U_imm & (1048575 << 12)) | ((rd & 0x1f) << 7) | 55);
+	}
 
 	static T ADDI(unsigned rd, unsigned rs1, int I_imm) {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 19 | (0 << 12));
@@ -294,7 +304,9 @@ struct InstructionFactory {
 		         ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 99 | (1 << 12));
 	}
 
-	static T EBREAK() { return T(1048691); }
+	static T EBREAK() {
+		return T(1048691);
+	}
 };
 
 Compressed::Opcode decode_compressed(Instruction &instr) {
@@ -472,7 +484,8 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 
 		case C_ADDI4SPN: {
 			unsigned n = C_ADDI4SPN_NZUIMM(instr.data());
-			if (n == 0) return UNDEF;
+			if (n == 0)
+				return UNDEF;
 			instr = InstructionFactory::ADDI(instr.c_rs2_small(), 2, n);
 			return ADDI;
 		}
@@ -507,14 +520,16 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 
 		case C_SRLI: {
 			auto n = instr.c_uimm();
-			if (n > 31) return UNDEF;
+			if (n > 31)
+				return UNDEF;
 			instr = InstructionFactory::SRLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRLI;
 		}
 
 		case C_SRAI: {
 			auto n = instr.c_uimm();
-			if (n > 31) return UNDEF;
+			if (n > 31)
+				return UNDEF;
 			instr = InstructionFactory::SRAI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRAI;
 		}
@@ -537,7 +552,8 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 
 		case C_SLLI: {
 			auto n = instr.c_uimm();
-			if (n > 31) return UNDEF;
+			if (n > 31)
+				return UNDEF;
 			instr = InstructionFactory::SLLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SLLI;
 		}

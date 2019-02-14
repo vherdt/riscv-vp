@@ -42,12 +42,16 @@ struct PRCI : public sc_core::sc_module {
 	void register_access_callback(const vp::map::register_access_t &r) {
 		r.fn();
 
-		if ((r.vptr == &hfrosccfg) && r.nv) hfrosccfg |= 1 << 31;
+		if ((r.vptr == &hfrosccfg) && r.nv)
+			hfrosccfg |= 1 << 31;
 
-		if ((r.vptr == &pllcfg) && r.nv) pllcfg |= 1 << 31;
+		if ((r.vptr == &pllcfg) && r.nv)
+			pllcfg |= 1 << 31;
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		router.transport(trans, delay);
+	}
 };
 
 #endif  // RISCV_VP_PRCI_H

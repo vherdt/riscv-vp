@@ -166,8 +166,10 @@ int sc_main(int argc, char **argv) {
 
 	instr_memory_interface *instr_mem_if = &iss_mem_if;
 	data_memory_interface *data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi) instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi) data_mem_if = &data_mem;
+	if (opt.use_instr_dmi)
+		instr_mem_if = &instr_mem;
+	if (opt.use_data_dmi)
+		data_mem_if = &data_mem;
 
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
 	bus.ports[1] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
