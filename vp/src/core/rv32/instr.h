@@ -107,12 +107,6 @@ enum Parts {
 
 	// reserved opcodes for custom instructions
 	OP_CUST1 = 0b0101011,
-	/*
-	F3_C1F0   = 0b000,	//settaint.i
-	F3_C1F1   = 0b001,	//settaint.r
-	F3_C1F2   = 0b010,	//gettaint
-	...
-	*/
 	OP_CUST0 = 0b0001011,
 };
 

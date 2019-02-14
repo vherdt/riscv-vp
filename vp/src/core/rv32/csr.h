@@ -120,6 +120,10 @@ struct csr_misa : public csr_base {
 		};
 	};
 
+	bool has_C_extension() {
+		return extensions & (1 << 2);
+	}
+
 	void init() {
 		extensions = 1 | (1 << 2) | (1 << 8) | (1 << 12);  // IMAC
 		wiri = 0;

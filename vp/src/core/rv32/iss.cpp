@@ -89,6 +89,8 @@ ISS::ISS() : sc_module(sc_core::sc_module_name("ISS")) {
 }
 
 Opcode::Mapping ISS::exec_step() {
+	assert (!(pc & 0x1) && (!(pc & 0x3) || csrs.misa->has_C_extension()) && "misaligned instruction");
+
 	auto mem_word = instr_mem->load_instr(pc);
 	Instruction instr(mem_word);
 	Opcode::Mapping op;
