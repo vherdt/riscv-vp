@@ -26,18 +26,23 @@ struct ExternalTimingDecorator : public timing_interface {
 
 	void initialize() {
 		lib_handle = dlopen(RISCV_TIMING_SIM_LIB.c_str(), RTLD_LAZY);
-		if (!lib_handle) throw std::runtime_error("unable to open shared library '" + RISCV_TIMING_SIM_LIB + "'");
+		if (!lib_handle)
+			throw std::runtime_error("unable to open shared library '" + RISCV_TIMING_SIM_LIB + "'");
 
 		create = (SimTimingInterface * (*)(const char *)) dlsym(lib_handle, "create_riscv_vp_timing_interface");
-		if (!create) throw std::runtime_error("unable to load 'create_riscv_vp_timing_interface' function");
+		if (!create)
+			throw std::runtime_error("unable to load 'create_riscv_vp_timing_interface' function");
 
 		destroy = (void (*)(SimTimingInterface *))dlsym(lib_handle, "destroy_riscv_vp_timing_interface");
-		if (!destroy) throw std::runtime_error("unable to load 'destroy_riscv_vp_timing_interface' function");
+		if (!destroy)
+			throw std::runtime_error("unable to load 'destroy_riscv_vp_timing_interface' function");
 
 		timing_sim = (SimTimingInterface *)create(RISCV_TIMING_DB.c_str());
 	}
 
-	ExternalTimingDecorator() { initialize(); }
+	ExternalTimingDecorator() {
+		initialize();
+	}
 
 	~ExternalTimingDecorator() {
 		assert(timing_sim != 0);

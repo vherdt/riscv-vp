@@ -67,7 +67,9 @@ struct SyscallHandler {
 	uint32_t start_heap = 0;
 	uint32_t max_heap = 0;
 
-	uint32_t get_max_heap_memory_consumption() { return max_heap - start_heap; }
+	uint32_t get_max_heap_memory_consumption() {
+		return max_heap - start_heap;
+	}
 
 	void init(uint8_t *host_memory_pointer, uint32_t mem_start_address, uint32_t heap_pointer_address) {
 		mem = host_memory_pointer;
@@ -84,7 +86,9 @@ struct SyscallHandler {
 		return mem + (addr - mem_offset);
 	}
 
-	uint8_t *guest_to_host_pointer(void *p) { return guest_address_to_host_pointer((uintptr_t)p); }
+	uint8_t *guest_to_host_pointer(void *p) {
+		return guest_address_to_host_pointer((uintptr_t)p);
+	}
 
 	typedef unsigned long int ulong;
 

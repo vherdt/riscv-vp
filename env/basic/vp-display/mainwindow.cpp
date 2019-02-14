@@ -13,7 +13,9 @@ VPDisplay::VPDisplay(QWidget* mparent) : QWidget(mparent) {
 	server.startListening(std::bind(&VPDisplay::notifyChange, this, std::placeholders::_1));
 }
 
-VPDisplay::~VPDisplay() { delete frame; }
+VPDisplay::~VPDisplay() {
+	delete frame;
+}
 
 void VPDisplay::drawMainPage(QImage* mem) {
 	Frame activeFrame = framebuffer->getActiveFrame();

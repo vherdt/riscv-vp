@@ -105,7 +105,9 @@ struct EthernetDevice : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		router.transport(trans, delay);
+	}
 
 	void run() {
 		while (!disabled) {
@@ -117,7 +119,8 @@ struct EthernetDevice : public sc_core::sc_module {
 			if (!has_frame) {
 				while (!try_recv_raw_frame())
 					;
-				if (has_frame) plic->gateway_incoming_interrupt(irq_number);
+				if (has_frame)
+					plic->gateway_incoming_interrupt(irq_number);
 			}
 		}
 	}

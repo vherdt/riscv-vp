@@ -60,7 +60,9 @@ void fillRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color) {
 	}
 }
 
-void applyFrame() { framebuffer->command = Framebuffer::Command::applyFrame; }
+void applyFrame() {
+	framebuffer->command = Framebuffer::Command::applyFrame;
+}
 
 void fillFrame(Framebuffer::Type frame, Color color) {
 	framebuffer->parameter.fill.frame = frame;

@@ -24,7 +24,9 @@ struct PointF {
 	inline PointF(Point p) : x(p.x), y(p.y){};
 };
 
-inline PointF operator+(const PointF l, PointF const r) { return PointF(l.x + r.x, l.y + r.y); }
+inline PointF operator+(const PointF l, PointF const r) {
+	return PointF(l.x + r.x, l.y + r.y);
+}
 
 struct Frame {
 	Color raw[screenHeight][screenWidth];  // Notice: Screen is on side
@@ -58,9 +60,15 @@ struct Framebuffer {
 
 	Framebuffer() : activeFrame(0), command(Command::none){};
 
-	Frame& getActiveFrame() { return frames[activeFrame % 2]; }
-	Frame& getInactiveFrame() { return frames[(activeFrame + 1) % 2]; }
-	Frame& getBackground() { return background; }
+	Frame& getActiveFrame() {
+		return frames[activeFrame % 2];
+	}
+	Frame& getInactiveFrame() {
+		return frames[(activeFrame + 1) % 2];
+	}
+	Frame& getBackground() {
+		return background;
+	}
 	Frame& getFrame(Type type) {
 		if (type == Type::foreground)
 			return getInactiveFrame();

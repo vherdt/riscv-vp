@@ -59,4 +59,6 @@ void GpioCommon::printRequest(Request* req) {
 	cout << endl;
 };
 
-GpioCommon::GpioCommon() { state = 0; }
+GpioCommon::GpioCommon() {
+	state = 0;
+}

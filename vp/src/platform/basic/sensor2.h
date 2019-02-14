@@ -58,7 +58,8 @@ struct SimpleSensor2 : public sc_core::sc_module {
 	void register_access_callback(const vp::map::register_access_t &r) {
 		// trigger pre read/write actions
 		if (r.write && (r.vptr == &scaler)) {
-			if (r.nv < 1 || r.nv > 100) return;
+			if (r.nv < 1 || r.nv > 100)
+				return;
 		}
 
 		// actual read/write
@@ -71,7 +72,9 @@ struct SimpleSensor2 : public sc_core::sc_module {
 		}
 	}
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) { router.transport(trans, delay); }
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		router.transport(trans, delay);
+	}
 
 	void run() {
 		while (true) {

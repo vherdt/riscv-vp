@@ -46,7 +46,9 @@ class AsyncEvent : public sc_core::sc_prim_channel {
 	}
 
 	// only allow waiting for the event
-	operator const sc_core::sc_event&() const { return m_event; }
+	operator const sc_core::sc_event&() const {
+		return m_event;
+	}
 
    protected:
 	void update(void) {

@@ -20,7 +20,8 @@ bool stop = false;
 void signalHandler(int signum) {
 	cout << "Interrupt signal (" << signum << ") received.\n";
 
-	if (stop) exit(signum);
+	if (stop)
+		exit(signum);
 	stop = true;
 	raise(SIGUSR1);  // this breaks wait in thread
 }

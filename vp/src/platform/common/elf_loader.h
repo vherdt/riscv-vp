@@ -87,7 +87,8 @@ struct ELFLoader {
 			const Elf32_Phdr *p =
 			    reinterpret_cast<const Elf32_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
 
-			if (p->p_type != PT_LOAD) continue;
+			if (p->p_type != PT_LOAD)
+				continue;
 
 			sections.push_back(p);
 		}
@@ -140,7 +141,9 @@ struct ELFLoader {
 		return s + s % 8;
 	}
 
-	uint32_t get_entrypoint() { return hdr->e_entry; }
+	uint32_t get_entrypoint() {
+		return hdr->e_entry;
+	}
 
 	const char *get_section_string_table() {
 		assert(hdr->e_shoff != 0 && "string table section not available");

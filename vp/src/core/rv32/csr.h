@@ -9,7 +9,8 @@
 #include <stdexcept>
 
 inline void ensure(bool cond) {
-	if (!cond) throw std::runtime_error("runtime assertion failed");
+	if (!cond)
+		throw std::runtime_error("runtime assertion failed");
 }
 
 struct csr_base {
@@ -82,7 +83,8 @@ struct csr_base {
 				ensure(false && "unknown access mode");
 		}
 
-		if ((addr & RW_BITS) != RW_BITS) ans |= Write;
+		if ((addr & RW_BITS) != RW_BITS)
+			ans |= Write;
 
 		return static_cast<AccessMode>(ans);
 	}
@@ -93,12 +95,16 @@ struct csr_base {
 	PrivilegeLevel level;
 };
 
-#define INCLUDE_CSR_MIXIN                                     \
-	using csr_base::csr_base;                                 \
-                                                              \
-	virtual int32_t unchecked_read() override { return reg; } \
-                                                              \
-	virtual void unchecked_write(int32_t val) override { reg = val; }
+#define INCLUDE_CSR_MIXIN                                \
+	using csr_base::csr_base;                            \
+                                                         \
+	virtual int32_t unchecked_read() override {          \
+		return reg;                                      \
+	}                                                    \
+                                                         \
+	virtual void unchecked_write(int32_t val) override { \
+		reg = val;                                       \
+	}
 
 struct csr_32 : public csr_base {
 	INCLUDE_CSR_MIXIN;
@@ -109,7 +115,9 @@ struct csr_32 : public csr_base {
 struct csr_misa : public csr_base {
 	INCLUDE_CSR_MIXIN;
 
-	csr_misa(uint32_t addr, const char *name) : csr_base(addr, name) { init(); }
+	csr_misa(uint32_t addr, const char *name) : csr_base(addr, name) {
+		init();
+	}
 
 	union {
 		int32_t reg = 0;
@@ -181,15 +189,20 @@ struct csr_mtvec : public csr_base {
 		};
 	};
 
-	uint32_t get_base_address() { return base << 2; }
+	uint32_t get_base_address() {
+		return base << 2;
+	}
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
-	virtual int32_t unchecked_read() override { return reg; }
+	virtual int32_t unchecked_read() override {
+		return reg;
+	}
 
 	virtual void unchecked_write(int32_t val) override {
 		reg = val;
-		if (mode >= 1) mode = 0;
+		if (mode >= 1)
+			mode = 0;
 	}
 };
 
@@ -222,7 +235,9 @@ struct csr_mie : public csr_base {
 struct csr_mip : public csr_base {
 	INCLUDE_CSR_MIXIN;
 
-	inline bool any_pending() { return msip || mtip || meip; }
+	inline bool any_pending() {
+		return msip || mtip || meip;
+	}
 
 	union {
 		int32_t reg = 0;
@@ -310,7 +325,9 @@ struct csr_64 {
 		};
 	};
 
-	void increment() { ++reg; }
+	void increment() {
+		++reg;
+	}
 };
 
 struct csr_64_low : public csr_base {
@@ -318,9 +335,13 @@ struct csr_64_low : public csr_base {
 
 	csr_64_low(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
 
-	virtual int32_t unchecked_read() override { return target.low; }
+	virtual int32_t unchecked_read() override {
+		return target.low;
+	}
 
-	virtual void unchecked_write(int32_t val) override { target.low = val; }
+	virtual void unchecked_write(int32_t val) override {
+		target.low = val;
+	}
 };
 
 struct csr_64_high : public csr_base {
@@ -328,9 +349,13 @@ struct csr_64_high : public csr_base {
 
 	csr_64_high(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
 
-	virtual int32_t unchecked_read() override { return target.high; }
+	virtual int32_t unchecked_read() override {
+		return target.high;
+	}
 
-	virtual void unchecked_write(int32_t val) override { target.high = val; }
+	virtual void unchecked_write(int32_t val) override {
+		target.high = val;
+	}
 };
 
 enum csr_addresses {

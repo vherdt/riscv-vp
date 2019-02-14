@@ -64,7 +64,8 @@ struct SimpleSensor : public sc_core::sc_module {
 			// trigger pre read/write actions
 			if ((cmd == tlm::TLM_WRITE_COMMAND) && (addr == SCALER_REG_ADDR)) {
 				uint32_t value = *((uint32_t *)ptr);
-				if (value < 1 || value > 100) return;  // ignore invalid values
+				if (value < 1 || value > 100)
+					return;  // ignore invalid values
 			}
 
 			// actual read/write

@@ -13,7 +13,9 @@ struct BasicTimer : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(BasicTimer);
 
-	BasicTimer(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) { SC_THREAD(run); }
+	BasicTimer(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
+		SC_THREAD(run);
+	}
 
 	void run() {
 		while (true) {

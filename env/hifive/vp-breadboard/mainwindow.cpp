@@ -119,7 +119,9 @@ uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg) {
 	return ext;
 }
 
-uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) { return (pinmap >> 2); }
+uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
+	return (pinmap >> 2);
+}
 
 uint8_t VPBreadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
 	uint8_t ret = 0;
@@ -139,7 +141,9 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin) {
 	return 0;  // also ignoring non-wired pin 14 <==> 8
 }
 
-uint8_t VPBreadboard::getPinnumberOfButton() { return 10; }
+uint8_t VPBreadboard::getPinnumberOfButton() {
+	return 10;
+}
 
 void printBin(char* buf, uint8_t len) {
 	for (uint16_t byte = 0; byte < len; byte++) {
@@ -157,7 +161,8 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	if (!inited || !gpio.update()) {
 		inited = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
-		if (!inited) usleep(500000);
+		if (!inited)
+			usleep(500000);
 		this->update();
 		return;
 	}

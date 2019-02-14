@@ -123,7 +123,8 @@ int sys_brk(SyscallHandler *sys, void *addr) {
 		auto n = (uintptr_t)addr;
 		sys->hp = n;
 
-		if (sys->hp > sys->max_heap) sys->max_heap = sys->hp;
+		if (sys->hp > sys->max_heap)
+			sys->max_heap = sys->hp;
 
 		return n;  // same for brk increase/decrease
 	}
