@@ -66,9 +66,9 @@
 
 struct SyscallHandler : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SyscallHandler> tsock;
-	std::unordered_map<uint32_t, syscall_if *> cores;
+	std::unordered_map<uint32_t, iss_syscall_if *> cores;
 
-	void register_core(syscall_if *core) {
+	void register_core(iss_syscall_if *core) {
         assert (cores.find(core->get_hart_id()) == cores.end());
         cores[core->get_hart_id()] = core;
 	}
@@ -106,6 +106,7 @@ struct SyscallHandler : public sc_core::sc_module {
 	                      // address space
 	uint32_t hp = 0;      // heap pointer
 	bool shall_exit = false;
+	bool shall_break = false;
 
 	// only for memory consumption evaluation
 	uint32_t start_heap = 0;

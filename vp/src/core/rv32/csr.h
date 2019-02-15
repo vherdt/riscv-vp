@@ -38,6 +38,14 @@ struct csr_base {
 	virtual int32_t unchecked_read() = 0;
 	virtual void unchecked_write(int32_t val) = 0;
 
+    bool is_read_only() {
+        return !(mode & Write);
+    }
+
+    bool is_illegal_access(bool write_access, PrivilegeLevel access_level=PrivilegeLevel::Machine) {
+        return ((write_access && is_read_only()) || (level > access_level));
+    }
+
 	int32_t read(PrivilegeLevel access_level = PrivilegeLevel::Machine) {
 		ensure(level <= access_level);
 		return unchecked_read();

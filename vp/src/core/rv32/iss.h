@@ -22,6 +22,11 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
+
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+
+
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;
 
@@ -140,6 +145,11 @@ struct data_memory_interface {
 	virtual void store_word(uint32_t addr, uint32_t value) = 0;
 	virtual void store_half(uint32_t addr, uint16_t value) = 0;
 	virtual void store_byte(uint32_t addr, uint8_t value) = 0;
+
+	virtual int32_t atomic_load_word(uint32_t addr) = 0;
+    virtual void atomic_store_word(uint32_t addr, uint32_t value) = 0;
+    virtual int32_t atomic_load_reserved_word(uint32_t addr) = 0;
+    virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) = 0;
 };
 
 struct direct_memory_interface {
@@ -257,7 +267,22 @@ struct DataMemoryProxy : public data_memory_interface {
 	virtual void store_byte(addr_t addr, uint8_t value) {
 		_store_data(addr, value);
 	}
+
+
+    virtual int32_t atomic_load_word(uint32_t addr) {
+	    throw std::runtime_error("not implemented");
+	}
+    virtual void atomic_store_word(uint32_t addr, uint32_t value) {
+        throw std::runtime_error("not implemented");
+	}
+    virtual int32_t atomic_load_reserved_word(uint32_t addr) {
+        throw std::runtime_error("not implemented");
+	}
+    virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) {
+        throw std::runtime_error("not implemented");
+	}
 };
+
 
 struct CombinedMemoryInterface : public sc_core::sc_module,
                                  public instr_memory_interface,
@@ -325,6 +350,19 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	void store_byte(addr_t addr, uint8_t value) {
 		_store_data(addr, value);
 	}
+
+    virtual int32_t atomic_load_word(uint32_t addr) {
+        throw std::runtime_error("not implemented");
+    }
+    virtual void atomic_store_word(uint32_t addr, uint32_t value) {
+        throw std::runtime_error("not implemented");
+    }
+    virtual int32_t atomic_load_reserved_word(uint32_t addr) {
+        throw std::runtime_error("not implemented");
+    }
+    virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) {
+        throw std::runtime_error("not implemented");
+    }
 };
 
 enum class CoreExecStatus {
@@ -333,7 +371,7 @@ enum class CoreExecStatus {
 	Terminated,
 };
 
-struct ISS : public external_interrupt_target, public timer_interrupt_target, public syscall_if {
+struct ISS : public external_interrupt_target, public timer_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_interface *instr_mem = nullptr;
 	data_memory_interface *mem = nullptr;
@@ -382,6 +420,42 @@ struct ISS : public external_interrupt_target, public timer_interrupt_target, pu
 	virtual uint32_t read_register(unsigned idx) override;
 	virtual void write_register(unsigned idx, uint32_t value) override;
 	virtual uint32_t get_hart_id() override;
+
+
+    inline void trap_check_pc() {
+        assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");
+
+        if (unlikely((pc & 0x3) && (!csrs.misa->has_C_extension()))) {
+            // NOTE: misaligned instruction address not possible on machines supporting compressed instructions
+            raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
+        }
+    }
+
+    inline void trap_check_natural_alignment(uint32_t addr) {
+        if (unlikely(addr & 0x3)) {
+            raise_trap(EXC_INSTR_ADDR_MISALIGNED, addr);
+        }
+    }
+
+    inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
+        uint32_t addr = regs[instr.rs1()];
+        trap_check_natural_alignment(addr);
+        uint32_t data;
+        try {
+            data = mem->atomic_load_word(addr);
+        } catch (SimulationTrap &e) {
+            if (e.reason == EXC_LOAD_ACCESS_FAULT)
+                e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+            throw e;
+        }
+        uint32_t val = operation(data, regs[instr.rs2()]);
+        mem->atomic_store_word(addr, val);
+        regs[instr.rd()] = data;
+    }
+
+    inline void _trace_amo(const std::string &name, const Instruction &instr) {
+    }
+
 
 	void prepare_trap(SimulationTrap &e);
 

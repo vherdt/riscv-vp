@@ -152,7 +152,8 @@ void ISS::exec_step() {
 
 	switch (op) {
 		case Opcode::UNDEF:
-			throw std::runtime_error("unknown instruction '" + std::to_string(instr.data()) + "' at address '" + std::to_string(last_pc) + "'");
+            std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'";
+		    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 		case Opcode::ADDI:
 			regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();
@@ -238,17 +239,18 @@ void ISS::exec_step() {
 			regs[instr.rd()] = last_pc + instr.U_imm();
 			break;
 
-		case Opcode::JAL:
-			if (instr.rd() != RegFile::zero)
-				regs[instr.rd()] = pc;
-			pc = last_pc + instr.J_imm();
-			break;
+		case Opcode::JAL: {
+            auto link = pc;
+            pc = last_pc + instr.J_imm();
+            trap_check_pc();
+            regs[instr.rd()] = link;
+        } break;
 
 		case Opcode::JALR: {
-			uint32_t link = pc;
-			pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
-			if (instr.rd() != RegFile::zero)
-				regs[instr.rd()] = link;
+            auto link = pc;
+            pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+            trap_check_pc();
+            regs[instr.rd()] = link;
 		} break;
 
 		case Opcode::SB: {
@@ -292,107 +294,147 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::BEQ:
-			if (regs[instr.rs1()] == regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] == regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::BNE:
-			if (regs[instr.rs1()] != regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] != regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::BLT:
-			if (regs[instr.rs1()] < regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] < regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::BGE:
-			if (regs[instr.rs1()] >= regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if (regs[instr.rs1()] >= regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::BLTU:
-			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::BGEU:
-			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()])
-				pc = last_pc + instr.B_imm();
+			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) {
+                pc = last_pc + instr.B_imm();
+                trap_check_pc();
+            }
 			break;
 
 		case Opcode::FENCE: {
 			// not using out of order execution so can be ignored
-			break;
-		}
-
-		case Opcode::ECALL: {
-			raise_trap(EXC_ECALL_M_MODE, 0);
 		} break;
 
-		case Opcode::EBREAK:
-			status = CoreExecStatus::HitBreakpoint;
-			break;
+		case Opcode::ECALL: {
+			raise_trap(EXC_ECALL_M_MODE, last_pc);
+		} break;
+
+		case Opcode::EBREAK: {
+		    //TODO: also raise trap and let the SW deal with it
+            status = CoreExecStatus::HitBreakpoint;
+        } break;
 
 		case Opcode::CSRRW: {
-			auto rd = instr.rd();
-			auto rs1_val = regs[instr.rs1()];
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) {
-				regs[instr.rd()] = csr.read();
+			if (csr.is_illegal_access(true)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				auto rs1_val = regs[instr.rs1()];
+				if (rd != RegFile::zero) {
+					regs[instr.rd()] = csr.read();
+				}
+				csr.write(rs1_val);
 			}
-			csr.write(rs1_val);
 		} break;
 
 		case Opcode::CSRRS: {
-			auto rd = instr.rd();
 			auto rs1 = instr.rs1();
-			auto rs1_val = regs[instr.rs1()];
+			auto write = rs1 != RegFile::zero;
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero)
-				regs[rd] = csr.read();
-			if (rs1 != RegFile::zero)
-				csr.set_bits(rs1_val);
+			if (csr.is_illegal_access(write)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				auto rs1_val = regs[instr.rs1()];
+				if (rd != RegFile::zero)
+					regs[rd] = csr.read();
+				if (write)
+					csr.set_bits(rs1_val);
+			}
 		} break;
 
 		case Opcode::CSRRC: {
-			auto rd = instr.rd();
 			auto rs1 = instr.rs1();
-			auto rs1_val = regs[instr.rs1()];
+			auto write = rs1 != RegFile::zero;
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero)
-				regs[rd] = csr.read();
-			if (rs1 != RegFile::zero)
-				csr.clear_bits(rs1_val);
+			if (csr.is_illegal_access(write)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				auto rs1_val = regs[instr.rs1()];
+				if (rd != RegFile::zero)
+					regs[rd] = csr.read();
+				if (write)
+					csr.clear_bits(rs1_val);
+			}
 		} break;
 
 		case Opcode::CSRRWI: {
-			auto rd = instr.rd();
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero) {
-				regs[rd] = csr.read();
+			if (csr.is_illegal_access(true)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				if (rd != RegFile::zero) {
+					regs[rd] = csr.read();
+				}
+				csr.write(instr.zimm());
 			}
-			csr.write(instr.zimm());
 		} break;
 
 		case Opcode::CSRRSI: {
-			auto rd = instr.rd();
 			auto zimm = instr.zimm();
+			auto write = zimm != 0;
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero)
-				regs[rd] = csr.read();
-			if (zimm != 0)
-				csr.set_bits(zimm);
+			if (csr.is_illegal_access(write)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				if (rd != RegFile::zero)
+					regs[rd] = csr.read();
+				if (write)
+					csr.set_bits(zimm);
+			}
 		} break;
 
 		case Opcode::CSRRCI: {
-			auto rd = instr.rd();
 			auto zimm = instr.zimm();
+			auto write = zimm != 0;
 			auto &csr = csr_update_and_get(instr.csr());
-			if (rd != RegFile::zero)
-				regs[rd] = csr.read();
-			if (zimm != 0)
-				csr.clear_bits(zimm);
+			if (csr.is_illegal_access(write)) {
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			} else {
+				auto rd = instr.rd();
+				if (rd != RegFile::zero)
+					regs[rd] = csr.read();
+				if (write)
+					csr.clear_bits(zimm);
+			}
 		} break;
 
 		case Opcode::MUL: {
@@ -464,88 +506,83 @@ void ISS::exec_step() {
 			// access the memory independently, e.g. through DMA) need to mark
 			// this addr as reserved
 			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			assert(addr != 0);
-			lrw_marked = addr;
+            trap_check_natural_alignment(addr);
+            regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
 		} break;
 
 		case Opcode::SC_W: {
-			uint32_t addr = regs[instr.rs1()];
-			uint32_t val = regs[instr.rs2()];
-			// TODO: check if other components (besides this iss) may have
-			// accessed the last marked memory region
-			if (lrw_marked == addr) {
-				mem->store_word(addr, val);
-				regs[instr.rd()] = 0;
-			} else {
-				regs[instr.rd()] = 1;
-			}
-			lrw_marked = 0;
+            uint32_t addr = regs[instr.rs1()];
+            trap_check_natural_alignment(addr);
+            uint32_t val  = regs[instr.rs2()];
+            regs[instr.rd()] = 1;												// failure by default (in case a trap is thrown)
+            regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val);	// overwrite result (in case no trap is thrown)
 		} break;
 
 		// TODO: implement the aq and rl flags if necessary (check for all AMO
 		// instructions)
 		case Opcode::AMOSWAP_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			mem->store_word(addr, regs[instr.rs2()]);
+			_trace_amo("AMOSWAP_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return b;
+			});
 		} break;
 
 		case Opcode::AMOADD_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = regs[instr.rd()] + regs[instr.rs2()];
-			mem->store_word(addr, val);
+			_trace_amo("AMOADD_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return a + b;
+			});
 		} break;
 
 		case Opcode::AMOXOR_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = regs[instr.rd()] ^ regs[instr.rs2()];
-			mem->store_word(addr, val);
+			_trace_amo("AMOXOR_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return a ^ b;
+			});
 		} break;
 
 		case Opcode::AMOAND_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = regs[instr.rd()] & regs[instr.rs2()];
-			mem->store_word(addr, val);
+			_trace_amo("AMOAND_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return a & b;
+			});
 		} break;
 
 		case Opcode::AMOOR_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = regs[instr.rd()] | regs[instr.rs2()];
-			mem->store_word(addr, val);
+			_trace_amo("AMOOR_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return a | b;
+			});
 		} break;
 
 		case Opcode::AMOMIN_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::min(regs[instr.rd()], regs[instr.rs2()]);
-			mem->store_word(addr, val);
+			_trace_amo("AMOMIN_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return std::min(a, b);
+			});
 		} break;
 
 		case Opcode::AMOMINU_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::min((uint32_t)regs[instr.rd()], (uint32_t)regs[instr.rs2()]);
-			mem->store_word(addr, val);
+			_trace_amo("AMOMINU_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return std::min((uint32_t)a, (uint32_t)b);
+			});
 		} break;
 
 		case Opcode::AMOMAX_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::max(regs[instr.rd()], regs[instr.rs2()]);
-			mem->store_word(addr, val);
+			_trace_amo("AMOMAX_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return std::max(a, b);
+			});
 		} break;
 
 		case Opcode::AMOMAXU_W: {
-			uint32_t addr = regs[instr.rs1()];
-			regs[instr.rd()] = mem->load_word(addr);
-			uint32_t val = std::max((uint32_t)regs[instr.rd()], (uint32_t)regs[instr.rs2()]);
-			mem->store_word(addr, val);
+			_trace_amo("AMOMAXU_W", instr);
+			execute_amo(instr, [](int32_t a, int32_t b) {
+				return std::max((uint32_t)a, (uint32_t)b);
+			});
 		} break;
+
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
@@ -567,7 +604,7 @@ void ISS::exec_step() {
 			break;
 
 		default:
-			assert(false && "unknown opcode");
+			throw std::runtime_error("unknown opcode");
 	}
 }
 
