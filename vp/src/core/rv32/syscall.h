@@ -68,7 +68,7 @@ struct SyscallHandler : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SyscallHandler> tsock;
 	std::unordered_map<uint32_t, iss_syscall_if *> cores;
 
-	void register_core(iss_syscall_if *core) {
+	void register_core(ISS *core) {
         assert (cores.find(core->get_hart_id()) == cores.end());
         cores[core->get_hart_id()] = core;
 	}

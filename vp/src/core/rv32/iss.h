@@ -419,7 +419,8 @@ struct ISS : public external_interrupt_target, public timer_interrupt_target, pu
 	virtual void sys_exit() override;
 	virtual uint32_t read_register(unsigned idx) override;
 	virtual void write_register(unsigned idx, uint32_t value) override;
-	virtual uint32_t get_hart_id() override;
+
+	uint32_t get_hart_id();
 
 
     inline void trap_check_pc() {
