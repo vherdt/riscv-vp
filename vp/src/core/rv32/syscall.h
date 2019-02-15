@@ -56,7 +56,51 @@
 #define SYS_host_test_pass 2  // RISC-V test execution successfully completed
 #define SYS_host_test_fail 3  // RISC-V test execution failed
 
-struct SyscallHandler {
+
+#include <systemc>
+#include <tlm_utils/simple_target_socket.h>
+
+#include "syscall_if.h"
+#include "iss.h"
+
+
+struct SyscallHandler : public sc_core::sc_module {
+	tlm_utils::simple_target_socket<SyscallHandler> tsock;
+	std::unordered_map<uint32_t, syscall_if *> cores;
+
+	void register_core(syscall_if *core) {
+        assert (cores.find(core->get_hart_id()) == cores.end());
+        cores[core->get_hart_id()] = core;
+	}
+
+	SyscallHandler(sc_core::sc_module_name) {
+			tsock.register_b_transport(this, &SyscallHandler::transport);
+	}
+
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+        (void) delay;
+
+		auto addr = trans.get_address();
+		assert (addr % 4 == 0);
+		assert (trans.get_data_length() == 4);
+		auto hart_id = *((uint32_t *)trans.get_data_ptr());
+
+        auto a7 = cores[hart_id]->read_register(RegFile::a7);
+        auto a3 = cores[hart_id]->read_register(RegFile::a3);
+        auto a2 = cores[hart_id]->read_register(RegFile::a2);
+        auto a1 = cores[hart_id]->read_register(RegFile::a1);
+        auto a0 = cores[hart_id]->read_register(RegFile::a0);
+
+        //printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
+
+        auto ans = execute_syscall(a7, a0, a1, a2, a3);
+
+        cores[hart_id]->write_register(RegFile::a0, ans);
+
+        if (shall_exit)
+        	cores[hart_id]->sys_exit();
+	}
+
 	uint8_t *mem = 0;     // direct pointer to start of guest memory in host memory
 	uint32_t mem_offset;  // start address of the memory as mapped into the
 	                      // address space

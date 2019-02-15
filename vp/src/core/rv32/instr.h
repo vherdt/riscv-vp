@@ -219,6 +219,8 @@ Type getType(Mapping mapping);
 #define EXTRACT_SIGN_BIT(instr, pos, new_pos) ((BIT_SINGLE_P1(instr, pos) << 31) >> (31 - new_pos))
 
 struct Instruction {
+	Instruction() : instr(0) {}
+
 	Instruction(uint32_t instr) : instr(instr) {}
 
 	inline uint32_t quadrant() {

@@ -3,7 +3,7 @@
 
 enum ExceptionCode {
     // interrupt exception codes (mcause)
-            EXC_U_SOFTWARE_INTERRUPT = 0,
+    EXC_U_SOFTWARE_INTERRUPT = 0,
     EXC_S_SOFTWARE_INTERRUPT = 1,
     EXC_M_SOFTWARE_INTERRUPT = 3,
 
@@ -16,7 +16,7 @@ enum ExceptionCode {
     EXC_M_EXTERNAL_INTERRUPT = 11,
 
     // non-interrupt exception codes (mcause)
-            EXC_INSTR_ADDR_MISALIGNED = 0,
+    EXC_INSTR_ADDR_MISALIGNED = 0,
     EXC_INSTR_ACCESS_FAULT = 1,
     EXC_ILLEGAL_INSTR = 2,
     EXC_BREAKPOINT = 3,
@@ -41,6 +41,6 @@ struct SimulationTrap {
 };
 
 
-void raise_trap(ExceptionCode exc, unsigned long mtval) {
+inline void raise_trap(ExceptionCode exc, unsigned long mtval) {
     throw SimulationTrap({exc, mtval});
 }

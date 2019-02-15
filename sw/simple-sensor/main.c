@@ -1,4 +1,4 @@
-#include "stdint.h"
+#include <stdint.h>
 #include "irq.h"
 
 static volatile char * const TERMINAL_ADDR = (char * const)0x20000000;
@@ -24,7 +24,7 @@ void dump_sensor_data() {
 	*TERMINAL_ADDR = '\n';
 }
 
-int main() {
+int main() {	
 	register_interrupt_handler(2, sensor_irq_handler);
 	
 	*SENSOR_SCALER_REG_ADDR = 5;

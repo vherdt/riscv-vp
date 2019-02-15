@@ -2,6 +2,17 @@
 .globl main
 .globl level_1_interrupt_handler
 
+.equ SYSCALL_ADDR, 0x02010000
+
+.macro SYS_EXIT, exit_code
+li   a7, 93
+li   a0, \exit_code
+li   t0, SYSCALL_ADDR
+csrr a6, mhartid
+sw   a6, 0(t0)
+.endm
+
+
 _start:
 la t0, level_0_interrupt_handler
 csrw mtvec, t0
@@ -11,9 +22,7 @@ csrsi mstatus, 8
 jal main
 
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
-li a7,93
-li a0,0
-ecall
+SYS_EXIT 0
 
 
 /*
@@ -45,8 +54,23 @@ STORE	x30, 29 * REGBYTES(sp)
 STORE	x31, 30 * REGBYTES(sp)
 
 // load interrupt/trap reason and call external C function to handle it
-csrr    a0, mcause
+csrr    t2, mcause
+srli    t3, t2, 31
+bnez    t3, handle_irq
+
+li      t0, SYSCALL_ADDR
+csrr    t1, mhartid
+sw      t1, 0(t0)
+csrr    t0, mepc
+addi    t0, t0, 4
+csrw    mepc, t0
+sw      a0, 9 * REGBYTES(sp)
+
+j       done_trap
+handle_irq:
+mv      a0, t2
 jal     level_1_interrupt_handler
+done_trap:
 
 // re-store the saved context
 LOAD	x1, 0x0(sp)

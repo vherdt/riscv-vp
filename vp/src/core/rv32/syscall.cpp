@@ -135,7 +135,12 @@ int sys_write(SyscallHandler *sys, int fd, const void *buf, size_t count) {
 
 	auto ans = write(fd, p, count);
 
-	assert(ans >= 0);
+	if (ans < 0) {
+		std::cout << "WARNING [sys-write error]: " << strerror(errno) << std::endl;
+		std::cout << "  fd = " << fd << std::endl;
+		std::cout << "  count = " << count << std::endl;
+		assert (false);
+	}
 
 	return ans;
 }

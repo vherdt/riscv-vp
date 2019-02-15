@@ -435,6 +435,10 @@ struct csr_table {
 
 	std::map<uint32_t, csr_base *> addr_to_csr;
 
+	csr_table() {
+	    setup();
+	}
+
 	csr_base &at(uint32_t addr) {
 		auto *ans = addr_to_csr.at(addr);
 		assert(ans != nullptr);

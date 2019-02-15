@@ -16,6 +16,7 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "terminal.h"
+#include "syscall.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -46,6 +47,8 @@ struct Options {
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
 	addr_t clint_end_addr = 0x0200ffff;
+	addr_t sys_start_addr = 0x02010000;
+	addr_t sys_end_addr = 0x020103ff;
 	addr_t term_start_addr = 0x20000000;
 	addr_t term_end_addr = term_start_addr + 16;
 	addr_t ethernet_start_addr = 0x30000000;
@@ -146,9 +149,9 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 11> bus("SimpleBus");
+	SimpleBus<2, 12> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
-	SyscallHandler sys;
+	SyscallHandler sys("SyscallHandler");
 	PLIC plic("PLIC");
 	CLINT clint("CLINT");
 	SimpleSensor sensor("SimpleSensor", 2);
@@ -182,11 +185,13 @@ int sc_main(int argc, char **argv) {
 	bus.ports[8] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
 	bus.ports[9] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
 	bus.ports[10] = new PortMapping(opt.display_start_addr, opt.display_end_addr);
+	bus.ports[11] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(),
+	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
 	          opt.mem_end_addr - 4);  // -4 to not overlap with the next region
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
+	sys.register_core(&core);
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
@@ -202,6 +207,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[8].bind(flashController.tsock);
 	bus.isocks[9].bind(ethernet.tsock);
 	bus.isocks[10].bind(display.tsock);
+	bus.isocks[11].bind(sys.tsock);
 
 	// connect interrupt signals/communication
 	plic.target_hart = &core;

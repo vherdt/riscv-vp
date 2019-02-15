@@ -1,7 +1,10 @@
 #include "iss.h"
+#include "trap.h"
 
 // to save *cout* format setting, see *ISS::show*
 #include <boost/io/ios_state.hpp>
+// for safe down-cast
+#include <boost/lexical_cast.hpp>
 
 const char *regnames[] = {
     "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
@@ -59,12 +62,14 @@ int32_t &RegFile::operator[](const uint32_t idx) {
 #endif
 
 void RegFile::show() {
-	for (int i = 0; i < NUM_REGS; ++i) {
+	for (unsigned i = 0; i < NUM_REGS; ++i) {
 		printf(COLORFRMT " = %8x\n", COLORPRINT(regcolors[i], regnames[i]), regs[i]);
 	}
 }
 
-ISS::ISS() : sc_module(sc_core::sc_module_name("ISS")) {
+ISS::ISS(uint32_t hart_id) {
+    csrs.mhartid->reg = hart_id;
+
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
 
@@ -94,12 +99,17 @@ ISS::ISS() : sc_module(sc_core::sc_module_name("ISS")) {
 	instr_cycles[Opcode::REMU] = mul_div_cycles;
 }
 
-Opcode::Mapping ISS::exec_step() {
+void ISS::exec_step() {
 	assert (!(pc & 0x1) && (!(pc & 0x3) || csrs.misa->has_C_extension()) && "misaligned instruction");
 
-	auto mem_word = instr_mem->load_instr(pc);
-	Instruction instr(mem_word);
-	Opcode::Mapping op;
+	try {
+        auto mem_word = instr_mem->load_instr(pc);
+        instr = Instruction(mem_word);
+    } catch (SimulationTrap &e) {
+	    op = Opcode::UNDEF;
+	    instr = Instruction(0);
+	    throw;
+	}
 
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed();
@@ -142,7 +152,7 @@ Opcode::Mapping ISS::exec_step() {
 
 	switch (op) {
 		case Opcode::UNDEF:
-			throw std::runtime_error("unknown instruction");
+			throw std::runtime_error("unknown instruction '" + std::to_string(instr.data()) + "' at address '" + std::to_string(last_pc) + "'");
 
 		case Opcode::ADDI:
 			regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();
@@ -317,12 +327,7 @@ Opcode::Mapping ISS::exec_step() {
 		}
 
 		case Opcode::ECALL: {
-			// NOTE: cast to unsigned value to avoid sign extension, since
-			// execute_syscall expects a native 64 bit value
-			int ans = sys->execute_syscall((uint32_t)regs[RegFile::a7], (uint32_t)regs[RegFile::a0],
-			                               (uint32_t)regs[RegFile::a1], (uint32_t)regs[RegFile::a2],
-			                               (uint32_t)regs[RegFile::a3]);
-			regs[RegFile::a0] = ans;
+			raise_trap(EXC_ECALL_M_MODE, 0);
 		} break;
 
 		case Opcode::EBREAK:
@@ -544,8 +549,7 @@ Opcode::Mapping ISS::exec_step() {
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
-			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie <<
-			// std::endl;
+			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
 			if (!has_pending_enabled_interrupts())
 				sc_core::wait(wfi_event);
 			break;
@@ -565,13 +569,6 @@ Opcode::Mapping ISS::exec_step() {
 		default:
 			assert(false && "unknown opcode");
 	}
-
-	// NOTE: writes to zero register are supposedly allowed but must be ignored
-	// (reset it after every instruction, instead of checking *rd != zero*
-	// before every register write)
-	regs.regs[regs.zero] = 0;
-
-	return op;
 }
 
 uint64_t ISS::_compute_and_get_current_cycles() {
@@ -620,15 +617,13 @@ csr_base &ISS::csr_update_and_get(uint32_t addr) {
 	return csrs.at(addr);
 }
 
-void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint, SyscallHandler *sys,
+void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
                uint32_t entrypoint, uint32_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
-	this->sys = sys;
 	regs[RegFile::sp] = sp;
 	pc = entrypoint;
-	csrs.setup();
 }
 
 void ISS::trigger_external_interrupt() {
@@ -646,10 +641,24 @@ void ISS::trigger_timer_interrupt(bool status) {
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
+void ISS::sys_exit() {
+    shall_exit = true;
+}
+
+uint32_t ISS::read_register(unsigned idx) {
+	return regs.read(idx);
+}
+
+void ISS::write_register(unsigned idx, uint32_t value) {
+	regs.write(idx, value);
+}
+
+uint32_t ISS::get_hart_id() {
+	return csrs.mhartid->reg;
+}
+
 void ISS::return_from_trap_handler() {
-	// std::cout << "[vp::iss] return from trap handler @time " <<
-	// quantum_keeper.get_current_time() << " to pc " << std::hex <<
-	// csrs.mepc->reg << std::endl;
+	//std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
 
 	// NOTE: assumes a SW based solution to store/re-store the execution
 	// context, since this appears to be the RISC-V convention
@@ -667,21 +676,30 @@ bool ISS::has_pending_enabled_interrupts() {
 	return csrs.mstatus->mie && ((csrs.mie->meie && csrs.mip->meip) || (csrs.mie->mtie && csrs.mip->mtip));
 }
 
-void ISS::switch_to_trap_handler() {
+
+void ISS::prepare_trap(SimulationTrap &e) {
+	pc = last_pc;	// undo any potential pc update
+	csrs.mcause->interrupt = 0;
+	csrs.mcause->exception_code = e.reason;
+	csrs.mtval->reg = boost::lexical_cast<uint32_t>(e.mtval);
+}
+
+void ISS::prepare_interrupt() {
 	assert(csrs.mstatus->mie);
-	// std::cout << "[vp::iss] switch to trap handler @time " <<
-	// quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc
-	// << " @pc " << pc << std::endl;
 
 	csrs.mcause->interrupt = 1;
 	if (csrs.mie->meie && csrs.mip->meip) {
-		csrs.mcause->exception_code = 11;
+		csrs.mcause->exception_code = EXC_M_EXTERNAL_INTERRUPT;
 	} else if (csrs.mie->mtie && csrs.mip->mtip) {
-		csrs.mcause->exception_code = 7;
+		csrs.mcause->exception_code = EXC_M_TIMER_INTERRUPT;
 	} else {
-		assert(false);  // enabled pending interrupts must be available if this
-		                // function is called
+		assert(false);  // enabled pending interrupts must be available if this function is called
 	}
+}
+
+
+void ISS::switch_to_trap_handler() {
+	//std::cout << "[vp::iss] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
 
 	// for SW traps the address of the instruction causing the trap/interrupt
 	// (i.e. last_pc, the address of the ECALL,EBREAK - better set pc=last_pc
@@ -712,16 +730,30 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 void ISS::run_step() {
 	assert(regs.read(0) == 0);
 
-	last_pc = pc;
-	Opcode::Mapping op = exec_step();
+	//std::cout << "pc " << std::hex << pc << std::endl;
 
-	if (has_pending_enabled_interrupts())
+	last_pc = pc;
+	try {
+		exec_step();
+	} catch (SimulationTrap &e) {
+		prepare_trap(e);
 		switch_to_trap_handler();
+	}
+
+	// NOTE: writes to zero register are supposedly allowed but must be ignored
+	// (reset it after every instruction, instead of checking *rd != zero*
+	// before every register write)
+	regs.regs[regs.zero] = 0;
+
+	if (has_pending_enabled_interrupts()) {
+		prepare_interrupt();
+		switch_to_trap_handler();
+	}
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
 	// to *mepc*).
-	if (sys->shall_exit)
+	if (shall_exit)
 		status = CoreExecStatus::Terminated;
 
 	// speeds up the execution performance (non debug mode) significantly by
@@ -749,7 +781,6 @@ void ISS::show() {
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret_root->reg << std::endl;
-	std::cout << "max-heap (c-lib malloc, bytes) = " << sys->get_max_heap_memory_consumption() << std::endl;
 }
 
 DirectCoreRunner::DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name("DirectCoreRunner")), core(core) {

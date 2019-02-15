@@ -13,6 +13,7 @@
 #include "prci.h"
 #include "spi.h"
 #include "uart.h"
+#include "core/rv32/syscall.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -46,6 +47,8 @@ struct Options {
 	addr_t maskROM_end_addr = 0x00001FFF;
 	addr_t clint_start_addr = 0x02000000;
 	addr_t clint_end_addr = 0x0200FFFF;
+    addr_t sys_start_addr = 0x02010000;
+    addr_t sys_end_addr = 0x020103ff;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x0FFFFFFF;
 	addr_t aon_start_addr = 0x10000000;
@@ -134,9 +137,9 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<1, 10> bus("SimpleBus");
+	SimpleBus<1, 11> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
-	SyscallHandler sys;
+	SyscallHandler sys("SyscallHandler");
 
 	PLIC plic("PLIC");
 	CLINT clint("CLINT");
@@ -169,9 +172,10 @@ int sc_main(int argc, char **argv) {
 	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
 	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
 	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
+    bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
-	core.init(instr_mem_if, data_mem_if, &clint, &sys, loader.get_entrypoint(),
+	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
 	          opt.dram_end_addr - 4);  // -4 to not overlap with the next region
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 
@@ -187,6 +191,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[7].bind(uart0.tsock);
 	bus.isocks[8].bind(maskROM.tsock);
 	bus.isocks[9].bind(gpio0.tsock);
+    bus.isocks[10].bind(sys.tsock);
 
 	// connect interrupt signals/communication
 	plic.target_hart = &core;

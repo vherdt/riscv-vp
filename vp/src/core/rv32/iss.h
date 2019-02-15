@@ -8,7 +8,8 @@
 #include "core/common/irq_if.h"
 #include "csr.h"
 #include "instr.h"
-#include "syscall.h"
+#include "syscall_if.h"
+#include "trap.h"
 
 #include <iostream>
 #include <map>
@@ -22,7 +23,7 @@
 #include <systemc>
 
 struct RegFile {
-	static constexpr uint16_t NUM_REGS = 32;
+	static constexpr unsigned NUM_REGS = 32;
 
 	int32_t regs[NUM_REGS];
 
@@ -109,6 +110,7 @@ struct RegFile {
 		t6 = x31,
 	};
 };
+
 
 // NOTE: on this branch, currently the *simple-timing* model is still directly
 // integrated in the ISS. Merge the *timedb* branch to use the timing_interface.
@@ -331,17 +333,21 @@ enum class CoreExecStatus {
 	Terminated,
 };
 
-struct ISS : public sc_core::sc_module, public external_interrupt_target, public timer_interrupt_target {
+struct ISS : public external_interrupt_target, public timer_interrupt_target, public syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_interface *instr_mem = nullptr;
 	data_memory_interface *mem = nullptr;
-	SyscallHandler *sys = nullptr;
 	RegFile regs;
 	uint32_t pc = 0;
 	uint32_t last_pc = 0;
 	bool debug = false;
+	bool shall_exit = false;
 	csr_table csrs;
 	uint32_t lrw_marked = 0;
+
+	// last decoded and executed instruction and opcode
+    Instruction instr;
+    Opcode::Mapping op;
 
 	CoreExecStatus status = CoreExecStatus::Runnable;
 	std::unordered_set<uint32_t> breakpoints;
@@ -355,14 +361,15 @@ struct ISS : public sc_core::sc_module, public external_interrupt_target, public
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
 
-	ISS();
-	Opcode::Mapping exec_step();
+	ISS(uint32_t hart_id = 0);
+
+	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();
 
 	csr_base &csr_update_and_get(uint32_t addr);
 
-	void init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint, SyscallHandler *sys,
+	void init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
 	          uint32_t entrypoint, uint32_t sp);
 
 	virtual void trigger_external_interrupt() override;
@@ -370,6 +377,15 @@ struct ISS : public sc_core::sc_module, public external_interrupt_target, public
 	virtual void clear_external_interrupt() override;
 
 	virtual void trigger_timer_interrupt(bool status) override;
+
+	virtual void sys_exit() override;
+	virtual uint32_t read_register(unsigned idx) override;
+	virtual void write_register(unsigned idx, uint32_t value) override;
+	virtual uint32_t get_hart_id() override;
+
+	void prepare_trap(SimulationTrap &e);
+
+	void prepare_interrupt();
 
 	void return_from_trap_handler();
 

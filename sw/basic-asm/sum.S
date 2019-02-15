@@ -1,4 +1,16 @@
 .globl _start
+.equ SYSCALL_ADDR, 0x02010000
+
+.macro SYS_EXIT, exit_code
+li   a7, 93
+li   a0, \exit_code
+li   t0, SYSCALL_ADDR
+csrr a6, mhartid
+sw   a6, 0(t0)
+.endm
+
+
+# program entry-point
 _start:
 
 li a0,50
@@ -13,6 +25,4 @@ j loop
 end:
 
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
-li a7,93
-li a0,0
-ecall
+SYS_EXIT 0
