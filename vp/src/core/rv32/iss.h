@@ -405,8 +405,6 @@ struct ISS : public external_interrupt_target, public timer_interrupt_target, pu
 
 	uint64_t _compute_and_get_current_cycles();
 
-	csr_base &csr_update_and_get(uint32_t addr);
-
 	void init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
 	          uint32_t entrypoint, uint32_t sp);
 
@@ -423,10 +421,19 @@ struct ISS : public external_interrupt_target, public timer_interrupt_target, pu
 	uint32_t get_hart_id();
 
 
+    uint32_t get_csr_value(uint32_t addr);
+    void set_csr_value(uint32_t addr, uint32_t value);
+
+    inline bool is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
+        bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+        return is_write && csr_readonly;
+    }
+
+
     inline void trap_check_pc() {
         assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");
 
-        if (unlikely((pc & 0x3) && (!csrs.misa->has_C_extension()))) {
+        if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
             // NOTE: misaligned instruction address not possible on machines supporting compressed instructions
             raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
         }

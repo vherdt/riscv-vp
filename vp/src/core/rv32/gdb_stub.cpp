@@ -276,11 +276,9 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			} else {
 				// see: https://github.com/riscv/riscv-gnu-toolchain/issues/217
 				// risc-v register 834
-				auto it = core.csrs.addr_to_csr.find(n - 65);
-				if (it != core.csrs.addr_to_csr.end()) {
-					csr_base &reg = *(it->second);
-					reg_value = reg.unchecked_read();
-				} else {
+				try {
+					reg_value = core.get_csr_value(n - 65);
+				} catch (SimulationTrap &e) {
 					reg_value = 0;  // return zero for unsupported CSRs
 				}
 			}

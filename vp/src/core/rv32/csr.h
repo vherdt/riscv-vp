@@ -1,134 +1,33 @@
-#ifndef RISCV_ISA_CSR_INFO_H
-#define RISCV_ISA_CSR_INFO_H
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
 
-#include <map>
-
+#include <unordered_map>
 #include <stdexcept>
+
+#include "trap.h"
+
 
 inline void ensure(bool cond) {
 	if (!cond)
 		throw std::runtime_error("runtime assertion failed");
 }
 
-struct csr_base {
-	enum class PrivilegeLevel {
-		User = 0,
-		Supervisor = 1,
-		Reserved = 2,
-		Machine = 3,
-	};
 
-	enum AccessMode { User = 1, Supervisor = 2, Machine = 4, Read = 8, Write = 16 };
-
-	enum Internal {
-		RW_BITS = 0xc00,    // addr[11:10]
-		MODE_BITS = 0x300,  // addr[9:8]
-
-		READONLY_BITS = 0x03,    // 0b11
-		USER_BITS = 0x00,        // 0b00
-		SUPERVISOR_BITS = 0x01,  // 0b01
-		MACHINE_BITS = 0x03,     // 0b11
-	};
-
-	virtual ~csr_base() {}
-
-	virtual int32_t unchecked_read() = 0;
-	virtual void unchecked_write(int32_t val) = 0;
-
-    bool is_read_only() {
-        return !(mode & Write);
-    }
-
-    bool is_illegal_access(bool write_access, PrivilegeLevel access_level=PrivilegeLevel::Machine) {
-        return ((write_access && is_read_only()) || (level > access_level));
-    }
-
-	int32_t read(PrivilegeLevel access_level = PrivilegeLevel::Machine) {
-		ensure(level <= access_level);
-		return unchecked_read();
-	}
-
-	void write(int32_t val, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
-		ensure(level <= access_level);
-		ensure(mode & Write);
-		unchecked_write(val);
-	}
-
-	void clear_bits(int32_t mask, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
-		write(unchecked_read() & ~mask, access_level);
-	}
-
-	void set_bits(int32_t mask, PrivilegeLevel access_level = PrivilegeLevel::Machine) {
-		write(unchecked_read() | mask, access_level);
-	}
-
-	csr_base(uint32_t addr, const char *name) : addr(addr), name(name) {
-		mode = _get_access_mode();
-		level = (mode & User)
-		            ? PrivilegeLevel::User
-		            : (mode & Supervisor) ? PrivilegeLevel::Supervisor
-		                                  : (mode & Machine) ? PrivilegeLevel::Machine : PrivilegeLevel::Reserved;
-		ensure(level != PrivilegeLevel::Reserved && "invalid privilege level");
-	}
-
-	AccessMode _get_access_mode() {
-		int ans = Read;
-
-		switch ((addr >> 8) & 0x03) {
-			case USER_BITS:
-				ans |= User;
-				break;
-			case SUPERVISOR_BITS:
-				ans |= Supervisor;
-				break;
-			case MACHINE_BITS:
-				ans |= Machine;
-				break;
-			default:
-				ensure(false && "unknown access mode");
-		}
-
-		if ((addr & RW_BITS) != RW_BITS)
-			ans |= Write;
-
-		return static_cast<AccessMode>(ans);
-	}
-
-	uint32_t addr;
-	const char *name;
-	AccessMode mode;
-	PrivilegeLevel level;
+struct csr_32 {
+	uint32_t reg = 0;
 };
 
-#define INCLUDE_CSR_MIXIN                                \
-	using csr_base::csr_base;                            \
-                                                         \
-	virtual int32_t unchecked_read() override {          \
-		return reg;                                      \
-	}                                                    \
-                                                         \
-	virtual void unchecked_write(int32_t val) override { \
-		reg = val;                                       \
-	}
 
-struct csr_32 : public csr_base {
-	INCLUDE_CSR_MIXIN;
+struct csr_misa {
 
-	int32_t reg = 0;
-};
-
-struct csr_misa : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
-	csr_misa(uint32_t addr, const char *name) : csr_base(addr, name) {
+	csr_misa() {
 		init();
 	}
 
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned extensions : 26;
 			unsigned wiri : 4;
@@ -147,11 +46,10 @@ struct csr_misa : public csr_base {
 	}
 };
 
-struct csr_mvendorid : public csr_base {
-	INCLUDE_CSR_MIXIN;
 
+struct csr_mvendorid {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned offset : 7;
 			unsigned bank : 25;
@@ -159,11 +57,10 @@ struct csr_mvendorid : public csr_base {
 	};
 };
 
-struct csr_mstatus : public csr_base {
-	INCLUDE_CSR_MIXIN;
 
+struct csr_mstatus {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned uie : 1;
 			unsigned sie : 1;
@@ -190,11 +87,9 @@ struct csr_mstatus : public csr_base {
 	};
 };
 
-struct csr_mtvec : public csr_base {
-	using csr_base::csr_base;
-
+struct csr_mtvec {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned mode : 2;   // WARL
 			unsigned base : 30;  // WARL
@@ -207,22 +102,17 @@ struct csr_mtvec : public csr_base {
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
-	virtual int32_t unchecked_read() override {
-		return reg;
-	}
-
-	virtual void unchecked_write(int32_t val) override {
+	void checked_write(uint32_t val) {
 		reg = val;
 		if (mode >= 1)
 			mode = 0;
 	}
 };
 
-struct csr_mie : public csr_base {
-	INCLUDE_CSR_MIXIN;
 
+struct csr_mie {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned usie : 1;
 			unsigned ssie : 1;
@@ -244,15 +134,13 @@ struct csr_mie : public csr_base {
 	};
 };
 
-struct csr_mip : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
+struct csr_mip {
 	inline bool any_pending() {
 		return msip || mtip || meip;
 	}
 
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned usip : 1;
 			unsigned ssip : 1;
@@ -274,19 +162,15 @@ struct csr_mip : public csr_base {
 	};
 };
 
-struct csr_mepc : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
+struct csr_mepc {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 	};
 };
 
-struct csr_mcause : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
+struct csr_mcause {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned exception_code : 31;  // WLRL
 			unsigned interrupt : 1;
@@ -294,11 +178,9 @@ struct csr_mcause : public csr_base {
 	};
 };
 
-struct csr_satp : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
+struct csr_satp {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned mode : 1;  // WARL
 			unsigned asid : 9;  // WARL
@@ -307,11 +189,9 @@ struct csr_satp : public csr_base {
 	};
 };
 
-struct csr_pmpcfg : public csr_base {
-	INCLUDE_CSR_MIXIN;
-
+struct csr_pmpcfg {
 	union {
-		int32_t reg = 0;
+		uint32_t reg = 0;
 		struct {
 			unsigned UNIMPLEMENTED : 24;  // WARL
 			unsigned L0 : 1;              // WARL
@@ -330,7 +210,7 @@ struct csr_pmpcfg : public csr_base {
  */
 struct csr_64 {
 	union {
-		int64_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			int32_t low;
 			int32_t high;
@@ -342,35 +222,8 @@ struct csr_64 {
 	}
 };
 
-struct csr_64_low : public csr_base {
-	csr_64 &target;
 
-	csr_64_low(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
-
-	virtual int32_t unchecked_read() override {
-		return target.low;
-	}
-
-	virtual void unchecked_write(int32_t val) override {
-		target.low = val;
-	}
-};
-
-struct csr_64_high : public csr_base {
-	csr_64 &target;
-
-	csr_64_high(csr_64 &obj, uint32_t addr, const char *name) : csr_base(addr, name), target(obj) {}
-
-	virtual int32_t unchecked_read() override {
-		return target.high;
-	}
-
-	virtual void unchecked_write(int32_t val) override {
-		target.high = val;
-	}
-};
-
-enum csr_addresses {
+enum {
 	// 64 bit readonly registers
 	CSR_CYCLE_ADDR = 0xC00,
 	CSR_CYCLEH_ADDR = 0xC80,
@@ -387,7 +240,7 @@ enum csr_addresses {
 	CSR_MINSTRET_ADDR = 0xB02,
 	CSR_MINSTRETH_ADDR = 0xB82,
 
-	// 32 bit machine level ISA registers
+	// 32 bit machine CSRs
 	CSR_MVENDORID_ADDR = 0xF11,
 	CSR_MARCHID_ADDR = 0xF12,
 	CSR_MIMPID_ADDR = 0xF13,
@@ -395,107 +248,109 @@ enum csr_addresses {
 
 	CSR_MSTATUS_ADDR = 0x300,
 	CSR_MISA_ADDR = 0x301,
+	CSR_MEDELEG_ADDR = 0x302,
+    CSR_MIDELEG_ADDR = 0x303,
 	CSR_MIE_ADDR = 0x304,
 	CSR_MTVEC_ADDR = 0x305,
+	CSR_MCOUNTEREN_ADDR = 0x306,
+
 	CSR_MSCRATCH_ADDR = 0x340,
 	CSR_MEPC_ADDR = 0x341,
 	CSR_MCAUSE_ADDR = 0x342,
 	CSR_MTVAL_ADDR = 0x343,
 	CSR_MIP_ADDR = 0x344,
+
+	CSR_PMPCFG0_ADDR = 0x3A0,
+    CSR_PMPCFG1_ADDR = 0x3A1,
+    CSR_PMPCFG2_ADDR = 0x3A2,
+    CSR_PMPCFG3_ADDR = 0x3A3,
+
+    CSR_PMPADDR0_ADDR = 0x3B0,
+    CSR_PMPADDR1_ADDR = 0x3B1,
+    CSR_PMPADDR2_ADDR = 0x3B2,
+    CSR_PMPADDR3_ADDR = 0x3B3,
+    CSR_PMPADDR4_ADDR = 0x3B4,
+    CSR_PMPADDR5_ADDR = 0x3B5,
+    CSR_PMPADDR6_ADDR = 0x3B6,
+    CSR_PMPADDR7_ADDR = 0x3B7,
+    CSR_PMPADDR8_ADDR = 0x3B8,
+    CSR_PMPADDR9_ADDR = 0x3B9,
+    CSR_PMPADDR10_ADDR = 0x3BA,
+    CSR_PMPADDR11_ADDR = 0x3BB,
+    CSR_PMPADDR12_ADDR = 0x3BC,
+    CSR_PMPADDR13_ADDR = 0x3BD,
+    CSR_PMPADDR14_ADDR = 0x3BE,
+    CSR_PMPADDR15_ADDR = 0x3BF,
+
+    // 32 bit supervisor CSRs
+    CSR_SATP_ADDR = 0x180,
 };
+
 
 struct csr_table {
-#define CSR_TABLE_DEFINE_COUNTER(basename) \
-	csr_64 *basename##_root = 0;           \
-	csr_64_low *basename = 0;              \
-	csr_64_high *basename##h = 0;
+    csr_64 cycle;
+    csr_64 time;
+    csr_64 instret;
 
-	/* user csrs */
-	CSR_TABLE_DEFINE_COUNTER(cycle);
-	CSR_TABLE_DEFINE_COUNTER(time);
-	CSR_TABLE_DEFINE_COUNTER(instret);
-	// CSR_TABLE_DEFINE_COUNTER(mcycle);
-	// CSR_TABLE_DEFINE_COUNTER(minstret);
+    csr_mvendorid mvendorid;
+    csr_32 marchid;
+    csr_32 mimpid;
+    csr_32 mhartid;
 
-	/* machine csrs */
-	csr_mvendorid *mvendorid = 0;
-	csr_32 *marchid = 0;
-	csr_32 *mimpid = 0;
-	csr_32 *mhartid = 0;
+	csr_mstatus mstatus;
+	csr_misa misa;
+	csr_mie mie;
+	csr_mtvec mtvec;
 
-	csr_mstatus *mstatus = 0;
-	csr_misa *misa = 0;
-	csr_mie *mie = 0;
-	csr_mtvec *mtvec = 0;
-
-	csr_32 *mscratch = 0;
-	csr_mepc *mepc = 0;
-	csr_mcause *mcause = 0;
-	csr_32 *mtval = 0;
-	csr_mip *mip = 0;
+	csr_32 mscratch;
+	csr_mepc mepc;
+	csr_mcause mcause;
+	csr_32 mtval;
+	csr_mip mip;
 
 	// risc-v tests execution
-	csr_32 *mideleg = 0;
-	csr_32 *medeleg = 0;
-	csr_32 *pmpaddr0 = 0;
-	csr_pmpcfg *pmpcfg0 = 0;
-	csr_satp *satp = 0;
+	csr_32 mideleg;
+	csr_32 medeleg;
+	csr_32 pmpaddr0;
+	csr_pmpcfg pmpcfg0;
+	csr_satp satp;
 
-	std::map<uint32_t, csr_base *> addr_to_csr;
+	std::unordered_map<unsigned, uint32_t*> register_mapping;
 
 	csr_table() {
-	    setup();
+        register_mapping[CSR_MVENDORID_ADDR] = &mvendorid.reg;
+        register_mapping[CSR_MARCHID_ADDR] = &marchid.reg;
+        register_mapping[CSR_MIMPID_ADDR] = &mimpid.reg;
+        register_mapping[CSR_MHARTID_ADDR] = &mhartid.reg;
+        register_mapping[CSR_MSTATUS_ADDR] = &mstatus.reg;
+        register_mapping[CSR_MISA_ADDR] = &misa.reg;
+        register_mapping[CSR_MIE_ADDR] = &mie.reg;
+        register_mapping[CSR_MTVEC_ADDR] = &mtvec.reg;
+        register_mapping[CSR_MSCRATCH_ADDR] = &mscratch.reg;
+        register_mapping[CSR_MEPC_ADDR] = &mepc.reg;
+        register_mapping[CSR_MCAUSE_ADDR] = &mcause.reg;
+        register_mapping[CSR_MTVAL_ADDR] = &mtval.reg;
+        register_mapping[CSR_MIP_ADDR] = &mip.reg;
+        register_mapping[CSR_MIDELEG_ADDR] = &mideleg.reg;
+        register_mapping[CSR_MEDELEG_ADDR] = &medeleg.reg;
+        register_mapping[CSR_PMPADDR0_ADDR] = &pmpaddr0.reg;
+        register_mapping[CSR_PMPCFG0_ADDR] = &pmpcfg0.reg;
+        register_mapping[CSR_SATP_ADDR] = &satp.reg;
 	}
 
-	csr_base &at(uint32_t addr) {
-		auto *ans = addr_to_csr.at(addr);
-		assert(ans != nullptr);
-		return *ans;
+	bool is_valid_csr32_addr(unsigned addr) {
+	    return register_mapping.find(addr) != register_mapping.end();
 	}
 
-	template <typename T>
-	T *_register(T *p) {
-		addr_to_csr[p->addr] = p;
-		return p;
+	void default_write32(unsigned addr, uint32_t value) {
+	    auto it = register_mapping.find(addr);
+	    ensure ((it != register_mapping.end()) && "validate address before calling this function");
+	    *it->second = value;
 	}
 
-#define CSR_TABLE_ADD_COUNTER_64(basename, addr)                             \
-	basename##_root = new csr_64();                                          \
-	basename = _register(new csr_64_low(*basename##_root, addr, #basename)); \
-	basename##h = _register(new csr_64_high(*basename##_root, addr + 0x80, #basename));
-
-	void setup() {
-		/* user csrs */
-		CSR_TABLE_ADD_COUNTER_64(cycle, 0xC00);
-		CSR_TABLE_ADD_COUNTER_64(time, 0xC01);
-		CSR_TABLE_ADD_COUNTER_64(instret, 0xC02);
-		// CSR_TABLE_ADD_COUNTER_64(mcycle, 0xB00);
-		// CSR_TABLE_ADD_COUNTER_64(minstret, 0xB02);
-
-		/* machine csrs */
-		mvendorid = _register(new csr_mvendorid(0xF11, "mvendorid"));
-		marchid = _register(new csr_32(0xF12, "marchid"));
-		mimpid = _register(new csr_32(0xF13, "mimpid"));
-		mhartid = _register(new csr_32(0xF14, "mhartid"));
-
-		mstatus = _register(new csr_mstatus(0x300, "mstatus"));
-		misa = _register(new csr_misa(0x301, "misa"));
-
-		mie = _register(new csr_mie(0x304, "mie"));
-		mtvec = _register(new csr_mtvec(0x305, "mtvec"));
-
-		mscratch = _register(new csr_32(0x340, "mscratch"));
-		mepc = _register(new csr_mepc(0x341, "mepc"));
-		mcause = _register(new csr_mcause(0x342, "mcause"));
-		mtval = _register(new csr_32(0x343, "mtval"));
-		mip = _register(new csr_mip(0x344, "mip"));
-
-		satp = _register(new csr_satp(0x180, "satp"));
-		medeleg = _register(new csr_32(0x302, "medeleg"));
-		mideleg = _register(new csr_32(0x303, "mideleg"));
-		pmpaddr0 = _register(new csr_32(0x3B0, "pmpaddr0"));
-		pmpcfg0 = _register(new csr_pmpcfg(0x3A0, "pmpcfg0"));
+	uint32_t default_read32(unsigned addr) {
+        auto it = register_mapping.find(addr);
+        ensure ((it != register_mapping.end()) && "validate address before calling this function");
+        return *it->second;
 	}
 };
-
-#endif  // RISCV_ISA_CSR_INFO_H

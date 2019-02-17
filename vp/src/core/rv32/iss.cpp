@@ -68,7 +68,7 @@ void RegFile::show() {
 }
 
 ISS::ISS(uint32_t hart_id) {
-    csrs.mhartid->reg = hart_id;
+    csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -100,7 +100,7 @@ ISS::ISS(uint32_t hart_id) {
 }
 
 void ISS::exec_step() {
-	assert (!(pc & 0x1) && (!(pc & 0x3) || csrs.misa->has_C_extension()) && "misaligned instruction");
+	assert (!(pc & 0x1) && (!(pc & 0x3) || csrs.misa.has_C_extension()) && "misaligned instruction");
 
 	try {
         auto mem_word = instr_mem->load_instr(pc);
@@ -349,91 +349,95 @@ void ISS::exec_step() {
         } break;
 
 		case Opcode::CSRRW: {
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(true)) {
+			auto addr = instr.csr();
+			if (is_invalid_csr_access(addr, true)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[instr.rs1()];
 				if (rd != RegFile::zero) {
-					regs[instr.rd()] = csr.read();
+					regs[instr.rd()] = get_csr_value(addr);
 				}
-				csr.write(rs1_val);
+				set_csr_value(addr, rs1_val);
 			}
 		} break;
 
 		case Opcode::CSRRS: {
+			auto addr = instr.csr();
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(write)) {
+			if (is_invalid_csr_access(addr, write)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
-				auto rs1_val = regs[instr.rs1()];
+				auto rs1_val = regs[rs1];
+				auto csr_val = get_csr_value(addr);
 				if (rd != RegFile::zero)
-					regs[rd] = csr.read();
+					regs[rd] = csr_val;
 				if (write)
-					csr.set_bits(rs1_val);
+					set_csr_value(addr, csr_val | rs1_val);
 			}
 		} break;
 
 		case Opcode::CSRRC: {
+			auto addr = instr.csr();
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(write)) {
+			if (is_invalid_csr_access(addr, write)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
-				auto rs1_val = regs[instr.rs1()];
+				auto rs1_val = regs[rs1];
+				auto csr_val = get_csr_value(addr);
 				if (rd != RegFile::zero)
-					regs[rd] = csr.read();
+					regs[rd] = csr_val;
 				if (write)
-					csr.clear_bits(rs1_val);
+					set_csr_value(addr, csr_val & ~rs1_val);
 			}
 		} break;
 
 		case Opcode::CSRRWI: {
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(true)) {
+			auto addr = instr.csr();
+			if (is_invalid_csr_access(addr, true)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
 				if (rd != RegFile::zero) {
-					regs[rd] = csr.read();
+					regs[rd] = get_csr_value(addr);
 				}
-				csr.write(instr.zimm());
+				set_csr_value(addr, instr.zimm());
 			}
 		} break;
 
 		case Opcode::CSRRSI: {
+			auto addr = instr.csr();
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(write)) {
+			if (is_invalid_csr_access(addr, true)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
+				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
 				if (rd != RegFile::zero)
-					regs[rd] = csr.read();
+					regs[rd] = csr_val;
 				if (write)
-					csr.set_bits(zimm);
+					set_csr_value(addr, csr_val | zimm);
 			}
 		} break;
 
 		case Opcode::CSRRCI: {
+			auto addr = instr.csr();
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
-			auto &csr = csr_update_and_get(instr.csr());
-			if (csr.is_illegal_access(write)) {
+			if (is_invalid_csr_access(addr, true)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
+				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
 				if (rd != RegFile::zero)
-					regs[rd] = csr.read();
+					regs[rd] = csr_val;
 				if (write)
-					csr.clear_bits(zimm);
+					set_csr_value(addr, csr_val & ~zimm);
 			}
 		} break;
 
@@ -620,39 +624,57 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
-csr_base &ISS::csr_update_and_get(uint32_t addr) {
+
+uint32_t ISS::get_csr_value(uint32_t addr) {
 	switch (addr) {
 		case CSR_TIME_ADDR:
 		case CSR_MTIME_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
-			csrs.time_root->reg = mtime;
-			return *csrs.time;
+			csrs.time.reg = mtime;
+			return csrs.time.low;
 		}
 
 		case CSR_TIMEH_ADDR:
 		case CSR_MTIMEH_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
-			csrs.time_root->reg = mtime;
-			return *csrs.timeh;
+			csrs.time.reg = mtime;
+			return csrs.time.high;
 		}
 
 		case CSR_MCYCLE_ADDR:
-			csrs.cycle_root->reg = _compute_and_get_current_cycles();
-			return *csrs.cycle;
+			csrs.cycle.reg = _compute_and_get_current_cycles();
+			return csrs.cycle.low;
 
 		case CSR_MCYCLEH_ADDR:
-			csrs.cycle_root->reg = _compute_and_get_current_cycles();
-			return *csrs.cycleh;
+			csrs.cycle.reg = _compute_and_get_current_cycles();
+			return csrs.cycle.high;
 
 		case CSR_MINSTRET_ADDR:
-			return *csrs.instret;
+			return csrs.instret.low;
 
 		case CSR_MINSTRETH_ADDR:
-			return *csrs.instreth;
+			return csrs.instret.high;
 	}
 
-	return csrs.at(addr);
+	if (!csrs.is_valid_csr32_addr(addr)) {
+		raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+	}
+
+	return csrs.default_read32(addr);
 }
+
+void ISS::set_csr_value(uint32_t addr, uint32_t value) {
+	switch (addr) {
+		case CSR_MTVEC_ADDR:
+			csrs.mtvec.reg = value;
+			if (csrs.mtvec.mode >= 1)
+				csrs.mtvec.mode = 0;
+			break;
+	}
+
+	csrs.default_write32(addr, value);
+}
+
 
 void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
                uint32_t entrypoint, uint32_t sp) {
@@ -665,16 +687,16 @@ void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_me
 
 void ISS::trigger_external_interrupt() {
 	// std::cout << "[vp::iss] trigger external interrupt" << std::endl;
-	csrs.mip->meip = true;
+	csrs.mip.meip = true;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 void ISS::clear_external_interrupt() {
-	csrs.mip->meip = false;
+	csrs.mip.meip = false;
 }
 
 void ISS::trigger_timer_interrupt(bool status) {
-	csrs.mip->mtip = status;
+	csrs.mip.mtip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
@@ -691,7 +713,7 @@ void ISS::write_register(unsigned idx, uint32_t value) {
 }
 
 uint32_t ISS::get_hart_id() {
-	return csrs.mhartid->reg;
+	return csrs.mhartid.reg;
 }
 
 void ISS::return_from_trap_handler() {
@@ -699,38 +721,38 @@ void ISS::return_from_trap_handler() {
 
 	// NOTE: assumes a SW based solution to store/re-store the execution
 	// context, since this appears to be the RISC-V convention
-	pc = csrs.mepc->reg;
+	pc = csrs.mepc.reg;
 
 	// NOTE: need to adapt when support for privilege levels beside M-mode is
 	// added
-	csrs.mstatus->mie = csrs.mstatus->mpie;
-	csrs.mstatus->mpie = 1;
+	csrs.mstatus.mie = csrs.mstatus.mpie;
+	csrs.mstatus.mpie = 1;
 }
 
 bool ISS::has_pending_enabled_interrupts() {
-	assert(!csrs.mip->msip && "traps and syscalls are handled in the simulator");
+	assert(!csrs.mip.msip && "traps and syscalls are handled in the simulator");
 
-	return csrs.mstatus->mie && ((csrs.mie->meie && csrs.mip->meip) || (csrs.mie->mtie && csrs.mip->mtip));
+	return csrs.mstatus.mie && ((csrs.mie.meie && csrs.mip.meip) || (csrs.mie.mtie && csrs.mip.mtip));
 }
 
 
 void ISS::prepare_trap(SimulationTrap &e) {
 	pc = last_pc;	// undo any potential pc update
-	csrs.mcause->interrupt = 0;
-	csrs.mcause->exception_code = e.reason;
-	csrs.mtval->reg = boost::lexical_cast<uint32_t>(e.mtval);
+	csrs.mcause.interrupt = 0;
+	csrs.mcause.exception_code = e.reason;
+	csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
 }
 
 void ISS::prepare_interrupt() {
-	assert(csrs.mstatus->mie);
+	assert(csrs.mstatus.mie);
 
-	csrs.mcause->interrupt = 1;
-	if (csrs.mie->meie && csrs.mip->meip) {
-		csrs.mcause->exception_code = EXC_M_EXTERNAL_INTERRUPT;
-	} else if (csrs.mie->mtie && csrs.mip->mtip) {
-		csrs.mcause->exception_code = EXC_M_TIMER_INTERRUPT;
+	csrs.mcause.interrupt = 1;
+	if (csrs.mie.meie && csrs.mip.meip) {
+		csrs.mcause.exception_code = EXC_M_EXTERNAL_INTERRUPT;
+	} else if (csrs.mie.mtie && csrs.mip.mtip) {
+		csrs.mcause.exception_code = EXC_M_TIMER_INTERRUPT;
 	} else {
-		assert(false);  // enabled pending interrupts must be available if this function is called
+		throw std::runtime_error("enabled pending interrupts must be available if this function is called");
 	}
 }
 
@@ -742,19 +764,19 @@ void ISS::switch_to_trap_handler() {
 	// (i.e. last_pc, the address of the ECALL,EBREAK - better set pc=last_pc
 	// before taking trap) for interrupts the address of the next instruction to
 	// execute (since e.g. the RISC-V FreeRTOS port will not modify it)
-	csrs.mepc->reg = pc;
+	csrs.mepc.reg = pc;
 
 	// deactivate interrupts before jumping to trap handler (SW can re-activate
 	// if supported)
-	csrs.mstatus->mpie = csrs.mstatus->mie;
-	csrs.mstatus->mie = 0;
+	csrs.mstatus.mpie = csrs.mstatus.mie;
+	csrs.mstatus.mie = 0;
 
 	// perform context switch to trap handler
-	pc = csrs.mtvec->get_base_address();
+	pc = csrs.mtvec.get_base_address();
 }
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
-	++csrs.instret_root->reg;
+	++csrs.instret.reg;
 
 	auto new_cycles = instr_cycles[executed_op];
 
@@ -817,7 +839,7 @@ void ISS::show() {
 	std::cout << "simulation time: " << sc_core::sc_time_stamp() << std::endl;
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
-	std::cout << "num-instr = " << std::dec << csrs.instret_root->reg << std::endl;
+	std::cout << "num-instr = " << std::dec << csrs.instret.reg << std::endl;
 }
 
 DirectCoreRunner::DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name("DirectCoreRunner")), core(core) {
