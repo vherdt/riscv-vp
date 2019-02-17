@@ -9,7 +9,7 @@
 
 /*
  * Provides the same functionality as sensor.h but uses the optional modelling
- * layer provided in vp.h.
+ * layer provided in util/tlm_map.h.
  */
 
 struct SimpleSensor2 : public sc_core::sc_module {
