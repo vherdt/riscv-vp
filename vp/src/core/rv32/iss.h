@@ -116,23 +116,23 @@ struct RegFile {
 
 
 // NOTE: on this branch, currently the *simple-timing* model is still directly
-// integrated in the ISS. Merge the *timedb* branch to use the timing_interface.
+// integrated in the ISS. Merge the *timedb* branch to use the timing_if.
 struct ISS;
 
-struct timing_interface {
-	virtual ~timing_interface() {}
+struct timing_if {
+	virtual ~timing_if() {}
 
 	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
 
-struct instr_memory_interface {
-	virtual ~instr_memory_interface() {}
+struct instr_memory_if {
+	virtual ~instr_memory_if() {}
 
 	virtual uint32_t load_instr(uint64_t pc) = 0;
 };
 
-struct data_memory_interface {
-	virtual ~data_memory_interface() {}
+struct data_memory_if {
+	virtual ~data_memory_if() {}
 
 	virtual int32_t load_word(uint64_t addr) = 0;
 	virtual int32_t load_half(uint64_t addr) = 0;
@@ -161,8 +161,9 @@ enum class CoreExecStatus {
 
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
-	instr_memory_interface *instr_mem = nullptr;
-	data_memory_interface *mem = nullptr;
+	instr_memory_if *instr_mem = nullptr;
+	data_memory_if *mem = nullptr;
+	syscall_emulator_if *sys = nullptr;	// optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	uint32_t pc = 0;
 	uint32_t last_pc = 0;
@@ -194,7 +195,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	uint64_t _compute_and_get_current_cycles();
 
-	void init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
+	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
 	          uint32_t entrypoint, uint32_t sp);
 
 	virtual void trigger_external_interrupt() override;
@@ -362,7 +363,7 @@ public:
 
 
 /* For optimization, use DMI to fetch instructions. */
-struct InstrMemoryProxy : public instr_memory_interface {
+struct InstrMemoryProxy : public instr_memory_if {
 	MemoryDMI dmi;
 
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
@@ -381,8 +382,8 @@ struct InstrMemoryProxy : public instr_memory_interface {
 
 
 struct CombinedMemoryInterface : public sc_core::sc_module,
-								 public instr_memory_interface,
-								 public data_memory_interface {
+								 public instr_memory_if,
+								 public data_memory_if {
 	ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;

@@ -160,8 +160,8 @@ int sc_main(int argc, char **argv) {
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
 
-	instr_memory_interface *instr_mem_if = &iss_mem_if;
-	data_memory_interface *data_mem_if = &iss_mem_if;
+	instr_memory_if *instr_mem_if = &iss_mem_if;
+	data_memory_if *data_mem_if = &iss_mem_if;
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi)

@@ -18,7 +18,7 @@ struct SimTimingInterface {
 	virtual uint64_t get_magic_number();
 };
 
-struct ExternalTimingDecorator : public timing_interface {
+struct ExternalTimingDecorator : public timing_if {
 	SimTimingInterface *timing_sim = 0;
 	void *lib_handle = 0;
 	SimTimingInterface *(*create)(const char *) = 0;

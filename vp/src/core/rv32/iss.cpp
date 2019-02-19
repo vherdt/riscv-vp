@@ -342,11 +342,14 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::ECALL: {
-			raise_trap(EXC_ECALL_M_MODE, last_pc);
+		    if (sys)
+		        sys->execute_syscall(this);
+		    else
+		        raise_trap(EXC_ECALL_M_MODE, last_pc);
 		} break;
 
 		case Opcode::EBREAK: {
-		    //TODO: also raise trap and let the SW deal with it
+		    //TODO: also raise trap and let the SW deal with it?
             status = CoreExecStatus::HitBreakpoint;
         } break;
 
@@ -686,7 +689,7 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 }
 
 
-void ISS::init(instr_memory_interface *instr_mem, data_memory_interface *data_mem, clint_if *clint,
+void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
                uint32_t entrypoint, uint32_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;

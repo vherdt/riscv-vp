@@ -2,7 +2,7 @@
 
 #include "../iss.h"
 
-struct SimpleTimingDecorator : public timing_interface {
+struct SimpleTimingDecorator : public timing_if {
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 	sc_core::sc_time cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
 

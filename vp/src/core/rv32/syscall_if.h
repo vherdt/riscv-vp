@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 
+/* The syscall handler is using this interface to access and control the ISS. */
 struct iss_syscall_if {
     virtual ~iss_syscall_if() {}
 
@@ -16,6 +17,7 @@ struct iss_syscall_if {
 };
 
 
+/* Using this interface, the ISS supports to intercept and delegate syscalls. */
 struct syscall_emulator_if {
     virtual ~syscall_emulator_if() {}
 

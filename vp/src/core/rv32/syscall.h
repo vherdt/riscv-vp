@@ -64,7 +64,7 @@
 #include "iss.h"
 
 
-struct SyscallHandler : public sc_core::sc_module {
+struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	tlm_utils::simple_target_socket<SyscallHandler> tsock;
 	std::unordered_map<uint32_t, iss_syscall_if *> cores;
 
@@ -85,20 +85,24 @@ struct SyscallHandler : public sc_core::sc_module {
 		assert (trans.get_data_length() == 4);
 		auto hart_id = *((uint32_t *)trans.get_data_ptr());
 
-        auto a7 = cores[hart_id]->read_register(RegFile::a7);
-        auto a3 = cores[hart_id]->read_register(RegFile::a3);
-        auto a2 = cores[hart_id]->read_register(RegFile::a2);
-        auto a1 = cores[hart_id]->read_register(RegFile::a1);
-        auto a0 = cores[hart_id]->read_register(RegFile::a0);
+        execute_syscall(cores[hart_id]);
+	}
 
-        //printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
+	virtual void execute_syscall(iss_syscall_if *core) override {
+		auto a7 = core->read_register(RegFile::a7);
+		auto a3 = core->read_register(RegFile::a3);
+		auto a2 = core->read_register(RegFile::a2);
+		auto a1 = core->read_register(RegFile::a1);
+		auto a0 = core->read_register(RegFile::a0);
 
-        auto ans = execute_syscall(a7, a0, a1, a2, a3);
+		//printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
 
-        cores[hart_id]->write_register(RegFile::a0, ans);
+		auto ans = execute_syscall(a7, a0, a1, a2, a3);
 
-        if (shall_exit)
-        	cores[hart_id]->sys_exit();
+		core->write_register(RegFile::a0, ans);
+
+		if (shall_exit)
+			core->sys_exit();
 	}
 
 	uint8_t *mem = 0;     // direct pointer to start of guest memory in host memory
