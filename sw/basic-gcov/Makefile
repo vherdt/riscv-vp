@@ -1,6 +1,8 @@
 all : main.c
 	riscv32-unknown-elf-gcc main.c --coverage -o main -march=rv32ima
 	
+sim: main.gcda
+	
 main.gcda : all
 	riscv-vp --intercept-syscalls main
 	

@@ -1,6 +1,9 @@
 all : main.c irq.c irq.h bootstrap.S
 	riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -o main -march=rv32ima -nostartfiles -Wl,--no-relax
 	
+sim: all
+	riscv-vp --intercept-syscalls main
+	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
 	

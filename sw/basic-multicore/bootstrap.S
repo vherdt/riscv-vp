@@ -13,32 +13,32 @@ sw   a6, 0(t0)
 .endm
 
 
-# NOTE: each core will enter here
+# NOTE: each core will start here with execution
 _start:
 
-# Initialize global pointer
+# initialize global pointer (see crt0.S of the RISC-V newlib C-library port)
 .option push
 .option norelax
 1:auipc gp, %pcrel_hi(__global_pointer$)
   addi  gp, gp, %pcrel_lo(1b)
 .option pop
 
-csrr a0, mhartid
+csrr a0, mhartid   # return a core specific number 0 or 1
 li t0, 0
 beq a0, t0, core0
 li t0, 1
 beq a0, t0, core1
 core0:
-la sp, stack0_end
+la sp, stack0_end  # code executed only by core0
 j end
 core1:
-la sp, stack1_end
+la sp, stack1_end  # code executed only by core1
 j end
 end:
 
 jal main
 
-# wait until all two cores are finished
+# wait until all two cores have finished
 la t0, exit_counter
 li t1, 1
 li t2, 1

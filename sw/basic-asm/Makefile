@@ -1,6 +1,9 @@
 all : sum.o
 	riscv32-unknown-elf-ld sum.o -o main
 	
+sim: all
+	riscv-vp main
+	
 sum.o : sum.S
 	riscv32-unknown-elf-as sum.S -o sum.o -march=rv32i -mabi=ilp32
 	
