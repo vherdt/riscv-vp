@@ -131,81 +131,27 @@ struct timing_interface {
 struct instr_memory_interface {
 	virtual ~instr_memory_interface() {}
 
-	virtual int32_t load_instr(uint32_t pc) = 0;
+	virtual uint32_t load_instr(uint64_t pc) = 0;
 };
 
 struct data_memory_interface {
 	virtual ~data_memory_interface() {}
 
-	virtual int32_t load_word(uint32_t addr) = 0;
-	virtual int32_t load_half(uint32_t addr) = 0;
-	virtual int32_t load_byte(uint32_t addr) = 0;
-	virtual uint32_t load_uhalf(uint32_t addr) = 0;
-	virtual uint32_t load_ubyte(uint32_t addr) = 0;
+	virtual int32_t load_word(uint64_t addr) = 0;
+	virtual int32_t load_half(uint64_t addr) = 0;
+	virtual int32_t load_byte(uint64_t addr) = 0;
+	virtual uint32_t load_uhalf(uint64_t addr) = 0;
+	virtual uint32_t load_ubyte(uint64_t addr) = 0;
 
-	virtual void store_word(uint32_t addr, uint32_t value) = 0;
-	virtual void store_half(uint32_t addr, uint16_t value) = 0;
-	virtual void store_byte(uint32_t addr, uint8_t value) = 0;
+	virtual void store_word(uint64_t addr, uint32_t value) = 0;
+	virtual void store_half(uint64_t addr, uint16_t value) = 0;
+	virtual void store_byte(uint64_t addr, uint8_t value) = 0;
 
-	virtual int32_t atomic_load_word(uint32_t addr) = 0;
-    virtual void atomic_store_word(uint32_t addr, uint32_t value) = 0;
-    virtual int32_t atomic_load_reserved_word(uint32_t addr) = 0;
-    virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) = 0;
+	virtual int32_t atomic_load_word(uint64_t addr) = 0;
+    virtual void atomic_store_word(uint64_t addr, uint32_t value) = 0;
+    virtual int32_t atomic_load_reserved_word(uint64_t addr) = 0;
+    virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) = 0;
     virtual void atomic_unlock() = 0;
-};
-
-struct direct_memory_interface {
-	uint8_t *mem;
-	uint32_t offset;
-	uint32_t size;
-};
-
-
-class MemoryDMI {
-	uint8_t *mem;
-	uint64_t start;
-	uint64_t size;
-	uint64_t end;
-
-	MemoryDMI(uint8_t *mem, uint64_t start, uint64_t size)
-		: mem(mem), start(start), size(size), end(start+size) {
-	}
-
-public:
-	static MemoryDMI create_start_end_mapping(uint8_t *mem, uint64_t start, uint64_t end) {
-		assert (end > start);
-		return create_start_size_mapping(mem, start, end-start);
-	}
-
-	static MemoryDMI create_start_size_mapping(uint8_t *mem, uint64_t start, uint64_t size) {
-		assert (start + size > start);
-		return MemoryDMI(mem, start, size);
-	}
-
-	uint8_t *get_mem_ptr() {
-		return mem;
-	}
-
-	uint8_t *get_mem_ptr_to_global_addr(uint64_t addr) {
-		assert (contains(addr));
-		return mem + (addr - start);
-	}
-
-	uint64_t get_start() {
-		return start;
-	}
-
-	uint64_t get_end() {
-		return start+size;
-	}
-
-	uint64_t get_size() {
-		return size;
-	}
-
-	bool contains(uint64_t addr) {
-		return addr >= start && addr < end;
-	}
 };
 
 
@@ -350,155 +296,71 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 
 
+class MemoryDMI {
+    uint8_t *mem;
+    uint64_t start;
+    uint64_t size;
+    uint64_t end;
+
+    MemoryDMI(uint8_t *mem, uint64_t start, uint64_t size)
+            : mem(mem), start(start), size(size), end(start+size) {
+    }
+
+public:
+    static MemoryDMI create_start_end_mapping(uint8_t *mem, uint64_t start, uint64_t end) {
+        assert (end > start);
+        return create_start_size_mapping(mem, start, end-start);
+    }
+
+    static MemoryDMI create_start_size_mapping(uint8_t *mem, uint64_t start, uint64_t size) {
+        assert (start + size > start);
+        return MemoryDMI(mem, start, size);
+    }
+
+    uint8_t *get_mem_ptr() {
+        return mem;
+    }
+
+    template <typename T>
+    T *get_mem_ptr_to_global_addr(uint64_t addr) {
+        assert (contains(addr));
+        assert ((addr + sizeof(T)) <= end);
+        return reinterpret_cast<T*>(mem + (addr - start));
+    }
+
+    uint64_t get_start() {
+        return start;
+    }
+
+    uint64_t get_end() {
+        return start+size;
+    }
+
+    uint64_t get_size() {
+        return size;
+    }
+
+    bool contains(uint64_t addr) {
+        return addr >= start && addr < end;
+    }
+};
+
+
+
+/* For optimization, use DMI to fetch instructions. */
 struct InstrMemoryProxy : public instr_memory_interface {
-	direct_memory_interface &dmi;
+	MemoryDMI dmi;
 
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_time access_delay = clock_cycle * 2;
 
-	InstrMemoryProxy(direct_memory_interface &dmi, ISS &owner)
+	InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner)
 			: dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
 
-	virtual int32_t load_instr(uint32_t pc) override {
-		assert(pc >= dmi.offset);
-		assert((pc - dmi.offset) < dmi.size);
-
+	virtual uint32_t load_instr(uint64_t pc) override {
 		quantum_keeper.inc(access_delay);
-
-		return *((int32_t *)(dmi.mem + (pc - dmi.offset)));
-
-		//quantum_keeper.inc(access_delay);
-		//return *((uint32_t *)(dmi.get_mem_ptr_to_global_addr(pc)));
-	}
-};
-
-
-struct DataMemoryProxy : public data_memory_interface {
-	/* Try to access the memory and redirect to the next data_memory_interface
-	 * if the access is not in range */
-	typedef uint32_t addr_t;
-
-	direct_memory_interface &dmi;
-
-	data_memory_interface *next_memory = nullptr;
-
-	ISS &iss;
-	std::shared_ptr<bus_lock_if> bus_lock;
-
-	tlm_utils::tlm_quantumkeeper &quantum_keeper;
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time access_delay = clock_cycle * 4;
-
-	DataMemoryProxy(direct_memory_interface &dmi, data_memory_interface *next_memory,
-					ISS &owner)
-			: dmi(dmi), next_memory(next_memory), iss(owner), quantum_keeper(owner.quantum_keeper) {}
-
-	/* NOTE: Should be ok to perform a non-atomic DMI load operation even if the bus is locked. */
-	template <typename T>
-	inline T _load_data(addr_t addr) {
-		if (addr >= dmi.offset && addr < dmi.size) {
-			bus_lock->wait_for_access_rights(iss.get_hart_id());
-
-			assert((addr - dmi.offset + sizeof(T)) <= dmi.size);
-
-			quantum_keeper.inc(access_delay);
-
-			T ans = *((T *)(dmi.mem + (addr - dmi.offset)));
-			return ans;
-		} else {
-			if (std::is_same<T, int8_t>::value) {
-				return next_memory->load_byte(addr);
-			} else if (std::is_same<T, int16_t>::value) {
-				return next_memory->load_half(addr);
-			} else if (std::is_same<T, int32_t>::value) {
-				return next_memory->load_word(addr);
-			} else if (std::is_same<T, uint16_t>::value) {
-				return next_memory->load_uhalf(addr);
-			} else if (std::is_same<T, uint8_t>::value) {
-				return next_memory->load_ubyte(addr);
-			} else {
-				assert(false && "unsupported load operation");
-			}
-		}
-	}
-
-	template <typename T>
-	inline void _store_data(addr_t addr, T value) {
-		if (addr >= dmi.offset && addr < dmi.size) {
-			bus_lock->wait_for_access_rights(iss.get_hart_id());
-
-			assert((addr - dmi.offset + sizeof(T)) <= dmi.size);
-
-			quantum_keeper.inc(access_delay);
-
-			*((T *)(dmi.mem + (addr - dmi.offset))) = value;
-		} else {
-			if (std::is_same<T, uint8_t>::value) {
-				next_memory->store_byte(addr, value);
-			} else if (std::is_same<T, uint16_t>::value) {
-				next_memory->store_half(addr, value);
-			} else if (std::is_same<T, uint32_t>::value) {
-				next_memory->store_word(addr, value);
-			} else {
-				assert(false && "unsupported store operation");
-			}
-		}
-	}
-
-	virtual int32_t load_word(addr_t addr) {
-		return _load_data<int32_t>(addr);
-	}
-	virtual int32_t load_half(addr_t addr) {
-		return _load_data<int16_t>(addr);
-	}
-	virtual int32_t load_byte(addr_t addr) {
-		return _load_data<int8_t>(addr);
-	}
-	virtual uint32_t load_uhalf(addr_t addr) {
-		return _load_data<uint16_t>(addr);
-	}
-	virtual uint32_t load_ubyte(addr_t addr) {
-		return _load_data<uint8_t>(addr);
-	}
-
-	virtual void store_word(addr_t addr, uint32_t value) {
-		_store_data(addr, value);
-	}
-	virtual void store_half(addr_t addr, uint16_t value) {
-		_store_data(addr, value);
-	}
-	virtual void store_byte(addr_t addr, uint8_t value) {
-		_store_data(addr, value);
-	}
-
-
-	virtual int32_t atomic_load_word(uint32_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-		return load_word(addr);
-	}
-	virtual void atomic_store_word(uint32_t addr, uint32_t value) {
-		assert (bus_lock->is_locked(iss.get_hart_id()));
-		store_word(addr, value);
-		atomic_unlock();
-	}
-	virtual int32_t atomic_load_reserved_word(uint32_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-		return load_word(addr);
-	}
-	virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) {
-		/* According to the RISC-V ISA, an implementation can fail each LR/SC sequence that does not satisfy the forward progress semantic.
-		 * The lock is established by the LR instruction and the lock is kept while forward progress is maintained. */
-		if (bus_lock->is_locked(iss.get_hart_id())) {
-			store_word(addr, value);
-			atomic_unlock();
-			return true;
-		} else {
-			return false;
-		}
-	}
-	virtual void atomic_unlock() {
-		bus_lock->unlock(iss.get_hart_id());
+		return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
 	}
 };
 
@@ -507,13 +369,17 @@ struct DataMemoryProxy : public data_memory_interface {
 struct CombinedMemoryInterface : public sc_core::sc_module,
 								 public instr_memory_interface,
 								 public data_memory_interface {
-	typedef uint32_t addr_t;
-
 	ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
+	uint64_t lr_addr = 0;
 
 	tlm_utils::simple_initiator_socket<CombinedMemoryInterface> isock;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
+
+    // optionally add DMI ranges for optimization
+	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
+	std::vector<MemoryDMI> dmi_ranges;
 
 	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner)
 			: iss(owner), quantum_keeper(iss.quantum_keeper) {
@@ -535,70 +401,97 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	}
 
 	template <typename T>
-	inline T _load_data(addr_t addr) {
+	inline T _load_data(uint64_t addr) {
+        // NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to postpone the lock after the dmi access
+        bus_lock->wait_for_access_rights(iss.get_hart_id());
+
+	    for (auto &e : dmi_ranges) {
+	        if (e.contains(addr)) {
+                quantum_keeper.inc(dmi_access_delay);
+
+                T ans = *(e.get_mem_ptr_to_global_addr<T>(addr));
+                return ans;
+	        }
+	    }
+
 		T ans;
 		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
 		return ans;
 	}
 
 	template <typename T>
-	inline void _store_data(addr_t addr, T value) {
-		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
+	inline void _store_data(uint64_t addr, T value) {
+        bus_lock->wait_for_access_rights(iss.get_hart_id());
+
+        bool done = false;
+        for (auto &e : dmi_ranges) {
+            if (e.contains(addr)) {
+                quantum_keeper.inc(dmi_access_delay);
+
+                *(e.get_mem_ptr_to_global_addr<T>(addr)) = value;
+                done = true;
+            }
+        }
+
+        if (!done)
+		    _do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
+        atomic_unlock();
 	}
 
-	int32_t load_instr(addr_t addr) {
-		return _load_data<int32_t>(addr);
+	uint32_t load_instr(uint64_t addr) {
+		return _load_data<uint32_t>(addr);
 	}
 
-	int32_t load_word(addr_t addr) {
+	int32_t load_word(uint64_t addr) {
 		return _load_data<int32_t>(addr);
 	}
-	int32_t load_half(addr_t addr) {
+	int32_t load_half(uint64_t addr) {
 		return _load_data<int16_t>(addr);
 	}
-	int32_t load_byte(addr_t addr) {
+	int32_t load_byte(uint64_t addr) {
 		return _load_data<int8_t>(addr);
 	}
-	uint32_t load_uhalf(addr_t addr) {
+	uint32_t load_uhalf(uint64_t addr) {
 		return _load_data<uint16_t>(addr);
 	}
-	uint32_t load_ubyte(addr_t addr) {
+	uint32_t load_ubyte(uint64_t addr) {
 		return _load_data<uint8_t>(addr);
 	}
 
-	void store_word(addr_t addr, uint32_t value) {
+	void store_word(uint64_t addr, uint32_t value) {
 		_store_data(addr, value);
 	}
-	void store_half(addr_t addr, uint16_t value) {
+	void store_half(uint64_t addr, uint16_t value) {
 		_store_data(addr, value);
 	}
-	void store_byte(addr_t addr, uint8_t value) {
+	void store_byte(uint64_t addr, uint8_t value) {
 		_store_data(addr, value);
 	}
 
-	virtual int32_t atomic_load_word(uint32_t addr) {
+	virtual int32_t atomic_load_word(uint64_t addr) {
 		bus_lock->lock(iss.get_hart_id());
 		return load_word(addr);
 	}
-	virtual void atomic_store_word(uint32_t addr, uint32_t value) {
+	virtual void atomic_store_word(uint64_t addr, uint32_t value) {
 		assert (bus_lock->is_locked(iss.get_hart_id()));
 		store_word(addr, value);
-		atomic_unlock();
 	}
-	virtual int32_t atomic_load_reserved_word(uint32_t addr) {
+	virtual int32_t atomic_load_reserved_word(uint64_t addr) {
 		bus_lock->lock(iss.get_hart_id());
+        lr_addr = addr;
 		return load_word(addr);
 	}
-	virtual bool atomic_store_conditional_word(uint32_t addr, uint32_t value) {
+	virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) {
 		/* According to the RISC-V ISA, an implementation can fail each LR/SC sequence that does not satisfy the forward progress semantic.
 		 * The lock is established by the LR instruction and the lock is kept while forward progress is maintained. */
 		if (bus_lock->is_locked(iss.get_hart_id())) {
-			store_word(addr, value);
+		    if (addr == lr_addr) {
+                store_word(addr, value);
+                return true;
+            }
 			atomic_unlock();
-			return true;
-		} else {
-			return false;
 		}
+		return false;
 	}
 	virtual void atomic_unlock() {
 		bus_lock->unlock(iss.get_hart_id());

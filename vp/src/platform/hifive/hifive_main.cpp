@@ -152,13 +152,12 @@ int sc_main(int argc, char **argv) {
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
 
-	direct_memory_interface dram_dmi({dram.data, opt.dram_start_addr, dram.size});
-	direct_memory_interface flash_dmi({flash.data, opt.flash_start_addr, flash.size});
+
+	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.size);
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
 	InstrMemoryProxy instr_mem(flash_dmi, core);
-	DataMemoryProxy data_mem(dram_dmi, &iss_mem_if, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
-	data_mem.bus_lock = bus_lock;
 	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_interface *instr_mem_if = &iss_mem_if;
@@ -166,7 +165,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi)
-		data_mem_if = &data_mem;
+	    iss_mem_if.dmi_ranges.emplace_back(dram_dmi);
 
 	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
 	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr);
