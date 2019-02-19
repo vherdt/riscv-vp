@@ -143,7 +143,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
-	PLIC plic("PLIC");
+	PLIC<1, 53, 7> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");
@@ -199,7 +199,7 @@ int sc_main(int argc, char **argv) {
     bus.isocks[10].bind(sys.tsock);
 
 	// connect interrupt signals/communication
-	plic.target_hart = &core;
+	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
 

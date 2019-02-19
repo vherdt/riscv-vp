@@ -154,7 +154,7 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<2, 12> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
-	PLIC plic("PLIC");
+	PLIC<1, 64, 32> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	SimpleSensor sensor("SimpleSensor", 2);
 	SimpleSensor2 sensor2("SimpleSensor2", 5);
@@ -180,10 +180,10 @@ int sc_main(int argc, char **argv) {
 	}
 
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
-	bus.ports[1] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
+	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[3] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr);
-	bus.ports[4] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
+	bus.ports[3] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
+	bus.ports[4] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr);
 	bus.ports[5] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
 	bus.ports[6] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
 	bus.ports[7] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
@@ -206,10 +206,10 @@ int sc_main(int argc, char **argv) {
 	dma.isock.bind(dma_connector.tsock);
 
 	bus.isocks[0].bind(mem.tsock);
-	bus.isocks[1].bind(term.tsock);
+	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(plic.tsock);
-	bus.isocks[3].bind(sensor.tsock);
-	bus.isocks[4].bind(clint.tsock);
+	bus.isocks[3].bind(term.tsock);
+	bus.isocks[4].bind(sensor.tsock);
 	bus.isocks[5].bind(dma.tsock);
 	bus.isocks[6].bind(sensor2.tsock);
 	bus.isocks[7].bind(mram.tsock);
@@ -219,7 +219,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[11].bind(sys.tsock);
 
 	// connect interrupt signals/communication
-	plic.target_hart = &core;
+	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	sensor.plic = &plic;
 	dma.plic = &plic;

@@ -39,6 +39,8 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	// sw a0, mtimecmp    # New value.
 	//
 
+    static_assert(NumberOfCores < 4096, "out of bound"); // stay within the allocated address range
+
 	static constexpr uint64_t scaler = 1000000;  // scale from PS resolution (default in SystemC) to US
 	                                             // resolution (apparently required by FreeRTOS)
 
@@ -58,8 +60,6 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	SC_HAS_PROCESS(CLINT);
 
 	CLINT(sc_core::sc_module_name) {
-		assert (NumberOfCores < 4096);	// stay within the allocated address range
-
 		tsock.register_b_transport(this, &CLINT::transport);
 
 		addr_to_reg = {

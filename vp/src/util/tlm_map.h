@@ -138,6 +138,7 @@ struct register_access_t {
 	uint32_t nv;
 	callback_t fn;
 	sc_core::sc_time &delay;
+	uint64_t addr;
 };
 
 struct RegisterMapping : public AbstractMapping {
@@ -201,7 +202,7 @@ struct RegisterMapping : public AbstractMapping {
 
 		assert(handler && "no callback function provided");
 
-		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND, r.vptr, *new_vptr, fn, delay});
+		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND, r.vptr, *new_vptr, fn, delay, addr});
 		return true;
 	}
 };
