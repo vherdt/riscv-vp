@@ -61,13 +61,13 @@ struct SimpleBus : sc_core::sc_module {
  * Use this adapter to attach peripherals with write access (e.g. DMA) to the bus.
  * This ensures that those peripherals do not violate the RISC-V LR/SC atomic semantic.
  */
-struct PeripheralConnector : sc_core::sc_module {
-	tlm_utils::simple_target_socket<PeripheralConnector> tsock;
-	tlm_utils::simple_initiator_socket<PeripheralConnector> isock;
+struct PeripheralWriteConnector : sc_core::sc_module {
+	tlm_utils::simple_target_socket<PeripheralWriteConnector> tsock;
+	tlm_utils::simple_initiator_socket<PeripheralWriteConnector> isock;
 	std::shared_ptr<bus_lock_if> bus_lock;
 
-	PeripheralConnector() {
-		tsock.register_b_transport(this, &PeripheralConnector::transport);
+	PeripheralWriteConnector() {
+		tsock.register_b_transport(this, &PeripheralWriteConnector::transport);
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {

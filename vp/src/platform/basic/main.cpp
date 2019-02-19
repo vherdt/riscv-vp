@@ -200,7 +200,11 @@ int sc_main(int argc, char **argv) {
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
-	dma.isock.bind(bus.tsocks[1]);
+
+	PeripheralWriteConnector dma_connector;     // to respect ISS bus locking
+	dma_connector.isock.bind(bus.tsocks[1]);
+	dma.isock.bind(dma_connector.tsock);
+
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(term.tsock);
 	bus.isocks[2].bind(plic.tsock);
