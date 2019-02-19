@@ -12,6 +12,8 @@
  - **New:** Compressed instructions (C)
  - **New:** Peripherals, e.g. display, flash controller, preliminary ethernet
  - **New:** Example configuration for the SiFive HiFive1 board available
+ - **New:** Zephyr operating system (https://www.zephyrproject.org/) support
+ - **New:** Support for simulation of multi-core platforms
 
 For related information, e.g. verification, please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. 
 We accept pull requests and in general contributions are very welcome. 
