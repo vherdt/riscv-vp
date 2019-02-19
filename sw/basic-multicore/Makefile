@@ -1,6 +1,9 @@
 all : main.c bootstrap.S
 	riscv32-unknown-elf-gcc main.c bootstrap.S -o main -nostartfiles
 	
+sim: all
+	riscv-mvp main
+	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
 	
