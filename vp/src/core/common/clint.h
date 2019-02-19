@@ -1,18 +1,13 @@
 #ifndef RISCV_ISA_CLINT_H
 #define RISCV_ISA_CLINT_H
 
-#include <unordered_map>
 #include "irq_if.h"
+#include "clint_if.h"
 
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
 
-
-struct clint_if {
-	virtual ~clint_if() {}
-
-	virtual uint64_t update_and_get_mtime() = 0;
-};
+#include <unordered_map>
 
 
 template <unsigned NumberOfCores>

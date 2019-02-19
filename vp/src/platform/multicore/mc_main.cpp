@@ -4,6 +4,7 @@
 #include "core/common/clint.h"
 #include "elf_loader.h"
 #include "iss.h"
+#include "mem.h"
 #include "memory.h"
 #include "plic.h"
 #include "syscall.h"

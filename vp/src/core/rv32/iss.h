@@ -1,17 +1,18 @@
 #pragma once
 
+#include "util/common.h"
+#include "core/common/clint_if.h"
+#include "core/common/irq_if.h"
+#include "core/common/bus_lock_if.h"
+#include "syscall_if.h"
+#include "mem_if.h"
+#include "csr.h"
+#include "instr.h"
+#include "trap.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-
-#include "util/common.h"
-#include "core/common/clint.h"
-#include "core/common/irq_if.h"
-#include "core/common/bus_lock_if.h"
-#include "csr.h"
-#include "instr.h"
-#include "syscall_if.h"
-#include "trap.h"
 
 #include <iostream>
 #include <map>
@@ -125,33 +126,6 @@ struct timing_if {
 	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
 
-struct instr_memory_if {
-	virtual ~instr_memory_if() {}
-
-	virtual uint32_t load_instr(uint64_t pc) = 0;
-};
-
-struct data_memory_if {
-	virtual ~data_memory_if() {}
-
-	virtual int32_t load_word(uint64_t addr) = 0;
-	virtual int32_t load_half(uint64_t addr) = 0;
-	virtual int32_t load_byte(uint64_t addr) = 0;
-	virtual uint32_t load_uhalf(uint64_t addr) = 0;
-	virtual uint32_t load_ubyte(uint64_t addr) = 0;
-
-	virtual void store_word(uint64_t addr, uint32_t value) = 0;
-	virtual void store_half(uint64_t addr, uint16_t value) = 0;
-	virtual void store_byte(uint64_t addr, uint8_t value) = 0;
-
-	virtual int32_t atomic_load_word(uint64_t addr) = 0;
-    virtual void atomic_store_word(uint64_t addr, uint32_t value) = 0;
-    virtual int32_t atomic_load_reserved_word(uint64_t addr) = 0;
-    virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) = 0;
-    virtual void atomic_unlock() = 0;
-};
-
-
 
 enum class CoreExecStatus {
 	Runnable,
@@ -188,6 +162,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
+
 
 	ISS(uint32_t hart_id);
 
@@ -305,210 +280,5 @@ struct DirectCoreRunner : public sc_core::sc_module {
         assert(core.status == CoreExecStatus::Terminated);
 
         sc_core::sc_stop();
-	}
-};
-
-
-
-
-class MemoryDMI {
-    uint8_t *mem;
-    uint64_t start;
-    uint64_t size;
-    uint64_t end;
-
-    MemoryDMI(uint8_t *mem, uint64_t start, uint64_t size)
-            : mem(mem), start(start), size(size), end(start+size) {
-    }
-
-public:
-    static MemoryDMI create_start_end_mapping(uint8_t *mem, uint64_t start, uint64_t end) {
-        assert (end > start);
-        return create_start_size_mapping(mem, start, end-start);
-    }
-
-    static MemoryDMI create_start_size_mapping(uint8_t *mem, uint64_t start, uint64_t size) {
-        assert (start + size > start);
-        return MemoryDMI(mem, start, size);
-    }
-
-    uint8_t *get_mem_ptr() {
-        return mem;
-    }
-
-    template <typename T>
-    T *get_mem_ptr_to_global_addr(uint64_t addr) {
-        assert (contains(addr));
-        assert ((addr + sizeof(T)) <= end);
-        return reinterpret_cast<T*>(mem + (addr - start));
-    }
-
-    uint64_t get_start() {
-        return start;
-    }
-
-    uint64_t get_end() {
-        return start+size;
-    }
-
-    uint64_t get_size() {
-        return size;
-    }
-
-    bool contains(uint64_t addr) {
-        return addr >= start && addr < end;
-    }
-};
-
-
-
-/* For optimization, use DMI to fetch instructions. */
-struct InstrMemoryProxy : public instr_memory_if {
-	MemoryDMI dmi;
-
-	tlm_utils::tlm_quantumkeeper &quantum_keeper;
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time access_delay = clock_cycle * 2;
-
-	InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner)
-			: dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
-
-	virtual uint32_t load_instr(uint64_t pc) override {
-		quantum_keeper.inc(access_delay);
-		return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
-	}
-};
-
-
-
-struct CombinedMemoryInterface : public sc_core::sc_module,
-								 public instr_memory_if,
-								 public data_memory_if {
-	ISS &iss;
-	std::shared_ptr<bus_lock_if> bus_lock;
-	uint64_t lr_addr = 0;
-
-	tlm_utils::simple_initiator_socket<CombinedMemoryInterface> isock;
-	tlm_utils::tlm_quantumkeeper &quantum_keeper;
-
-    // optionally add DMI ranges for optimization
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
-	std::vector<MemoryDMI> dmi_ranges;
-
-	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner)
-			: iss(owner), quantum_keeper(iss.quantum_keeper) {
-	}
-
-	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
-		tlm::tlm_generic_payload trans;
-		trans.set_command(cmd);
-		trans.set_address(addr);
-		trans.set_data_ptr(data);
-		trans.set_data_length(num_bytes);
-
-		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
-
-		isock->b_transport(trans, local_delay);
-
-		assert(local_delay >= quantum_keeper.get_local_time());
-		quantum_keeper.set(local_delay);
-	}
-
-	template <typename T>
-	inline T _load_data(uint64_t addr) {
-        // NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to postpone the lock after the dmi access
-        bus_lock->wait_for_access_rights(iss.get_hart_id());
-
-	    for (auto &e : dmi_ranges) {
-	        if (e.contains(addr)) {
-                quantum_keeper.inc(dmi_access_delay);
-
-                T ans = *(e.get_mem_ptr_to_global_addr<T>(addr));
-                return ans;
-	        }
-	    }
-
-		T ans;
-		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
-		return ans;
-	}
-
-	template <typename T>
-	inline void _store_data(uint64_t addr, T value) {
-        bus_lock->wait_for_access_rights(iss.get_hart_id());
-
-        bool done = false;
-        for (auto &e : dmi_ranges) {
-            if (e.contains(addr)) {
-                quantum_keeper.inc(dmi_access_delay);
-
-                *(e.get_mem_ptr_to_global_addr<T>(addr)) = value;
-                done = true;
-            }
-        }
-
-        if (!done)
-		    _do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
-        atomic_unlock();
-	}
-
-	uint32_t load_instr(uint64_t addr) {
-		return _load_data<uint32_t>(addr);
-	}
-
-	int32_t load_word(uint64_t addr) {
-		return _load_data<int32_t>(addr);
-	}
-	int32_t load_half(uint64_t addr) {
-		return _load_data<int16_t>(addr);
-	}
-	int32_t load_byte(uint64_t addr) {
-		return _load_data<int8_t>(addr);
-	}
-	uint32_t load_uhalf(uint64_t addr) {
-		return _load_data<uint16_t>(addr);
-	}
-	uint32_t load_ubyte(uint64_t addr) {
-		return _load_data<uint8_t>(addr);
-	}
-
-	void store_word(uint64_t addr, uint32_t value) {
-		_store_data(addr, value);
-	}
-	void store_half(uint64_t addr, uint16_t value) {
-		_store_data(addr, value);
-	}
-	void store_byte(uint64_t addr, uint8_t value) {
-		_store_data(addr, value);
-	}
-
-	virtual int32_t atomic_load_word(uint64_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-		return load_word(addr);
-	}
-	virtual void atomic_store_word(uint64_t addr, uint32_t value) {
-		assert (bus_lock->is_locked(iss.get_hart_id()));
-		store_word(addr, value);
-	}
-	virtual int32_t atomic_load_reserved_word(uint64_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-        lr_addr = addr;
-		return load_word(addr);
-	}
-	virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) {
-		/* According to the RISC-V ISA, an implementation can fail each LR/SC sequence that does not satisfy the forward progress semantic.
-		 * The lock is established by the LR instruction and the lock is kept while forward progress is maintained. */
-		if (bus_lock->is_locked(iss.get_hart_id())) {
-		    if (addr == lr_addr) {
-                store_word(addr, value);
-                return true;
-            }
-			atomic_unlock();
-		}
-		return false;
-	}
-	virtual void atomic_unlock() {
-		bus_lock->unlock(iss.get_hart_id());
 	}
 };

@@ -10,6 +10,7 @@
 #include "flash.h"
 #include "gdb_stub.h"
 #include "iss.h"
+#include "mem.h"
 #include "memory.h"
 #include "mram.h"
 #include "plic.h"

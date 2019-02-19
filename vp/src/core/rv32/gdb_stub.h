@@ -3,6 +3,7 @@
 
 #include "iss.h"
 
+
 struct debug_memory_mapping {
 	uint8_t *mem;
 	uint32_t mem_offset;
@@ -13,6 +14,7 @@ struct debug_memory_mapping {
 
 	void write_memory(unsigned start, int nbytes, const std::string &data);
 };
+
 
 struct DebugCoreRunner : public sc_core::sc_module {
 	ISS &core;

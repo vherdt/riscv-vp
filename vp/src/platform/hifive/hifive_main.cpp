@@ -7,6 +7,7 @@
 #include "gdb_stub.h"
 #include "gpio.h"
 #include "iss.h"
+#include "mem.h"
 #include "maskROM.h"
 #include "memory.h"
 #include "plic.h"
