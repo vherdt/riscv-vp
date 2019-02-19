@@ -162,7 +162,7 @@ enum class CoreExecStatus {
 	Terminated,
 };
 
-struct ISS : public external_interrupt_target, public timer_interrupt_target, public iss_syscall_if {
+struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_interface *instr_mem = nullptr;
 	data_memory_interface *mem = nullptr;
@@ -204,6 +204,8 @@ struct ISS : public external_interrupt_target, public timer_interrupt_target, pu
 	virtual void clear_external_interrupt() override;
 
 	virtual void trigger_timer_interrupt(bool status) override;
+
+    virtual void trigger_software_interrupt(bool status) override;
 
 	virtual void sys_exit() override;
 	virtual uint32_t read_register(unsigned idx) override;

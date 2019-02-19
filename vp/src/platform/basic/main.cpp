@@ -155,7 +155,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	PLIC plic("PLIC");
-	CLINT clint("CLINT");
+	CLINT<1> clint("CLINT");
 	SimpleSensor sensor("SimpleSensor", 2);
 	SimpleSensor2 sensor2("SimpleSensor2", 5);
 	BasicTimer timer("BasicTimer", 3);
@@ -220,7 +220,7 @@ int sc_main(int argc, char **argv) {
 
 	// connect interrupt signals/communication
 	plic.target_hart = &core;
-	clint.target_hart = &core;
+	clint.target_harts[0] = &core;
 	sensor.plic = &plic;
 	dma.plic = &plic;
 	timer.plic = &plic;

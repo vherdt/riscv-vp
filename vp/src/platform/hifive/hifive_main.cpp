@@ -144,7 +144,7 @@ int sc_main(int argc, char **argv) {
 	SyscallHandler sys("SyscallHandler");
 
 	PLIC plic("PLIC");
-	CLINT clint("CLINT");
+	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");
 	SPI spi0("SPI0");
@@ -200,7 +200,7 @@ int sc_main(int argc, char **argv) {
 
 	// connect interrupt signals/communication
 	plic.target_hart = &core;
-	clint.target_hart = &core;
+	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
 
 	core.trace = opt.trace_mode;  // switch for printing instructions

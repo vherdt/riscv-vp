@@ -706,6 +706,11 @@ void ISS::trigger_timer_interrupt(bool status) {
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
+void ISS::trigger_software_interrupt(bool status) {
+	csrs.mip.msip = status;
+	wfi_event.notify(sc_core::SC_ZERO_TIME);
+}
+
 void ISS::sys_exit() {
     shall_exit = true;
 }

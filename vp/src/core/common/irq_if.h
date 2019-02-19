@@ -8,10 +8,11 @@ struct external_interrupt_target {
 	virtual void clear_external_interrupt() = 0;
 };
 
-struct timer_interrupt_target {
-	virtual ~timer_interrupt_target() {}
+struct clint_interrupt_target {
+	virtual ~clint_interrupt_target() {}
 
 	virtual void trigger_timer_interrupt(bool status) = 0;
+	virtual void trigger_software_interrupt(bool status) = 0;
 };
 
 struct interrupt_gateway {
