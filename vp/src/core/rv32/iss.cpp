@@ -67,7 +67,8 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint32_t hart_id) {
+ISS::ISS(uint32_t hart_id)
+    : systemc_name("core-" + std::to_string(hart_id)) {
     csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
@@ -120,7 +121,7 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
+		printf("core %2u: pc %8x: %s ", csrs.mhartid.reg, last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -673,7 +674,9 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 				csrs.mtvec.mode = 0;
 			break;
 
-		case CSR_MISA_ADDR:	// read-only
+			// read-only
+		case CSR_MISA_ADDR:
+		case CSR_MHARTID_ADDR:
 			break;
 
 	    default:
@@ -852,25 +855,9 @@ void ISS::run() {
 
 void ISS::show() {
 	boost::io::ios_flags_saver ifs(std::cout);
+	std::cout << "=[ core : " << csrs.mhartid.reg << " ]===========================" << std::endl;
 	std::cout << "simulation time: " << sc_core::sc_time_stamp() << std::endl;
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret.reg << std::endl;
-}
-
-DirectCoreRunner::DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name("DirectCoreRunner")), core(core) {
-	SC_THREAD(run);
-}
-
-void DirectCoreRunner::run() {
-	core.run();
-
-	if (core.status == CoreExecStatus::HitBreakpoint) {
-		throw std::runtime_error(
-		    "Breakpoints are not supported in the direct runner, use the debug "
-		    "runner instead.");
-	}
-	assert(core.status == CoreExecStatus::Terminated);
-
-	sc_core::sc_stop();
 }

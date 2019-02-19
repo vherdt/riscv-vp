@@ -184,6 +184,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	sc_core::sc_event wfi_event;
 
+	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
@@ -290,9 +291,23 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core);
+	DirectCoreRunner(ISS &core)
+            : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+        SC_THREAD(run);
+    }
 
-	void run();
+	void run() {
+        core.run();
+
+        if (core.status == CoreExecStatus::HitBreakpoint) {
+            throw std::runtime_error(
+                    "Breakpoints are not supported in the direct runner, use the debug "
+                    "runner instead.");
+        }
+        assert(core.status == CoreExecStatus::Terminated);
+
+        sc_core::sc_stop();
+	}
 };
 
 

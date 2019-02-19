@@ -41,8 +41,7 @@ struct Options {
 	std::string network_device;
 	std::string test_signature;
 
-	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base
-	                                     // examples (assume memory start at zero) without modifications
+	addr_t mem_size = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
 	addr_t mem_start_addr = 0x00000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
@@ -201,7 +200,7 @@ int sc_main(int argc, char **argv) {
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
 
-	PeripheralWriteConnector dma_connector;     // to respect ISS bus locking
+	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");     // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
 	dma.isock.bind(dma_connector.tsock);
 

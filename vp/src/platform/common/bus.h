@@ -66,7 +66,7 @@ struct PeripheralWriteConnector : sc_core::sc_module {
 	tlm_utils::simple_initiator_socket<PeripheralWriteConnector> isock;
 	std::shared_ptr<bus_lock_if> bus_lock;
 
-	PeripheralWriteConnector() {
+	PeripheralWriteConnector(sc_core::sc_module_name) {
 		tsock.register_b_transport(this, &PeripheralWriteConnector::transport);
 	}
 
