@@ -71,6 +71,7 @@ struct Options {
 	bool use_debug_runner = false;
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
+	bool trace_mode = false;
 
 	unsigned int tlm_global_quantum = 10;
 
@@ -95,6 +96,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		desc.add_options()("help", "produce help message")("debug-mode", po::bool_switch(&opt.use_debug_runner),
 		                                                   "start execution in debugger (using gdb rsp interface)")(
+			"trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")(
 		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
 		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
 		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
@@ -133,12 +135,12 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core;
+	ISS core(0);
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<1, 11> bus("SimpleBus");
-	CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
+	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
 	PLIC plic("PLIC");
@@ -152,8 +154,12 @@ int sc_main(int argc, char **argv) {
 
 	direct_memory_interface dram_dmi({dram.data, opt.dram_start_addr, dram.size});
 	direct_memory_interface flash_dmi({flash.data, opt.flash_start_addr, flash.size});
-	InstrMemoryProxy instr_mem(flash_dmi, core.quantum_keeper);
-	DataMemoryProxy data_mem(dram_dmi, &iss_mem_if, core.quantum_keeper);
+	InstrMemoryProxy instr_mem(flash_dmi, core);
+	DataMemoryProxy data_mem(dram_dmi, &iss_mem_if, core);
+
+	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
+	data_mem.bus_lock = bus_lock;
+	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_interface *instr_mem_if = &iss_mem_if;
 	data_memory_interface *data_mem_if = &iss_mem_if;
@@ -198,8 +204,8 @@ int sc_main(int argc, char **argv) {
 	clint.target_hart = &core;
 	gpio0.plic = &plic;
 
+	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
-		core.debug = true;  // Debug switch for printing instructions
 		debug_memory_mapping dmm({dram.data, opt.dram_start_addr, dram.size});
 		new DebugCoreRunner(core, dmm);
 	} else {

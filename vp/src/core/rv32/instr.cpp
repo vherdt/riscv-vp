@@ -1,7 +1,17 @@
 #include "instr.h"
+#include "trap.h"
 
 #include <cassert>
 #include <stdexcept>
+
+
+Opcode::Mapping opcode_masks[Opcode::NUMBER_OF_INSTRUCTIONS];
+
+Opcode::Mapping opcode_encoding[Opcode::NUMBER_OF_INSTRUCTIONS];
+
+uint32_t SLLI_MASK = 0b11111110000000000111000001111111;
+uint32_t SLLI_ENCODING = 0b00000000000000000001000000010011;
+
 
 namespace Compressed {
 enum Opcode {
@@ -598,21 +608,6 @@ Opcode::Mapping Instruction::decode_normal() {
 	switch (instr.opcode()) {
 		case OP_LUI:
 			return LUI;
-		case OP_CUST1:
-			switch (instr.funct3()) {
-				/*	Example:
-		case F3_C1F0:
-		return SETTAINT_I;
-		case F3_C1F1:
-		return SETTAINT_R;
-		case F3_C1F2:
-		return GETTAINT;
-				*/
-			}
-			break;
-
-		case OP_CUST0:
-			break;
 
 		case OP_AUIPC:
 			return AUIPC;
@@ -686,7 +681,8 @@ Opcode::Mapping Instruction::decode_normal() {
 				case F3_ANDI:
 					return ANDI;
 				case F3_SLLI:
-					assert(instr.funct7() == 0);
+					if (instr.funct7() != 0)
+						raise_trap(EXC_ILLEGAL_INSTR, data());
 					return SLLI;
 				case F3_SRLI: {
 					switch (instr.funct7()) {

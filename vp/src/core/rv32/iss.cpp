@@ -119,7 +119,7 @@ void ISS::exec_step() {
 		pc += 4;
 	}
 
-	if (debug) {
+	if (trace) {
 		printf("pc %8x: %s ", last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
@@ -152,7 +152,7 @@ void ISS::exec_step() {
 
 	switch (op) {
 		case Opcode::UNDEF:
-            std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'";
+            std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
 		    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 		case Opcode::ADDI:
@@ -512,14 +512,16 @@ void ISS::exec_step() {
 			uint32_t addr = regs[instr.rs1()];
             trap_check_natural_alignment(addr);
             regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
+            lr_sc_counter = csrs.instret.reg + 17;  // this instruction + 16 additional ones to cover the forward progress property
 		} break;
 
 		case Opcode::SC_W: {
             uint32_t addr = regs[instr.rs1()];
             trap_check_natural_alignment(addr);
             uint32_t val  = regs[instr.rs2()];
-            regs[instr.rd()] = 1;												// failure by default (in case a trap is thrown)
-            regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val);	// overwrite result (in case no trap is thrown)
+            regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
+            regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
+			lr_sc_counter = 0;
 		} break;
 
 		// TODO: implement the aq and rl flags if necessary (check for all AMO
@@ -670,9 +672,13 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			if (csrs.mtvec.mode >= 1)
 				csrs.mtvec.mode = 0;
 			break;
-	}
 
-	csrs.default_write32(addr, value);
+		case CSR_MISA_ADDR:	// read-only
+			break;
+
+	    default:
+            csrs.default_write32(addr, value);
+	}
 }
 
 
@@ -760,6 +766,9 @@ void ISS::prepare_interrupt() {
 void ISS::switch_to_trap_handler() {
 	//std::cout << "[vp::iss] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
 
+	// free any potential LR/SC bus lock before processing a trap/interrupt
+	release_lr_sc_reservation();
+
 	// for SW traps the address of the instruction causing the trap/interrupt
 	// (i.e. last_pc, the address of the ECALL,EBREAK - better set pc=last_pc
 	// before taking trap) for interrupts the address of the next instruction to
@@ -778,18 +787,20 @@ void ISS::switch_to_trap_handler() {
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 	++csrs.instret.reg;
 
+	if (lr_sc_counter != 0 && lr_sc_counter < csrs.instret.reg)
+		release_lr_sc_reservation();
+
 	auto new_cycles = instr_cycles[executed_op];
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
-		quantum_keeper.sync();
+		if (lr_sc_counter == 0)	// only an optimization, to avoid (SystemC) context switching while the bus is locked
+			quantum_keeper.sync();
 	}
 }
 
 void ISS::run_step() {
 	assert(regs.read(0) == 0);
-
-	//std::cout << "pc " << std::hex << pc << std::endl;
 
 	last_pc = pc;
 	try {

@@ -72,6 +72,7 @@ struct Options {
 	bool use_debug_runner = false;
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
+	bool trace_mode = false;
 
 	unsigned int tlm_global_quantum = 10;
 
@@ -98,7 +99,8 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		                                                   "set memory start address")(
 		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
 		    "start execution in debugger (using gdb rsp interface)")(
-		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
+		    "trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")(
+            "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
 		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
 		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
 		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
@@ -145,12 +147,12 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core;
+	ISS core(0);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<2, 12> bus("SimpleBus");
-	CombinedMemoryInterface iss_mem_if("MemoryInterface", core.quantum_keeper);
+	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	PLIC plic("PLIC");
 	CLINT clint("CLINT");
@@ -164,8 +166,12 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 
 	direct_memory_interface dmi({mem.data, opt.mem_start_addr, mem.size});
-	InstrMemoryProxy instr_mem(dmi, core.quantum_keeper);
-	DataMemoryProxy data_mem(dmi, &iss_mem_if, core.quantum_keeper);
+	InstrMemoryProxy instr_mem(dmi, core);
+	DataMemoryProxy data_mem(dmi, &iss_mem_if, core);
+
+	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
+	data_mem.bus_lock = bus_lock;
+	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_interface *instr_mem_if = &iss_mem_if;
 	data_memory_interface *data_mem_if = &iss_mem_if;
@@ -218,8 +224,8 @@ int sc_main(int argc, char **argv) {
 	sensor2.plic = &plic;
 	ethernet.plic = &plic;
 
+	core.trace = opt.trace_mode; // switch for printing instructions
 	if (opt.use_debug_runner) {
-		core.debug = true;  // Debug switch for printing instructions
 		debug_memory_mapping dmm({mem.data, opt.mem_start_addr, mem.size});
 		new DebugCoreRunner(core, dmm);
 	} else {
