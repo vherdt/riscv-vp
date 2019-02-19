@@ -336,7 +336,8 @@ void ISS::exec_step() {
             }
 			break;
 
-		case Opcode::FENCE: {
+		case Opcode::FENCE:
+		case Opcode::FENCE_I: {
 			// not using out of order execution so can be ignored
 		} break;
 

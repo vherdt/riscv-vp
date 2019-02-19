@@ -6,13 +6,8 @@
 #include <unordered_map>
 #include <stdexcept>
 
+#include "util/common.h"
 #include "trap.h"
-
-
-inline void ensure(bool cond) {
-	if (!cond)
-		throw std::runtime_error("runtime assertion failed");
-}
 
 
 struct csr_32 {

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "util/common.h"
 #include "core/common/clint.h"
 #include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
@@ -22,10 +23,6 @@
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
-
-
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
 
 
 struct RegFile {

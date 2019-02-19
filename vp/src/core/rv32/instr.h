@@ -73,6 +73,8 @@ enum Parts {
 	F3_REMU = 0b111,
 
 	OP_FENCE = 0b0001111,
+	F3_FENCE = 0b000,
+	F3_FENCE_I = 0b001,
 
 	OP_ECALL = 0b1110011,
 	F3_SYS = 0b000,
@@ -114,7 +116,7 @@ enum Parts {
 enum Mapping {
 	UNDEF = 0,
 
-	// RV32I Base Instruction Set
+	// RV32I base instruction set
 	LUI = 1,
 	AUIPC,
 	JAL,
@@ -155,6 +157,11 @@ enum Mapping {
 	FENCE,
 	ECALL,
 	EBREAK,
+
+	// Zifencei standard extension
+	FENCE_I,
+
+	// Zicsr standard extension
 	CSRRW,
 	CSRRS,
 	CSRRC,
@@ -162,7 +169,7 @@ enum Mapping {
 	CSRRSI,
 	CSRRCI,
 
-	// RV32M Standard Extension
+	// RV32M standard extension
 	MUL,
 	MULH,
 	MULHSU,
@@ -172,7 +179,7 @@ enum Mapping {
 	REM,
 	REMU,
 
-	// RV32A Standard Extension
+	// RV32A standard extension
 	LR_W,
 	SC_W,
 	AMOSWAP_W,
@@ -309,6 +316,18 @@ struct Instruction {
 	inline int32_t funct5() {
 		// cast to unsigned to avoid sign extension when shifting
 		return (BIT_RANGE((uint32_t)instr, 31, 27) >> 27);
+	}
+
+	inline uint32_t fence_succ() {
+		return BIT_SLICE(instr, 23, 20);
+	}
+
+	inline uint32_t fence_pred() {
+		return BIT_SLICE(instr, 27, 24);
+	}
+
+	inline uint32_t fence_fm() {
+		return BIT_SLICE(instr, 31, 28);
 	}
 
 	inline bool aq() {

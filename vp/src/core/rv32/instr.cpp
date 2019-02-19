@@ -1,3 +1,4 @@
+#include "util/common.h"
 #include "instr.h"
 #include "trap.h"
 
@@ -5,12 +6,154 @@
 #include <stdexcept>
 
 
-Opcode::Mapping opcode_masks[Opcode::NUMBER_OF_INSTRUCTIONS];
+constexpr uint32_t LUI_MASK            = 0b00000000000000000000000001111111;
+constexpr uint32_t LUI_ENCODING        = 0b00000000000000000000000000110111;
+constexpr uint32_t AUIPC_MASK          = 0b00000000000000000000000001111111;
+constexpr uint32_t AUIPC_ENCODING      = 0b00000000000000000000000000010111;
+constexpr uint32_t JAL_MASK            = 0b00000000000000000000000001111111;
+constexpr uint32_t JAL_ENCODING        = 0b00000000000000000000000001101111;
+constexpr uint32_t JALR_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t JALR_ENCODING       = 0b00000000000000000000000001100111;
+constexpr uint32_t BEQ_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t BEQ_ENCODING        = 0b00000000000000000000000001100011;
+constexpr uint32_t BNE_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t BNE_ENCODING        = 0b00000000000000000001000001100011;
+constexpr uint32_t BLT_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t BLT_ENCODING        = 0b00000000000000000100000001100011;
+constexpr uint32_t BGE_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t BGE_ENCODING        = 0b00000000000000000101000001100011;
+constexpr uint32_t BLTU_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t BLTU_ENCODING       = 0b00000000000000000110000001100011;
+constexpr uint32_t BGEU_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t BGEU_ENCODING       = 0b00000000000000000111000001100011;
+constexpr uint32_t LB_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t LB_ENCODING         = 0b00000000000000000000000000000011;
+constexpr uint32_t LH_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t LH_ENCODING         = 0b00000000000000000001000000000011;
+constexpr uint32_t LW_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t LW_ENCODING         = 0b00000000000000000010000000000011;
+constexpr uint32_t LBU_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t LBU_ENCODING        = 0b00000000000000000100000000000011;
+constexpr uint32_t LHU_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t LHU_ENCODING        = 0b00000000000000000101000000000011;
+constexpr uint32_t SB_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t SB_ENCODING         = 0b00000000000000000000000000100011;
+constexpr uint32_t SH_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t SH_ENCODING         = 0b00000000000000000001000000100011;
+constexpr uint32_t SW_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t SW_ENCODING         = 0b00000000000000000010000000100011;
+constexpr uint32_t ADDI_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t ADDI_ENCODING       = 0b00000000000000000000000000010011;
+constexpr uint32_t SLTI_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t SLTI_ENCODING       = 0b00000000000000000010000000010011;
+constexpr uint32_t SLTIU_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t SLTIU_ENCODING      = 0b00000000000000000011000000010011;
+constexpr uint32_t XORI_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t XORI_ENCODING       = 0b00000000000000000100000000010011;
+constexpr uint32_t ORI_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t ORI_ENCODING        = 0b00000000000000000110000000010011;
+constexpr uint32_t ANDI_MASK           = 0b00000000000000000111000001111111;
+constexpr uint32_t ANDI_ENCODING       = 0b00000000000000000111000000010011;
+constexpr uint32_t SLLI_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLI_ENCODING       = 0b00000000000000000001000000010011;
+constexpr uint32_t SRLI_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLI_ENCODING       = 0b00000000000000000101000000010011;
+constexpr uint32_t SRAI_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAI_ENCODING       = 0b01000000000000000101000000010011;
+constexpr uint32_t ADD_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t ADD_ENCODING        = 0b00000000000000000000000000110011;
+constexpr uint32_t SUB_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t SUB_ENCODING        = 0b01000000000000000000000000110011;
+constexpr uint32_t SLL_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t SLL_ENCODING        = 0b00000000000000000001000000110011;
+constexpr uint32_t SLT_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t SLT_ENCODING        = 0b00000000000000000010000000110011;
+constexpr uint32_t SLTU_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SLTU_ENCODING       = 0b00000000000000000011000000110011;
+constexpr uint32_t XOR_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t XOR_ENCODING        = 0b00000000000000000100000000110011;
+constexpr uint32_t SRL_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t SRL_ENCODING        = 0b00000000000000000101000000110011;
+constexpr uint32_t SRA_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t SRA_ENCODING        = 0b01000000000000000101000000110011;
+constexpr uint32_t OR_MASK             = 0b11111110000000000111000001111111;
+constexpr uint32_t OR_ENCODING         = 0b00000000000000000110000000110011;
+constexpr uint32_t AND_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t AND_ENCODING        = 0b00000000000000000111000000110011;
+constexpr uint32_t FENCE_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t FENCE_ENCODING      = 0b00000000000000000000000000001111;
+constexpr uint32_t FENCE_I_MASK        = 0b00000000000000000111000001111111;
+constexpr uint32_t FENCE_I_ENCODING    = 0b00000000000000000001000000001111;
+constexpr uint32_t ECALL_MASK          = 0b11111111111100000111000001111111;
+constexpr uint32_t ECALL_ENCODING      = 0b00000000000000000000000001110011;
+constexpr uint32_t EBREAK_MASK         = 0b11111111111100000111000001111111;
+constexpr uint32_t EBREAK_ENCODING     = 0b00000000000100000000000001110011;
+constexpr uint32_t CSRRW_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRW_ENCODING      = 0b00000000000000000001000001110011;
+constexpr uint32_t CSRRS_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRS_ENCODING      = 0b00000000000000000010000001110011;
+constexpr uint32_t CSRRC_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRC_ENCODING      = 0b00000000000000000011000001110011;
+constexpr uint32_t CSRRWI_MASK         = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRWI_ENCODING     = 0b00000000000000000101000001110011;
+constexpr uint32_t CSRRSI_MASK         = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRSI_ENCODING     = 0b00000000000000000110000001110011;
+constexpr uint32_t CSRRCI_MASK         = 0b00000000000000000111000001111111;
+constexpr uint32_t CSRRCI_ENCODING     = 0b00000000000000000111000001110011;
+constexpr uint32_t MUL_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t MUL_ENCODING        = 0b00000010000000000000000000110011;
+constexpr uint32_t MULH_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t MULH_ENCODING       = 0b00000010000000000001000000110011;
+constexpr uint32_t MULHSU_MASK         = 0b11111110000000000111000001111111;
+constexpr uint32_t MULHSU_ENCODING     = 0b00000010000000000010000000110011;
+constexpr uint32_t MULHU_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t MULHU_ENCODING      = 0b00000010000000000011000000110011;
+constexpr uint32_t DIV_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t DIV_ENCODING        = 0b00000010000000000100000000110011;
+constexpr uint32_t DIVU_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t DIVU_ENCODING       = 0b00000010000000000101000000110011;
+constexpr uint32_t REM_MASK            = 0b11111110000000000111000001111111;
+constexpr uint32_t REM_ENCODING        = 0b00000010000000000110000000110011;
+constexpr uint32_t REMU_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t REMU_ENCODING       = 0b00000010000000000111000000110011;
+constexpr uint32_t LR_W_MASK           = 0b11111001111100000111000001111111;
+constexpr uint32_t LR_W_ENCODING       = 0b00010000000000000010000000101111;
+constexpr uint32_t SC_W_MASK           = 0b11111000000000000111000001111111;
+constexpr uint32_t SC_W_ENCODING       = 0b00011000000000000010000000101111;
+constexpr uint32_t AMOSWAP_W_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOSWAP_W_ENCODING  = 0b00001000000000000010000000101111;
+constexpr uint32_t AMOADD_W_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOADD_W_ENCODING   = 0b00000000000000000010000000101111;
+constexpr uint32_t AMOXOR_W_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOXOR_W_ENCODING   = 0b00100000000000000010000000101111;
+constexpr uint32_t AMOAND_W_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOAND_W_ENCODING   = 0b01100000000000000010000000101111;
+constexpr uint32_t AMOOR_W_MASK        = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOOR_W_ENCODING    = 0b01000000000000000010000000101111;
+constexpr uint32_t AMOMIN_W_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMIN_W_ENCODING   = 0b10000000000000000010000000101111;
+constexpr uint32_t AMOMAX_W_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAX_W_ENCODING   = 0b10100000000000000010000000101111;
+constexpr uint32_t AMOMINU_W_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMINU_W_ENCODING  = 0b11000000000000000010000000101111;
+constexpr uint32_t AMOMAXU_W_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAXU_W_ENCODING  = 0b11100000000000000010000000101111;
+constexpr uint32_t URET_MASK           = 0b11111111111111111111111111111111;
+constexpr uint32_t URET_ENCODING       = 0b00000000001000000000000001110011;
+constexpr uint32_t SRET_MASK           = 0b11111111111111111111111111111111;
+constexpr uint32_t SRET_ENCODING       = 0b00010000001000000000000001110011;
+constexpr uint32_t MRET_MASK           = 0b11111111111111111111111111111111;
+constexpr uint32_t MRET_ENCODING       = 0b00110000001000000000000001110011;
+constexpr uint32_t WFI_MASK            = 0b11111111111111111111111111111111;
+constexpr uint32_t WFI_ENCODING        = 0b00010000010100000000000001110011;
+constexpr uint32_t SFENCE_VMA_MASK     = 0b11111110000000000111111111111111;
+constexpr uint32_t SFENCE_VMA_ENCODING = 0b00010010000000000000000001110011;
 
-Opcode::Mapping opcode_encoding[Opcode::NUMBER_OF_INSTRUCTIONS];
 
-uint32_t SLLI_MASK = 0b11111110000000000111000001111111;
-uint32_t SLLI_ENCODING = 0b00000000000000000001000000010011;
+#define MATCH_AND_RETURN_INSTR(instr)									\
+	if (unlikely((data() & (instr ## _MASK)) != (instr ## _ENCODING)))	\
+		return UNDEF;                        							\
+	return instr;
 
 
 namespace Compressed {
@@ -598,42 +741,38 @@ Opcode::Mapping Instruction::decode_and_expand_compressed() {
 }
 
 Opcode::Mapping Instruction::decode_normal() {
-	// NOTE: perhaps check constant fields inside the instructions to ensure
-	// that illegal instruction formats are detected (e.g. shamt extends into
-	// func7 field)
 	using namespace Opcode;
 
 	Instruction &instr = *this;
 
 	switch (instr.opcode()) {
 		case OP_LUI:
-			return LUI;
+			MATCH_AND_RETURN_INSTR(LUI);
 
 		case OP_AUIPC:
-			return AUIPC;
+            MATCH_AND_RETURN_INSTR(AUIPC);
 
 		case OP_JAL:
-			return JAL;
+            MATCH_AND_RETURN_INSTR(JAL);
 
 		case OP_JALR: {
-			assert(instr.funct3() == F3_JALR);
-			return JALR;
+            MATCH_AND_RETURN_INSTR(JALR);
 		}
 
 		case OP_BEQ: {
 			switch (instr.funct3()) {
 				case F3_BEQ:
-					return BEQ;
+                    MATCH_AND_RETURN_INSTR(BEQ);
 				case F3_BNE:
-					return BNE;
+                    MATCH_AND_RETURN_INSTR(BNE);
 				case F3_BLT:
-					return BLT;
+                    MATCH_AND_RETURN_INSTR(BLT);
 				case F3_BGE:
-					return BGE;
+                    MATCH_AND_RETURN_INSTR(BGE);
 				case F3_BLTU:
-					return BLTU;
+                    MATCH_AND_RETURN_INSTR(BLTU);
 				case F3_BGEU:
-					return BGEU;
+                    MATCH_AND_RETURN_INSTR(BGEU);
 			}
 			break;
 		}
@@ -641,15 +780,15 @@ Opcode::Mapping Instruction::decode_normal() {
 		case OP_LB: {
 			switch (instr.funct3()) {
 				case F3_LB:
-					return LB;
+                    MATCH_AND_RETURN_INSTR(LB);
 				case F3_LH:
-					return LH;
+                    MATCH_AND_RETURN_INSTR(LH);
 				case F3_LW:
-					return LW;
+                    MATCH_AND_RETURN_INSTR(LW);
 				case F3_LBU:
-					return LBU;
+                    MATCH_AND_RETURN_INSTR(LBU);
 				case F3_LHU:
-					return LHU;
+                    MATCH_AND_RETURN_INSTR(LHU);
 			}
 			break;
 		}
@@ -657,11 +796,11 @@ Opcode::Mapping Instruction::decode_normal() {
 		case OP_SB: {
 			switch (instr.funct3()) {
 				case F3_SB:
-					return SB;
+                    MATCH_AND_RETURN_INSTR(SB);
 				case F3_SH:
-					return SH;
+                    MATCH_AND_RETURN_INSTR(SH);
 				case F3_SW:
-					return SW;
+                    MATCH_AND_RETURN_INSTR(SW);
 			}
 			break;
 		}
@@ -669,27 +808,25 @@ Opcode::Mapping Instruction::decode_normal() {
 		case OP_ADDI: {
 			switch (instr.funct3()) {
 				case F3_ADDI:
-					return ADDI;
+                    MATCH_AND_RETURN_INSTR(ADDI);
 				case F3_SLTI:
-					return SLTI;
+                    MATCH_AND_RETURN_INSTR(SLTI);
 				case F3_SLTIU:
-					return SLTIU;
+                    MATCH_AND_RETURN_INSTR(SLTIU);
 				case F3_XORI:
-					return XORI;
+                    MATCH_AND_RETURN_INSTR(XORI);
 				case F3_ORI:
-					return ORI;
+                    MATCH_AND_RETURN_INSTR(ORI);
 				case F3_ANDI:
-					return ANDI;
+                    MATCH_AND_RETURN_INSTR(ANDI);
 				case F3_SLLI:
-					if (instr.funct7() != 0)
-						raise_trap(EXC_ILLEGAL_INSTR, data());
-					return SLLI;
+                    MATCH_AND_RETURN_INSTR(SLLI);
 				case F3_SRLI: {
 					switch (instr.funct7()) {
 						case F7_SRLI:
-							return SRLI;
+							MATCH_AND_RETURN_INSTR(SRLI);
 						case F7_SRAI:
-							return SRAI;
+                            MATCH_AND_RETURN_INSTR(SRAI);
 					}
 				}
 			}
@@ -701,51 +838,51 @@ Opcode::Mapping Instruction::decode_normal() {
 				case F7_ADD:
 					switch (instr.funct3()) {
 						case F3_ADD:
-							return ADD;
+                            MATCH_AND_RETURN_INSTR(ADD);
 						case F3_SLL:
-							return SLL;
+                            MATCH_AND_RETURN_INSTR(SLL);
 						case F3_SLT:
-							return SLT;
+                            MATCH_AND_RETURN_INSTR(SLT);
 						case F3_SLTU:
-							return SLTU;
+                            MATCH_AND_RETURN_INSTR(SLTU);
 						case F3_XOR:
-							return XOR;
+                            MATCH_AND_RETURN_INSTR(XOR);
 						case F3_SRL:
-							return SRL;
+                            MATCH_AND_RETURN_INSTR(SRL);
 						case F3_OR:
-							return OR;
+                            MATCH_AND_RETURN_INSTR(OR);
 						case F3_AND:
-							return AND;
+                            MATCH_AND_RETURN_INSTR(AND);
 					}
 					break;
 
 				case F7_SUB:
 					switch (instr.funct3()) {
 						case F3_SUB:
-							return SUB;
+                            MATCH_AND_RETURN_INSTR(SUB);
 						case F3_SRA:
-							return SRA;
+                            MATCH_AND_RETURN_INSTR(SRA);
 					}
 					break;
 
 				case F7_MUL:
 					switch (instr.funct3()) {
 						case F3_MUL:
-							return MUL;
+                            MATCH_AND_RETURN_INSTR(MUL);
 						case F3_MULH:
-							return MULH;
+                            MATCH_AND_RETURN_INSTR(MULH);
 						case F3_MULHSU:
-							return MULHSU;
+                            MATCH_AND_RETURN_INSTR(MULHSU);
 						case F3_MULHU:
-							return MULHU;
+                            MATCH_AND_RETURN_INSTR(MULHU);
 						case F3_DIV:
-							return DIV;
+                            MATCH_AND_RETURN_INSTR(DIV);
 						case F3_DIVU:
-							return DIVU;
+                            MATCH_AND_RETURN_INSTR(DIVU);
 						case F3_REM:
-							return REM;
+                            MATCH_AND_RETURN_INSTR(REM);
 						case F3_REMU:
-							return REMU;
+                            MATCH_AND_RETURN_INSTR(REMU);
 					}
 					break;
 			}
@@ -753,7 +890,13 @@ Opcode::Mapping Instruction::decode_normal() {
 		}
 
 		case OP_FENCE: {
-			return FENCE;
+			switch (instr.funct3()) {
+				case F3_FENCE:
+                    MATCH_AND_RETURN_INSTR(FENCE);
+				case F3_FENCE_I:
+                    MATCH_AND_RETURN_INSTR(FENCE_I);
+			}
+			break;
 		}
 
 		case OP_ECALL: {
@@ -761,35 +904,34 @@ Opcode::Mapping Instruction::decode_normal() {
 				case F3_SYS: {
 					switch (instr.funct12()) {
 						case F12_ECALL:
-							return ECALL;
+                            MATCH_AND_RETURN_INSTR(ECALL);
 						case F12_EBREAK:
-							return EBREAK;
+                            MATCH_AND_RETURN_INSTR(EBREAK);
 						case F12_URET:
-							return URET;
+                            MATCH_AND_RETURN_INSTR(URET);
 						case F12_SRET:
-							return SRET;
+                            MATCH_AND_RETURN_INSTR(SRET);
 						case F12_MRET:
-							return MRET;
+                            MATCH_AND_RETURN_INSTR(MRET);
 						case F12_WFI:
-							return WFI;
+                            MATCH_AND_RETURN_INSTR(WFI);
 						default:
-							assert(instr.funct7() == F7_SFENCE_VMA && "invalid instruction detected");
-							return SFENCE_VMA;
+                            MATCH_AND_RETURN_INSTR(SFENCE_VMA);
 					}
 					break;
 				}
 				case F3_CSRRW:
-					return CSRRW;
+                    MATCH_AND_RETURN_INSTR(CSRRW);
 				case F3_CSRRS:
-					return CSRRS;
+                    MATCH_AND_RETURN_INSTR(CSRRS);
 				case F3_CSRRC:
-					return CSRRC;
+                    MATCH_AND_RETURN_INSTR(CSRRC);
 				case F3_CSRRWI:
-					return CSRRWI;
+                    MATCH_AND_RETURN_INSTR(CSRRWI);
 				case F3_CSRRSI:
-					return CSRRSI;
+                    MATCH_AND_RETURN_INSTR(CSRRSI);
 				case F3_CSRRCI:
-					return CSRRCI;
+                    MATCH_AND_RETURN_INSTR(CSRRCI);
 			}
 			break;
 		}
@@ -797,27 +939,27 @@ Opcode::Mapping Instruction::decode_normal() {
 		case OP_AMO: {
 			switch (instr.funct5()) {
 				case F5_LR_W:
-					return LR_W;
+                    MATCH_AND_RETURN_INSTR(LR_W);
 				case F5_SC_W:
-					return SC_W;
+                    MATCH_AND_RETURN_INSTR(SC_W);
 				case F5_AMOSWAP_W:
-					return AMOSWAP_W;
+                    MATCH_AND_RETURN_INSTR(AMOSWAP_W);
 				case F5_AMOADD_W:
-					return AMOADD_W;
+                    MATCH_AND_RETURN_INSTR(AMOADD_W);
 				case F5_AMOXOR_W:
-					return AMOXOR_W;
+                    MATCH_AND_RETURN_INSTR(AMOXOR_W);
 				case F5_AMOAND_W:
-					return AMOAND_W;
+                    MATCH_AND_RETURN_INSTR(AMOAND_W);
 				case F5_AMOOR_W:
-					return AMOOR_W;
+                    MATCH_AND_RETURN_INSTR(AMOOR_W);
 				case F5_AMOMIN_W:
-					return AMOMIN_W;
+                    MATCH_AND_RETURN_INSTR(AMOMIN_W);
 				case F5_AMOMAX_W:
-					return AMOMAX_W;
+                    MATCH_AND_RETURN_INSTR(AMOMAX_W);
 				case F5_AMOMINU_W:
-					return AMOMINU_W;
+                    MATCH_AND_RETURN_INSTR(AMOMINU_W);
 				case F5_AMOMAXU_W:
-					return AMOMAXU_W;
+                    MATCH_AND_RETURN_INSTR(AMOMAXU_W);
 			}
 		}
 	}
