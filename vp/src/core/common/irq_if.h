@@ -18,7 +18,7 @@ struct clint_interrupt_target {
 struct interrupt_gateway {
 	virtual ~interrupt_gateway() {}
 
-	virtual void gateway_incoming_interrupt(uint32_t irq_id) = 0;
+	virtual void gateway_trigger_interrupt(uint32_t irq_id) = 0;
 };
 
 #endif  // RISCV_ISA_IRQ_IF_H

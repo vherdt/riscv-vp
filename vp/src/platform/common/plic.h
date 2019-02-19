@@ -49,7 +49,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	PLIC(sc_core::sc_module_name);
 
-	void gateway_incoming_interrupt(uint32_t irq_id);
+	void gateway_trigger_interrupt(uint32_t irq_id);
 	void clear_pending_interrupt(int irq_id);
 	int hart_0_get_next_pending_interrupt(bool consider_threshold);
 	void register_access_callback(const vp::map::register_access_t &r);

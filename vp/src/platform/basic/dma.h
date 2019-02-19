@@ -107,7 +107,7 @@ struct SimpleDMA : public sc_core::sc_module {
 					assert(false && "unknown operation requested by software");
 			}
 
-			plic->gateway_incoming_interrupt(irq_number);
+            plic->gateway_trigger_interrupt(irq_number);
 		}
 	}
 

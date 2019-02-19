@@ -23,7 +23,7 @@ PLIC::PLIC(sc_core::sc_module_name) {
 	SC_THREAD(run);
 }
 
-void PLIC::gateway_incoming_interrupt(uint32_t irq_id) {
+void PLIC::gateway_trigger_interrupt(uint32_t irq_id) {
 	// NOTE: can use different techniques for each gateway, in this case a
 	// simple non queued edge trigger
 	assert(irq_id > 0 && irq_id < NUM_INTERRUPTS);

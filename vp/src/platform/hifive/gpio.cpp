@@ -137,7 +137,7 @@ void GPIO::synchronousChange() {
 						// cout << "and is being fired at " << int_gpio_base + i
 						// << endl;
 						rise_intr_pending &= ~(1l << i);
-						plic->gateway_incoming_interrupt(int_gpio_base + i);
+                        plic->gateway_trigger_interrupt(int_gpio_base + i);
 					}
 				} else {
 					// cout << "but no interrupt is registered." << endl;
@@ -153,7 +153,7 @@ void GPIO::synchronousChange() {
 						// cout << "and is being fired at " << int_gpio_base + i
 						// << endl;
 						fall_intr_pending &= ~(1l << i);
-						plic->gateway_incoming_interrupt(int_gpio_base + i);
+                        plic->gateway_trigger_interrupt(int_gpio_base + i);
 					}
 				} else {
 					// cout << "but no interrupt is registered." << endl;

@@ -120,7 +120,7 @@ struct EthernetDevice : public sc_core::sc_module {
 				while (!try_recv_raw_frame())
 					;
 				if (has_frame)
-					plic->gateway_incoming_interrupt(irq_number);
+                    plic->gateway_trigger_interrupt(irq_number);
 			}
 		}
 	}

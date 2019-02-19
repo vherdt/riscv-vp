@@ -21,7 +21,7 @@ struct BasicTimer : public sc_core::sc_module {
 		while (true) {
 			sc_core::wait(sc_core::sc_time(1, sc_core::SC_MS));
 
-			plic->gateway_incoming_interrupt(irq_number);
+            plic->gateway_trigger_interrupt(irq_number);
 		}
 	}
 };
