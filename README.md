@@ -63,8 +63,10 @@ ii) in *vp* folder (requires the *boost* C++ library):
 mkdir build
 cd build
 cmake ..
-make
+make install
 ```
+
+The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
 
 
 #### 3) Compile and run some Software:
@@ -72,12 +74,12 @@ make
 In *sw*:
 
 ```bash
-cd simple-sensor                                   # can be replaced with different example
-make                                               # (requires RISC-V GNU toolchain in PATH)
-../../vp/build/src/platform/basic/riscv-vp main    # shows final simulation time as well as register and pc contents
+cd simple-sensor    # can be replaced with different example
+make                # (requires RISC-V GNU toolchain in PATH)
+make sim            # (requires *riscv-vp*, i.e. *vp/build/bin/riscv-vp*, executable in PATH)
 ```
 
-Add the *riscv-vp* executable to PATH to simplify execution of SW examples.
+Please note, if *make* is called without the *install* argument in step 2, then the *riscv-vp* executable is available in *vp/build/src/platform/basic/riscv-vp*.
 
 
 #### 4) Optional Makefile:
