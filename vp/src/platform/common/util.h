@@ -5,6 +5,7 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
 
+
 /* A simple memory block that provides arbitrary read/write access. */
 struct BlankDevice : public sc_core::sc_module {
     tlm_utils::simple_target_socket<BlankDevice> tsock;

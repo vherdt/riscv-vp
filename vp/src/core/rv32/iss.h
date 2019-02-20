@@ -144,6 +144,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool trace = false;
 	bool shall_exit = false;
 	csr_table csrs;
+	PrivilegeLevel priv_level;
 	uint64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
@@ -159,6 +160,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
+	sc_core::sc_time cycle_counter;	// use a separate cycle counter, since cycle count can be inhibited
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;

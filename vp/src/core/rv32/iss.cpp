@@ -342,10 +342,11 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::ECALL: {
-		    if (sys)
-		        sys->execute_syscall(this);
-		    else
-		        raise_trap(EXC_ECALL_M_MODE, last_pc);
+		    if (sys) {
+				sys->execute_syscall(this);
+			} else {
+				raise_trap(EXC_ECALL_M_MODE, last_pc);
+			}
 		} break;
 
 		case Opcode::EBREAK: {
@@ -511,9 +512,6 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::LR_W: {
-			// TODO: in multi-threaded system (or even if other components can
-			// access the memory independently, e.g. through DMA) need to mark
-			// this addr as reserved
 			uint32_t addr = regs[instr.rs1()];
             trap_check_natural_alignment(addr);
             regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
@@ -529,8 +527,6 @@ void ISS::exec_step() {
 			lr_sc_counter = 0;
 		} break;
 
-		// TODO: implement the aq and rl flags if necessary (check for all AMO
-		// instructions)
 		case Opcode::AMOSWAP_W: {
 			_trace_amo("AMOSWAP_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
@@ -598,6 +594,7 @@ void ISS::exec_step() {
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
 			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
+			mem->atomic_unlock();
 			if (!has_pending_enabled_interrupts())
 				sc_core::wait(wfi_event);
 			break;
@@ -619,14 +616,12 @@ void ISS::exec_step() {
 	}
 }
 
+
 uint64_t ISS::_compute_and_get_current_cycles() {
-	// Note: result is based on the default time resolution of SystemC (1 PS)
-	sc_core::sc_time now = quantum_keeper.get_current_time();
+	assert(cycle_counter % cycle_time == sc_core::SC_ZERO_TIME);
+	assert(cycle_counter.value() % cycle_time.value() == 0);
 
-	assert(now % cycle_time == sc_core::SC_ZERO_TIME);
-	assert(now.value() % cycle_time.value() == 0);
-
-	uint64_t num_cycles = now.value() / cycle_time.value();
+	uint64_t num_cycles = cycle_counter.value() / cycle_time.value();
 
 	return num_cycles;
 }
@@ -661,6 +656,9 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 
 		case CSR_MINSTRETH_ADDR:
 			return csrs.instret.high;
+
+		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:	// not implemented
+			return 0;
 	}
 
 	if (!csrs.is_valid_csr32_addr(addr)) {
@@ -670,21 +668,62 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 	return csrs.default_read32(addr);
 }
 
+
 void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	switch (addr) {
-		case CSR_MTVEC_ADDR:
+		case CSR_MTVEC_ADDR: {
+			csr_mtvec copy{csrs.mtvec};
+
 			csrs.mtvec.reg = value;
-			if (csrs.mtvec.mode >= 1)
-				csrs.mtvec.mode = 0;
+
+			// reset to old values in case of illegal/unsupported value provided
+			if (csrs.mtvec.mode > 1)
+				csrs.mtvec.mode = copy.mode;
+
+			if (csrs.mtvec.base & 0x1)
+				csrs.mtvec.base = copy.base;
+
+			if ((csrs.mtvec.base & 0x3) && !csrs.misa.has_C_extension())
+				csrs.mtvec.base = copy.base;
+		}
+			break;
+
+		case CSR_MEPC_ADDR:
+			if (csrs.misa.has_C_extension())
+				value = value & ~0x1;
+			else
+				value = value & ~0x3;
+
+			csrs.mepc.reg = value;
 			break;
 
 			// read-only
 		case CSR_MISA_ADDR:
 		case CSR_MHARTID_ADDR:
+		case CSR_MVENDORID_ADDR:
+		case CSR_MARCHID_ADDR:
+		case CSR_MIMPID_ADDR:
+		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:	// not implemented
 			break;
 
 	    default:
             csrs.default_write32(addr, value);
+	}
+
+	switch (addr) {
+		case CSR_MCOUNTINHIBIT_ADDR:
+			csrs.mcountinhibit.zero = 0;
+			csrs.mcountinhibit.reserved = 0;
+			break;
+
+		case CSR_MCOUNTEREN_ADDR:
+			csrs.mcounteren.reserved = 0;
+			break;
+
+		case CSR_MEDELEG_ADDR:
+			// clear exceptions that cannot be delegated (according to spec, since they cannot occur)
+			csrs.medeleg.reg &= ~(1 << EXC_ECALL_M_MODE);
+			break;
 	}
 }
 
@@ -737,12 +776,10 @@ uint32_t ISS::get_hart_id() {
 void ISS::return_from_trap_handler() {
 	//std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
 
-	// NOTE: assumes a SW based solution to store/re-store the execution
-	// context, since this appears to be the RISC-V convention
+	// NOTE: assumes a SW based solution to store/re-store the execution context, since this appears to be the RISC-V convention
 	pc = csrs.mepc.reg;
 
-	// NOTE: need to adapt when support for privilege levels beside M-mode is
-	// added
+	// NOTE: need to adapt when support for privilege levels beside M-mode is added
 	csrs.mstatus.mie = csrs.mstatus.mpie;
 	csrs.mstatus.mpie = 1;
 }
@@ -794,15 +831,23 @@ void ISS::switch_to_trap_handler() {
 
 	// perform context switch to trap handler
 	pc = csrs.mtvec.get_base_address();
+
+	// in vectored mode, the interrupt entry address is computed differently
+	if (csrs.mtvec.mode == csrs.mtvec.Vectored && csrs.mcause.interrupt)
+		pc += 4*csrs.mcause.exception_code;
 }
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
-	++csrs.instret.reg;
+	if (!csrs.mcountinhibit.IR)
+		++csrs.instret.reg;
 
 	if (lr_sc_counter != 0 && lr_sc_counter < csrs.instret.reg)
 		release_lr_sc_reservation();
 
 	auto new_cycles = instr_cycles[executed_op];
+
+	if (!csrs.mcountinhibit.CY)
+		cycle_counter += new_cycles;
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
