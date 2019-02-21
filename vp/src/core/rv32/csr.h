@@ -10,11 +10,16 @@
 #include "trap.h"
 
 
-enum class PrivilegeLevel {
-	Machine,
-	Supervisor,
-	User
-};
+typedef uint32_t PrivilegeLevel;
+
+constexpr uint32_t MachineMode = 0b11;
+constexpr uint32_t SupervisorMode = 0b01;
+constexpr uint32_t UserMode = 0b00;
+constexpr uint32_t NoneMode = -1;	// invalid sentinel to avoid passing a boolean alongside a privilege level
+
+inline bool is_valid_privilege_level(PrivilegeLevel mode) {
+    return mode == MachineMode || mode == SupervisorMode || mode == UserMode;
+}
 
 
 struct csr_32 {
@@ -38,11 +43,29 @@ struct csr_misa {
 	};
 
 	bool has_C_extension() {
-		return extensions & (1 << 2);
+		return extensions & C;
 	}
 
+	bool has_user_mode_extension() {
+	    return extensions & U;
+	}
+
+    bool has_supervisor_mode_extension() {
+        return extensions & S;
+    }
+
+	enum {
+	    A = 1,
+	    C = 1 << 2,
+	    I = 1 << 8,
+	    M = 1 << 12,
+	    N = 1 << 13,
+	    S = 1 << 18,
+	    U = 1 << 20,
+	};
+
 	void init() {
-		extensions = 1 | (1 << 2) | (1 << 8) | (1 << 12);  // IMAC
+		extensions = I | M | A | C | N | U | S;  // IMAC + NUS
 		wiri = 0;
 		mxl = 1;  // RV32
 	}
@@ -82,7 +105,7 @@ struct csr_mstatus {
 			unsigned mxr : 1;
 			unsigned tvm : 1;
 			unsigned tw : 1;
-			unsigned txr : 1;
+			unsigned tsr : 1;
 			unsigned wpri4 : 8;
 			unsigned sd : 1;
 		};
@@ -536,6 +559,8 @@ struct csr_table {
 	csr_pmpcfg pmpcfg0;
 
 	// supervisor csrs (please note: some are already covered by the machine mode csrs, i.e. sstatus, sie and sip, and some are required but have the same fields, hence the machine mode classes are used)
+    csr_32 sedeleg;
+    csr_32 sideleg;
 	csr_mtvec stvec;
 	csr_mcounteren scounteren;
 	csr_32 sscratch;
@@ -578,6 +603,8 @@ struct csr_table {
         register_mapping[CSR_PMPADDR0_ADDR] = &pmpaddr0.reg;
         register_mapping[CSR_PMPCFG0_ADDR] = &pmpcfg0.reg;
 
+        register_mapping[CSR_SEDELEG_ADDR] = &sedeleg.reg;
+        register_mapping[CSR_SIDELEG_ADDR] = &sideleg.reg;
 		register_mapping[CSR_STVEC_ADDR] = &stvec.reg;
 		register_mapping[CSR_SCOUNTEREN_ADDR] = &scounteren.reg;
 		register_mapping[CSR_SSCRATCH_ADDR] = &sscratch.reg;

@@ -127,6 +127,12 @@ struct timing_if {
 };
 
 
+struct PendingInterrupts {
+    PrivilegeLevel target_mode;
+    uint32_t pending;
+};
+
+
 enum class CoreExecStatus {
 	Runnable,
 	HitBreakpoint,
@@ -144,7 +150,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool trace = false;
 	bool shall_exit = false;
 	csr_table csrs;
-	PrivilegeLevel priv_level;
+	PrivilegeLevel prv;
 	uint64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
@@ -200,8 +206,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     void set_csr_value(uint32_t addr, uint32_t value);
 
     inline bool is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
+        PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
         bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-        return is_write && csr_readonly;
+        return (is_write && csr_readonly) || (prv < csr_prv);
     }
 
 
@@ -236,19 +243,33 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         regs[instr.rd()] = data;
     }
 
-    inline void _trace_amo(const std::string &name, const Instruction &instr) {
+
+    inline bool m_mode() {
+    	return prv == MachineMode;
     }
 
+	inline bool s_mode() {
+		return prv == SupervisorMode;
+	}
 
-	void prepare_trap(SimulationTrap &e);
+	inline bool u_mode() {
+		return prv == UserMode;
+	}
 
-	void prepare_interrupt();
 
-	void return_from_trap_handler();
+	PrivilegeLevel prepare_trap(SimulationTrap &e);
 
-	bool has_pending_enabled_interrupts();
+	void prepare_interrupt(const PendingInterrupts &x);
 
-	void switch_to_trap_handler();
+    PendingInterrupts compute_pending_interrupts();
+
+    bool has_pending_enabled_interrupts() {
+        return compute_pending_interrupts().target_mode != NoneMode;
+    }
+
+	void return_from_trap_handler(PrivilegeLevel return_mode);
+
+	void switch_to_trap_handler(PrivilegeLevel target_mode);
 
 	void performance_and_sync_update(Opcode::Mapping executed_op);
 

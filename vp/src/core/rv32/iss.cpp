@@ -345,7 +345,16 @@ void ISS::exec_step() {
 		    if (sys) {
 				sys->execute_syscall(this);
 			} else {
-				raise_trap(EXC_ECALL_M_MODE, last_pc);
+		    	switch (prv) {
+		    		case MachineMode:
+						raise_trap(EXC_ECALL_M_MODE, last_pc);
+		    		case SupervisorMode:
+						raise_trap(EXC_ECALL_S_MODE, last_pc);
+					case UserMode:
+						raise_trap(EXC_ECALL_U_MODE, last_pc);
+		    		default:
+		    			throw std::runtime_error("unknown privilege level " + std::to_string(prv));
+		    	}
 			}
 		} break;
 
@@ -515,7 +524,7 @@ void ISS::exec_step() {
 			uint32_t addr = regs[instr.rs1()];
             trap_check_natural_alignment(addr);
             regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
-            lr_sc_counter = csrs.instret.reg + 17;  // this instruction + 16 additional ones to cover the forward progress property
+            lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
 		} break;
 
 		case Opcode::SC_W: {
@@ -528,63 +537,54 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::AMOSWAP_W: {
-			_trace_amo("AMOSWAP_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return b;
 			});
 		} break;
 
 		case Opcode::AMOADD_W: {
-			_trace_amo("AMOADD_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return a + b;
 			});
 		} break;
 
 		case Opcode::AMOXOR_W: {
-			_trace_amo("AMOXOR_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return a ^ b;
 			});
 		} break;
 
 		case Opcode::AMOAND_W: {
-			_trace_amo("AMOAND_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return a & b;
 			});
 		} break;
 
 		case Opcode::AMOOR_W: {
-			_trace_amo("AMOOR_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return a | b;
 			});
 		} break;
 
 		case Opcode::AMOMIN_W: {
-			_trace_amo("AMOMIN_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return std::min(a, b);
 			});
 		} break;
 
 		case Opcode::AMOMINU_W: {
-			_trace_amo("AMOMINU_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return std::min((uint32_t)a, (uint32_t)b);
 			});
 		} break;
 
 		case Opcode::AMOMAX_W: {
-			_trace_amo("AMOMAX_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return std::max(a, b);
 			});
 		} break;
 
 		case Opcode::AMOMAXU_W: {
-			_trace_amo("AMOMAXU_W", instr);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				return std::max((uint32_t)a, (uint32_t)b);
 			});
@@ -594,21 +594,37 @@ void ISS::exec_step() {
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
 			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
-			mem->atomic_unlock();
+			release_lr_sc_reservation();
+
+			if (s_mode() && !csrs.mstatus.tw)
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
+			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
 			if (!has_pending_enabled_interrupts())
 				sc_core::wait(wfi_event);
 			break;
 
 		case Opcode::SFENCE_VMA:
-			// NOTE: not using MMU so far, so can be ignored
+			if (s_mode() && csrs.mstatus.tvm)
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			break;
 
 		case Opcode::URET:
-		case Opcode::SRET:
-			assert(false && "not implemented");
+			if (!csrs.misa.has_user_mode_extension())
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			return_from_trap_handler(UserMode);
 			break;
+
+		case Opcode::SRET:
+			if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.tsr))
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			return_from_trap_handler(SupervisorMode);
+			break;
+
 		case Opcode::MRET:
-			return_from_trap_handler();
+			return_from_trap_handler(MachineMode);
 			break;
 
 		default:
@@ -737,6 +753,64 @@ void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *c
 	pc = entrypoint;
 }
 
+
+void ISS::sys_exit() {
+    shall_exit = true;
+}
+
+uint32_t ISS::read_register(unsigned idx) {
+	return regs.read(idx);
+}
+
+void ISS::write_register(unsigned idx, uint32_t value) {
+	regs.write(idx, value);
+}
+
+uint32_t ISS::get_hart_id() {
+	return csrs.mhartid.reg;
+}
+
+
+
+void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
+	//std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
+
+	switch (return_mode) {
+		case MachineMode:
+			prv = csrs.mstatus.mpp;
+			csrs.mstatus.mie = csrs.mstatus.mpie;
+			csrs.mstatus.mpie = 1;
+			pc = csrs.mepc.reg;
+			if (csrs.misa.has_user_mode_extension())
+				csrs.mstatus.mpp = UserMode;
+			else
+				csrs.mstatus.mpp = MachineMode;
+			break;
+
+		case SupervisorMode:
+			prv = csrs.mstatus.spp;
+			csrs.mstatus.sie = csrs.mstatus.spie;
+			csrs.mstatus.spie = 1;
+			pc = csrs.sepc.reg;
+			if (csrs.misa.has_user_mode_extension())
+				csrs.mstatus.spp = UserMode;
+			else
+				csrs.mstatus.spp = SupervisorMode;
+			break;
+
+		case UserMode:
+			prv = UserMode;
+			csrs.mstatus.uie = csrs.mstatus.upie;
+			csrs.mstatus.upie = 1;
+			pc = csrs.uepc.reg;
+			break;
+
+		default:
+            throw std::runtime_error("unknown privilege level " + std::to_string(return_mode));
+	}
+}
+
+
 void ISS::trigger_external_interrupt() {
 	// std::cout << "[vp::iss] trigger external interrupt" << std::endl;
 	csrs.mip.meip = true;
@@ -757,92 +831,173 @@ void ISS::trigger_software_interrupt(bool status) {
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
-void ISS::sys_exit() {
-    shall_exit = true;
-}
 
-uint32_t ISS::read_register(unsigned idx) {
-	return regs.read(idx);
-}
+PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
+	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's successor)
+	pc = last_pc;
 
-void ISS::write_register(unsigned idx, uint32_t value) {
-	regs.write(idx, value);
-}
+	// 1) machine mode execution takes any traps, independent of delegation setting
+	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
+	if (prv == MachineMode || !(e.reason & csrs.medeleg.reg)) {
+		csrs.mcause.interrupt = 0;
+		csrs.mcause.exception_code = e.reason;
+		csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		return MachineMode;
+	}
 
-uint32_t ISS::get_hart_id() {
-	return csrs.mhartid.reg;
-}
+	// see above machine mode comment
+	if (prv == SupervisorMode || !(e.reason & csrs.sedeleg.reg)) {
+		csrs.scause.interrupt = 0;
+		csrs.scause.exception_code = e.reason;
+		csrs.stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		return SupervisorMode;
+	}
 
-void ISS::return_from_trap_handler() {
-	//std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
-
-	// NOTE: assumes a SW based solution to store/re-store the execution context, since this appears to be the RISC-V convention
-	pc = csrs.mepc.reg;
-
-	// NOTE: need to adapt when support for privilege levels beside M-mode is added
-	csrs.mstatus.mie = csrs.mstatus.mpie;
-	csrs.mstatus.mpie = 1;
-}
-
-bool ISS::has_pending_enabled_interrupts() {
-	assert(!csrs.mip.msip && "traps and syscalls are handled in the simulator");
-
-	return csrs.mstatus.mie && ((csrs.mie.meie && csrs.mip.meip) || (csrs.mie.mtie && csrs.mip.mtip));
+	assert (prv == UserMode && (e.reason & csrs.medeleg.reg) && (e.reason & csrs.sedeleg.reg));
+	csrs.ucause.interrupt = 0;
+	csrs.ucause.exception_code = e.reason;
+	csrs.utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+	return UserMode;
 }
 
 
-void ISS::prepare_trap(SimulationTrap &e) {
-	pc = last_pc;	// undo any potential pc update
-	csrs.mcause.interrupt = 0;
-	csrs.mcause.exception_code = e.reason;
-	csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
-}
+void ISS::prepare_interrupt(const PendingInterrupts &e) {
+	csr_mip x{e.pending};
 
-void ISS::prepare_interrupt() {
-	assert(csrs.mstatus.mie);
+	ExceptionCode exc;
+	if (x.meip)
+		exc = EXC_M_EXTERNAL_INTERRUPT;
+	else if (x.msip)
+		exc = EXC_M_SOFTWARE_INTERRUPT;
+	else if (x.mtip)
+		exc = EXC_M_TIMER_INTERRUPT;
+	else if (x.seip)
+		exc = EXC_S_EXTERNAL_INTERRUPT;
+	else if (x.ssip)
+		exc = EXC_S_SOFTWARE_INTERRUPT;
+	else if (x.stip)
+		exc = EXC_S_TIMER_INTERRUPT;
+	else if (x.ueip)
+		exc = EXC_U_EXTERNAL_INTERRUPT;
+	else if (x.usip)
+		exc = EXC_U_SOFTWARE_INTERRUPT;
+	else if (x.utip)
+		exc = EXC_U_TIMER_INTERRUPT;
+	else
+		throw std::runtime_error("some pending interrupt must be available here");
 
-	csrs.mcause.interrupt = 1;
-	if (csrs.mie.meie && csrs.mip.meip) {
-		csrs.mcause.exception_code = EXC_M_EXTERNAL_INTERRUPT;
-	} else if (csrs.mie.mtie && csrs.mip.mtip) {
-		csrs.mcause.exception_code = EXC_M_TIMER_INTERRUPT;
-	} else {
-		throw std::runtime_error("enabled pending interrupts must be available if this function is called");
+	switch (e.target_mode) {
+		case MachineMode:
+			csrs.mcause.exception_code = exc;
+			csrs.mcause.interrupt = 1;
+			break;
+
+		case SupervisorMode:
+			csrs.scause.exception_code = exc;
+			csrs.scause.interrupt = 1;
+			break;
+
+		case UserMode:
+			csrs.ucause.exception_code = exc;
+			csrs.ucause.interrupt = 1;
+			break;
+
+		default:
+			throw std::runtime_error("unknown privilege level " + std::to_string(e.target_mode));
 	}
 }
 
 
-void ISS::switch_to_trap_handler() {
+PendingInterrupts ISS::compute_pending_interrupts() {
+	uint32_t pending = csrs.mie.reg & csrs.mip.reg;
+
+	if (!pending)
+		return {NoneMode, 0};
+
+	auto m_pending = pending & ~csrs.mideleg.reg;
+	if (m_pending && (prv < MachineMode || (prv == MachineMode && csrs.mstatus.mie))) {
+		return {MachineMode, m_pending};
+	}
+
+	pending = pending & csrs.mideleg.reg;
+	auto s_pending = pending & ~csrs.sideleg.reg;
+	if (s_pending && (prv < SupervisorMode || (prv == SupervisorMode && csrs.mstatus.sie))) {
+		return {SupervisorMode, s_pending};
+	}
+
+	auto u_pending = pending & csrs.sideleg.reg;
+	if (u_pending && (prv == UserMode && csrs.mstatus.uie)) {
+		return {UserMode, u_pending};
+	}
+
+	return {NoneMode, 0};
+}
+
+
+void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	//std::cout << "[vp::iss] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
 	release_lr_sc_reservation();
 
-	// for SW traps the address of the instruction causing the trap/interrupt
-	// (i.e. last_pc, the address of the ECALL,EBREAK - better set pc=last_pc
-	// before taking trap) for interrupts the address of the next instruction to
-	// execute (since e.g. the RISC-V FreeRTOS port will not modify it)
-	csrs.mepc.reg = pc;
+	switch (target_mode) {
+		case MachineMode:
+			csrs.mepc.reg = pc;
 
-	// deactivate interrupts before jumping to trap handler (SW can re-activate
-	// if supported)
-	csrs.mstatus.mpie = csrs.mstatus.mie;
-	csrs.mstatus.mie = 0;
+			csrs.mstatus.mpie = csrs.mstatus.mie;
+			csrs.mstatus.mie = 0;
+			csrs.mstatus.mpp = prv;
 
-	// perform context switch to trap handler
-	pc = csrs.mtvec.get_base_address();
+			pc = csrs.mtvec.get_base_address();
 
-	// in vectored mode, the interrupt entry address is computed differently
-	if (csrs.mtvec.mode == csrs.mtvec.Vectored && csrs.mcause.interrupt)
-		pc += 4*csrs.mcause.exception_code;
+			if (csrs.mcause.interrupt && csrs.mtvec.mode == csrs.mtvec.Vectored)
+				pc += 4 * csrs.mcause.exception_code;
+			break;
+
+		case SupervisorMode:
+			assert (prv == SupervisorMode || prv == UserMode);
+
+			csrs.sepc.reg = pc;
+
+			csrs.mstatus.spie = csrs.mstatus.sie;
+			csrs.mstatus.sie = 0;
+			csrs.mstatus.spp = prv;
+
+			pc = csrs.stvec.get_base_address();
+
+			if (csrs.scause.interrupt && csrs.stvec.mode == csrs.stvec.Vectored)
+				pc += 4 * csrs.scause.exception_code;
+			break;
+
+		case UserMode:
+			assert (prv == UserMode);
+
+			csrs.uepc.reg = pc;
+
+			csrs.mstatus.upie = csrs.mstatus.uie;
+			csrs.mstatus.uie = 0;
+
+			pc = csrs.utvec.get_base_address();
+
+			if (csrs.ucause.interrupt && csrs.utvec.mode == csrs.utvec.Vectored)
+				pc += 4 * csrs.ucause.exception_code;
+			break;
+
+		default:
+			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
+	}
 }
+
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 	if (!csrs.mcountinhibit.IR)
 		++csrs.instret.reg;
 
-	if (lr_sc_counter != 0 && lr_sc_counter < csrs.instret.reg)
-		release_lr_sc_reservation();
+	if (lr_sc_counter != 0) {
+		--lr_sc_counter;
+		if (lr_sc_counter == 0)
+			release_lr_sc_reservation();
+	}
 
 	auto new_cycles = instr_cycles[executed_op];
 
@@ -862,20 +1017,21 @@ void ISS::run_step() {
 	last_pc = pc;
 	try {
 		exec_step();
+
+		auto x = compute_pending_interrupts();
+		if (x.target_mode != NoneMode) {
+			prepare_interrupt(x);
+			switch_to_trap_handler(x.target_mode);
+		}
 	} catch (SimulationTrap &e) {
-		prepare_trap(e);
-		switch_to_trap_handler();
+		auto target_mode = prepare_trap(e);
+		switch_to_trap_handler(target_mode);
 	}
 
 	// NOTE: writes to zero register are supposedly allowed but must be ignored
 	// (reset it after every instruction, instead of checking *rd != zero*
 	// before every register write)
 	regs.regs[regs.zero] = 0;
-
-	if (has_pending_enabled_interrupts()) {
-		prepare_interrupt();
-		switch_to_trap_handler();
-	}
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
