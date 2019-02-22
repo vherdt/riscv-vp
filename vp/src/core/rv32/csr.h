@@ -276,6 +276,12 @@ struct csr_64 {
 
 
 namespace csr {
+	template <typename T>
+	inline bool is_bitset(T &csr, unsigned bitpos) {
+		return csr.reg & (1 << bitpos);
+	}
+
+
 	constexpr uint32_t MIE_MASK = 0b101100111011;
 	constexpr uint32_t SIE_MASK = 0b001100110011;
 	constexpr uint32_t UIE_MASK = 0b000100010001;
@@ -301,6 +307,7 @@ namespace csr {
 	constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
 
 
+// 64 bit timer csrs
 	constexpr unsigned CYCLE_ADDR = 0xC00;
 	constexpr unsigned CYCLEH_ADDR = 0xC80;
 	constexpr unsigned TIME_ADDR = 0xC01;
@@ -563,8 +570,8 @@ struct csr_table {
 	csr_mip mip;
 
 	// pmp configuration
-	csr_32 pmpaddr0;
-	csr_pmpcfg pmpcfg0;
+	std::array<csr_32, 16> pmpaddr;
+	std::array<csr_pmpcfg, 4> pmpcfg;
 
 	// supervisor csrs (please note: some are already covered by the machine mode csrs, i.e. sstatus, sie and sip, and some are required but have the same fields, hence the machine mode classes are used)
     csr_32 sedeleg;
@@ -590,6 +597,19 @@ struct csr_table {
 	csr_table() {
 		using namespace csr;
 
+        register_mapping[CYCLE_ADDR] = (uint32_t*)(&cycle.reg);
+        register_mapping[CYCLEH_ADDR] = (uint32_t*)(&cycle.reg)+1;
+        register_mapping[TIME_ADDR] = (uint32_t*)(&time.reg);
+        register_mapping[TIMEH_ADDR] = (uint32_t*)(&time.reg)+1;
+        register_mapping[INSTRET_ADDR] = (uint32_t*)(&instret.reg);
+        register_mapping[INSTRETH_ADDR] = (uint32_t*)(&instret.reg)+1;
+        register_mapping[MCYCLE_ADDR] = (uint32_t*)(&cycle.reg);
+        register_mapping[MCYCLEH_ADDR] = (uint32_t*)(&cycle.reg)+1;
+        register_mapping[MTIME_ADDR] = (uint32_t*)(&time.reg);
+        register_mapping[MTIMEH_ADDR] = (uint32_t*)(&time.reg)+1;
+        register_mapping[MINSTRET_ADDR] = (uint32_t*)(&instret.reg);
+        register_mapping[MINSTRETH_ADDR] = (uint32_t*)(&instret.reg)+1;
+
         register_mapping[MVENDORID_ADDR] = &mvendorid.reg;
         register_mapping[MARCHID_ADDR] = &marchid.reg;
         register_mapping[MIMPID_ADDR] = &mimpid.reg;
@@ -610,8 +630,11 @@ struct csr_table {
         register_mapping[MTVAL_ADDR] = &mtval.reg;
         register_mapping[MIP_ADDR] = &mip.reg;
 
-        register_mapping[PMPADDR0_ADDR] = &pmpaddr0.reg;
-        register_mapping[PMPCFG0_ADDR] = &pmpcfg0.reg;
+        for (unsigned i=0; i<16; ++i)
+            register_mapping[PMPADDR0_ADDR+i] = &pmpaddr[i].reg;
+
+        for (unsigned i=0; i<4; ++i)
+            register_mapping[PMPCFG0_ADDR+i] = &pmpcfg[i].reg;
 
         register_mapping[SEDELEG_ADDR] = &sedeleg.reg;
         register_mapping[SIDELEG_ADDR] = &sideleg.reg;

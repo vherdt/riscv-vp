@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <iostream>
+#include <array>
 
 namespace Opcode {
 // opcode masks used to decode an instruction
@@ -213,7 +214,7 @@ enum class Type {
 	J,
 };
 
-extern const char* mappingStr[];
+extern std::array<const char*, NUMBER_OF_INSTRUCTIONS> mappingStr;
 
 Type getType(Mapping mapping);
 }  // namespace Opcode

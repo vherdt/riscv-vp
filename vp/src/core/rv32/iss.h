@@ -211,7 +211,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         return (is_write && csr_readonly) || (prv < csr_prv);
     }
 
-    void validate_csr_counter_read_access(uint32_t addr);
+    void validate_csr_counter_read_access_rights(uint32_t addr);
 
     unsigned pc_alignment_mask() {
         if (csrs.misa.has_C_extension())
@@ -220,7 +220,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
             return ~0x3;
     }
 
-    inline void trap_check_pc() {
+    inline void trap_check_pc_alignment() {
         assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");
 
         if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {

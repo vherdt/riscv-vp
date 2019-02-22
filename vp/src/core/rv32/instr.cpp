@@ -195,8 +195,10 @@ enum Opcode {
 };
 }
 
-const char *Opcode::mappingStr[] = {
+std::array<const char*, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "ZERO-INVALID",
+
+    // RV32I base instruction set
     "LUI",
     "AUIPC",
     "JAL",
@@ -237,7 +239,11 @@ const char *Opcode::mappingStr[] = {
     "FENCE",
     "ECALL",
     "EBREAK",
+
+    // Zifencei standard extension
 	"FENCE_I",
+
+	// Zicsr standard extension
     "CSRRW",
     "CSRRS",
     "CSRRC",

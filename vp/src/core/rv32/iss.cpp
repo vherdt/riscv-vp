@@ -6,6 +6,11 @@
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
+
+#define RAISE_ILLEGAL_INSTRUCTION()  \
+    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
+
 const char *regnames[] = {
     "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
     "s0/sp(x8)", "s1   (x9)", "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)", "a5  (x15)",
@@ -101,7 +106,7 @@ ISS::ISS(uint32_t hart_id)
 }
 
 void ISS::exec_step() {
-	assert (!(pc & 0x1) && (!(pc & 0x3) || csrs.misa.has_C_extension()) && "misaligned instruction");
+	assert (((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
 	try {
         auto mem_word = instr_mem->load_instr(pc);
@@ -153,7 +158,8 @@ void ISS::exec_step() {
 
 	switch (op) {
 		case Opcode::UNDEF:
-            std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
+			if (trace)
+            	std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
 		    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 		case Opcode::ADDI:
@@ -243,14 +249,14 @@ void ISS::exec_step() {
 		case Opcode::JAL: {
             auto link = pc;
             pc = last_pc + instr.J_imm();
-            trap_check_pc();
+			trap_check_pc_alignment();
             regs[instr.rd()] = link;
         } break;
 
 		case Opcode::JALR: {
             auto link = pc;
             pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
-            trap_check_pc();
+			trap_check_pc_alignment();
             regs[instr.rd()] = link;
 		} break;
 
@@ -297,42 +303,42 @@ void ISS::exec_step() {
 		case Opcode::BEQ:
 			if (regs[instr.rs1()] == regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
 		case Opcode::BNE:
 			if (regs[instr.rs1()] != regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
 		case Opcode::BLT:
 			if (regs[instr.rs1()] < regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
 		case Opcode::BGE:
 			if (regs[instr.rs1()] >= regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
 		case Opcode::BLTU:
 			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
 		case Opcode::BGEU:
 			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) {
                 pc = last_pc + instr.B_imm();
-                trap_check_pc();
+				trap_check_pc_alignment();
             }
 			break;
 
@@ -643,31 +649,22 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 }
 
 
-template <typename T>
-bool is_bitset(T &csr, unsigned bitpos) {
-    return csr.reg & (1 << bitpos);
-}
-
-#define RAISE_ILLEGAL_INSTRUCTION()  \
-    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
-
-
-void ISS::validate_csr_counter_read_access(uint32_t addr) {
+void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F) || (addr >= 0xC80 && addr <= 0xC9F)) {
 		auto cnt = addr & 0x1F; // 32 counter in total, naturally aligned with the mcounteren and scounteren CSRs
 
-		if (s_mode() && !is_bitset(csrs.mcounteren, cnt))
+		if (s_mode() && !csr::is_bitset(csrs.mcounteren, cnt))
 			RAISE_ILLEGAL_INSTRUCTION();
 
-		if (u_mode() && (!is_bitset(csrs.mcounteren, cnt) || !is_bitset(csrs.scounteren, cnt)))
+		if (u_mode() && (!csr::is_bitset(csrs.mcounteren, cnt) || !csr::is_bitset(csrs.scounteren, cnt)))
 			RAISE_ILLEGAL_INSTRUCTION();
 	}
 }
 
 
 uint32_t ISS::get_csr_value(uint32_t addr) {
-	validate_csr_counter_read_access(addr);
+	validate_csr_counter_read_access_rights(addr);
 
 	auto read = [=](auto &x, uint32_t mask) {
 		return x.reg & mask;
@@ -729,8 +726,6 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		RAISE_ILLEGAL_INSTRUCTION();
 
 	return csrs.default_read32(addr);
-
-	//throw std::runtime_error("undefined CSR " + std::to_string(addr));
 }
 
 
@@ -743,8 +738,7 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	using namespace csr;
 
 	switch (addr) {
-		// currently, read-only, thus cannot be changed at runtime
-		case MISA_ADDR:
+		case MISA_ADDR: // currently, read-only, thus cannot be changed at runtime
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:	// not implemented
 			break;
 
