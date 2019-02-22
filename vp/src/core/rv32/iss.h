@@ -150,7 +150,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool trace = false;
 	bool shall_exit = false;
 	csr_table csrs;
-	PrivilegeLevel prv;
+	PrivilegeLevel prv = MachineMode;
 	uint64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
@@ -211,6 +211,14 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         return (is_write && csr_readonly) || (prv < csr_prv);
     }
 
+    void validate_csr_counter_read_access(uint32_t addr);
+
+    unsigned pc_alignment_mask() {
+        if (csrs.misa.has_C_extension())
+            return ~0x1;
+        else
+            return ~0x3;
+    }
 
     inline void trap_check_pc() {
         assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");

@@ -237,6 +237,7 @@ const char *Opcode::mappingStr[] = {
     "FENCE",
     "ECALL",
     "EBREAK",
+	"FENCE_I",
     "CSRRW",
     "CSRRS",
     "CSRRC",

@@ -121,7 +121,7 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2u: pc %8x: %s ", csrs.mhartid.reg, last_pc, Opcode::mappingStr[op]);
+		printf("core %2u: prv %1x: pc %8x: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -596,7 +596,7 @@ void ISS::exec_step() {
 			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
 			release_lr_sc_reservation();
 
-			if (s_mode() && !csrs.mstatus.tw)
+			if (s_mode() && csrs.mstatus.tw)
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
@@ -643,103 +643,169 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 }
 
 
+template <typename T>
+bool is_bitset(T &csr, unsigned bitpos) {
+    return csr.reg & (1 << bitpos);
+}
+
+#define RAISE_ILLEGAL_INSTRUCTION()  \
+    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
+
+void ISS::validate_csr_counter_read_access(uint32_t addr) {
+	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
+	if ((addr >= 0xC00 && addr <= 0xC1F) || (addr >= 0xC80 && addr <= 0xC9F)) {
+		auto cnt = addr & 0x1F; // 32 counter in total, naturally aligned with the mcounteren and scounteren CSRs
+
+		if (s_mode() && !is_bitset(csrs.mcounteren, cnt))
+			RAISE_ILLEGAL_INSTRUCTION();
+
+		if (u_mode() && (!is_bitset(csrs.mcounteren, cnt) || !is_bitset(csrs.scounteren, cnt)))
+			RAISE_ILLEGAL_INSTRUCTION();
+	}
+}
+
+
 uint32_t ISS::get_csr_value(uint32_t addr) {
+	validate_csr_counter_read_access(addr);
+
+	auto read = [=](auto &x, uint32_t mask) {
+		return x.reg & mask;
+	};
+
+	using namespace csr;
+
 	switch (addr) {
-		case CSR_TIME_ADDR:
-		case CSR_MTIME_ADDR: {
+		case TIME_ADDR:
+		case MTIME_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
 			csrs.time.reg = mtime;
 			return csrs.time.low;
 		}
 
-		case CSR_TIMEH_ADDR:
-		case CSR_MTIMEH_ADDR: {
+		case TIMEH_ADDR:
+		case MTIMEH_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
 			csrs.time.reg = mtime;
 			return csrs.time.high;
 		}
 
-		case CSR_MCYCLE_ADDR:
+		case MCYCLE_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
 			return csrs.cycle.low;
 
-		case CSR_MCYCLEH_ADDR:
+		case MCYCLEH_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
 			return csrs.cycle.high;
 
-		case CSR_MINSTRET_ADDR:
+		case MINSTRET_ADDR:
 			return csrs.instret.low;
 
-		case CSR_MINSTRETH_ADDR:
+		case MINSTRETH_ADDR:
 			return csrs.instret.high;
 
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:	// not implemented
 			return 0;
+
+		case MSTATUS_ADDR: return read(csrs.mstatus, MSTATUS_MASK);
+		case SSTATUS_ADDR: return read(csrs.mstatus, SSTATUS_MASK);
+		case USTATUS_ADDR: return read(csrs.mstatus, USTATUS_MASK);
+
+		case MIP_ADDR: return read(csrs.mip, MIP_READ_MASK);
+		case SIP_ADDR: return read(csrs.mip, SIP_MASK);
+		case UIP_ADDR: return read(csrs.mip, UIP_MASK);
+
+		case MIE_ADDR: return read(csrs.mie, MIE_MASK);
+		case SIE_ADDR: return read(csrs.mie, SIE_MASK);
+		case UIE_ADDR: return read(csrs.mie, UIE_MASK);
+
+		case SATP_ADDR:
+            if (csrs.mstatus.tvm)
+                RAISE_ILLEGAL_INSTRUCTION();
+            break;
 	}
 
-	if (!csrs.is_valid_csr32_addr(addr)) {
-		raise_trap(EXC_ILLEGAL_INSTR, instr.data());
-	}
+	if (!csrs.is_valid_csr32_addr(addr))
+		RAISE_ILLEGAL_INSTRUCTION();
 
 	return csrs.default_read32(addr);
+
+	//throw std::runtime_error("undefined CSR " + std::to_string(addr));
 }
 
 
 void ISS::set_csr_value(uint32_t addr, uint32_t value) {
+
+	auto write = [=](auto &x, uint32_t mask) {
+		x.reg = (x.reg & ~mask) | (value & mask);
+	};
+
+	using namespace csr;
+
 	switch (addr) {
-		case CSR_MTVEC_ADDR: {
-			csr_mtvec copy{csrs.mtvec};
-
-			csrs.mtvec.reg = value;
-
-			// reset to old values in case of illegal/unsupported value provided
-			if (csrs.mtvec.mode > 1)
-				csrs.mtvec.mode = copy.mode;
-
-			if (csrs.mtvec.base & 0x1)
-				csrs.mtvec.base = copy.base;
-
-			if ((csrs.mtvec.base & 0x3) && !csrs.misa.has_C_extension())
-				csrs.mtvec.base = copy.base;
-		}
-			break;
-
-		case CSR_MEPC_ADDR:
-			if (csrs.misa.has_C_extension())
-				value = value & ~0x1;
-			else
-				value = value & ~0x3;
-
-			csrs.mepc.reg = value;
-			break;
-
-			// read-only
-		case CSR_MISA_ADDR:
-		case CSR_MHARTID_ADDR:
-		case CSR_MVENDORID_ADDR:
-		case CSR_MARCHID_ADDR:
-		case CSR_MIMPID_ADDR:
+		// currently, read-only, thus cannot be changed at runtime
+		case MISA_ADDR:
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:	// not implemented
 			break;
 
+        case SATP_ADDR:
+            if (csrs.mstatus.tvm)
+                RAISE_ILLEGAL_INSTRUCTION();
+            break;
+
+	    case MTVEC_ADDR: std::cout << "set: MTVEC" << std::endl; write(csrs.mtvec, MTVEC_MASK); break;
+		case STVEC_ADDR: std::cout << "set: STVEC" << std::endl; write(csrs.stvec, MTVEC_MASK); break;
+		case UTVEC_ADDR: std::cout << "set: UTVEC" << std::endl; write(csrs.utvec, MTVEC_MASK); break;
+
+		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break;
+		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
+		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break;
+
+		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_MASK); break;
+		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_MASK); break;
+		case USTATUS_ADDR: write(csrs.mstatus, USTATUS_MASK); break;
+
+		case MIP_ADDR: write(csrs.mip, MIP_WRITE_MASK); break;
+		case SIP_ADDR: write(csrs.mip, SIP_MASK); break;
+		case UIP_ADDR: write(csrs.mip, UIP_MASK); break;
+
+		case MIE_ADDR: write(csrs.mie, MIE_MASK); break;
+		case SIE_ADDR: write(csrs.mie, SIE_MASK); break;
+		case UIE_ADDR: write(csrs.mie, UIE_MASK); break;
+
+		case MIDELEG_ADDR:
+			write(csrs.mideleg, MIDELEG_MASK);
+			break;
+
+		case MEDELEG_ADDR:
+			write(csrs.medeleg, MEDELEG_MASK);
+			break;
+
+		case SIDELEG_ADDR:
+			write(csrs.sideleg, SIDELEG_MASK);
+			break;
+
+		case SEDELEG_ADDR:
+			write(csrs.sedeleg, SEDELEG_MASK);
+			break;
+
+		case MCOUNTEREN_ADDR:
+			write(csrs.mcounteren, MCOUNTEREN_MASK);
+			break;
+
+		case SCOUNTEREN_ADDR:
+			write(csrs.scounteren, MCOUNTEREN_MASK);
+			break;
+
+		case MCOUNTINHIBIT_ADDR:
+			write(csrs.mcountinhibit, MCOUNTINHIBIT_MASK);
+			break;
+
 	    default:
+			if (!csrs.is_valid_csr32_addr(addr))
+				RAISE_ILLEGAL_INSTRUCTION();
+
             csrs.default_write32(addr, value);
-	}
-
-	switch (addr) {
-		case CSR_MCOUNTINHIBIT_ADDR:
-			csrs.mcountinhibit.zero = 0;
-			csrs.mcountinhibit.reserved = 0;
-			break;
-
-		case CSR_MCOUNTEREN_ADDR:
-			csrs.mcounteren.reserved = 0;
-			break;
-
-		case CSR_MEDELEG_ADDR:
-			// clear exceptions that cannot be delegated (according to spec, since they cannot occur)
-			csrs.medeleg.reg &= ~(1 << EXC_ECALL_M_MODE);
-			break;
 	}
 }
 
@@ -773,8 +839,6 @@ uint32_t ISS::get_hart_id() {
 
 
 void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
-	//std::cout << "[vp::iss] return from trap handler @time " << quantum_keeper.get_current_time() << " to pc " << std::hex << csrs.mepc->reg << std::endl;
-
 	switch (return_mode) {
 		case MachineMode:
 			prv = csrs.mstatus.mpp;
@@ -808,6 +872,8 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 		default:
             throw std::runtime_error("unknown privilege level " + std::to_string(return_mode));
 	}
+
+	printf("[vp::iss] return from trap handler, time %s, pc %8x, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
 }
 
 
@@ -835,10 +901,11 @@ void ISS::trigger_software_interrupt(bool status) {
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's successor)
 	pc = last_pc;
+	unsigned exc_bit = (1 << e.reason);
 
 	// 1) machine mode execution takes any traps, independent of delegation setting
 	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
-	if (prv == MachineMode || !(e.reason & csrs.medeleg.reg)) {
+	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg)) {
 		csrs.mcause.interrupt = 0;
 		csrs.mcause.exception_code = e.reason;
 		csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
@@ -846,14 +913,14 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	}
 
 	// see above machine mode comment
-	if (prv == SupervisorMode || !(e.reason & csrs.sedeleg.reg)) {
+	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg)) {
 		csrs.scause.interrupt = 0;
 		csrs.scause.exception_code = e.reason;
 		csrs.stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
 		return SupervisorMode;
 	}
 
-	assert (prv == UserMode && (e.reason & csrs.medeleg.reg) && (e.reason & csrs.sedeleg.reg));
+	assert (prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
 	csrs.ucause.interrupt = 0;
 	csrs.ucause.exception_code = e.reason;
 	csrs.utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
@@ -935,10 +1002,14 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 
 
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
-	//std::cout << "[vp::iss] switch to trap handler @time " << quantum_keeper.get_current_time() << " @last_pc " << std::hex << last_pc << " @pc " << pc << std::endl;
+    if (trace)
+        printf("[vp::iss] switch to trap handler, time %s, last_pc %8x, pc %8x, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
 	release_lr_sc_reservation();
+
+	auto pp = prv;
+	prv = target_mode;
 
 	switch (target_mode) {
 		case MachineMode:
@@ -946,7 +1017,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			csrs.mstatus.mpie = csrs.mstatus.mie;
 			csrs.mstatus.mie = 0;
-			csrs.mstatus.mpp = prv;
+			csrs.mstatus.mpp = pp;
 
 			pc = csrs.mtvec.get_base_address();
 
@@ -961,7 +1032,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			csrs.mstatus.spie = csrs.mstatus.sie;
 			csrs.mstatus.sie = 0;
-			csrs.mstatus.spp = prv;
+			csrs.mstatus.spp = pp;
 
 			pc = csrs.stvec.get_base_address();
 

@@ -275,257 +275,265 @@ struct csr_64 {
 };
 
 
-enum {
-	// 64 bit readonly registers
-	CSR_CYCLE_ADDR = 0xC00,
-	CSR_CYCLEH_ADDR = 0xC80,
-	CSR_TIME_ADDR = 0xC01,
-	CSR_TIMEH_ADDR = 0xC81,
-	CSR_INSTRET_ADDR = 0xC02,
-	CSR_INSTRETH_ADDR = 0xC82,
+namespace csr {
+	constexpr uint32_t MIE_MASK = 0b101100111011;
+	constexpr uint32_t SIE_MASK = 0b001100110011;
+	constexpr uint32_t UIE_MASK = 0b000100010001;
 
-	// shadows for the above CSRs
-	CSR_MCYCLE_ADDR = 0xB00,
-	CSR_MCYCLEH_ADDR = 0xB80,
-	CSR_MTIME_ADDR = 0xB01,
-	CSR_MTIMEH_ADDR = 0xB81,
-	CSR_MINSTRET_ADDR = 0xB02,
-	CSR_MINSTRETH_ADDR = 0xB82,
+	constexpr uint32_t MIP_WRITE_MASK = 0b001100110011;
+	constexpr uint32_t MIP_READ_MASK = MIE_MASK;
+	constexpr uint32_t SIP_MASK = 0b11;
+	constexpr uint32_t UIP_MASK = 0b1;
 
-	// 32 bit machine CSRs
-	CSR_MVENDORID_ADDR = 0xF11,
-	CSR_MARCHID_ADDR = 0xF12,
-	CSR_MIMPID_ADDR = 0xF13,
-	CSR_MHARTID_ADDR = 0xF14,
+	constexpr uint32_t MEDELEG_MASK = 0b1011101111111111;
+	constexpr uint32_t MIDELEG_MASK = MIE_MASK;
 
-	CSR_MSTATUS_ADDR = 0x300,
-	CSR_MISA_ADDR = 0x301,
-	CSR_MEDELEG_ADDR = 0x302,
-    CSR_MIDELEG_ADDR = 0x303,
-	CSR_MIE_ADDR = 0x304,
-	CSR_MTVEC_ADDR = 0x305,
-	CSR_MCOUNTEREN_ADDR = 0x306,
-	CSR_MCOUNTINHIBIT_ADDR = 0x320,
+	constexpr uint32_t MTVEC_MASK = ~2;
 
-	CSR_MSCRATCH_ADDR = 0x340,
-	CSR_MEPC_ADDR = 0x341,
-	CSR_MCAUSE_ADDR = 0x342,
-	CSR_MTVAL_ADDR = 0x343,
-	CSR_MIP_ADDR = 0x344,
+	constexpr uint32_t MCOUNTEREN_MASK = 0b111;
+	constexpr uint32_t MCOUNTINHIBIT_MASK = 0b101;
 
-	CSR_PMPCFG0_ADDR = 0x3A0,
-    CSR_PMPCFG1_ADDR = 0x3A1,
-    CSR_PMPCFG2_ADDR = 0x3A2,
-    CSR_PMPCFG3_ADDR = 0x3A3,
+	constexpr uint32_t SEDELEG_MASK = 0b1011000111111111;
+	constexpr uint32_t SIDELEG_MASK = MIDELEG_MASK;
 
-    CSR_PMPADDR0_ADDR = 0x3B0,
-    CSR_PMPADDR1_ADDR = 0x3B1,
-    CSR_PMPADDR2_ADDR = 0x3B2,
-    CSR_PMPADDR3_ADDR = 0x3B3,
-    CSR_PMPADDR4_ADDR = 0x3B4,
-    CSR_PMPADDR5_ADDR = 0x3B5,
-    CSR_PMPADDR6_ADDR = 0x3B6,
-    CSR_PMPADDR7_ADDR = 0x3B7,
-    CSR_PMPADDR8_ADDR = 0x3B8,
-    CSR_PMPADDR9_ADDR = 0x3B9,
-    CSR_PMPADDR10_ADDR = 0x3BA,
-    CSR_PMPADDR11_ADDR = 0x3BB,
-    CSR_PMPADDR12_ADDR = 0x3BC,
-    CSR_PMPADDR13_ADDR = 0x3BD,
-    CSR_PMPADDR14_ADDR = 0x3BE,
-    CSR_PMPADDR15_ADDR = 0x3BF,
-
-    // 32 bit supervisor CSRs
-    CSR_SSTATUS_ADDR = 0x100,
-	CSR_SEDELEG_ADDR = 0x102,
-	CSR_SIDELEG_ADDR = 0x103,
-	CSR_SIE_ADDR = 0x104,
-	CSR_STVEC_ADDR = 0x105,
-	CSR_SCOUNTEREN_ADDR = 0x106,
-	CSR_SSCRATCH_ADDR = 0x140,
-	CSR_SEPC_ADDR = 0x141,
-	CSR_SCAUSE_ADDR = 0x142,
-	CSR_STVAL_ADDR = 0x143,
-	CSR_SIP_ADDR = 0x144,
-    CSR_SATP_ADDR = 0x180,
-
-    // 32 bit user CSRs
-    CSR_USTATUS_ADDR = 0x000,
-	CSR_UIE_ADDR = 0x004,
-	CSR_UTVEC_ADDR = 0x005,
-	CSR_USCRATCH_ADDR = 0x040,
-	CSR_UEPC_ADDR = 0x041,
-	CSR_UCAUSE_ADDR = 0x042,
-	CSR_UTVAL_ADDR = 0x043,
-	CSR_UIP_ADDR = 0x044,
+	constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111100110111011;
+	constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110000100110011;
+	constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
 
 
-    // performance counters
-    /*
-for i in range(3,32):
-	print("CSR_HPMCOUNTER{}_ADDR = 0x{:X},".format(i, 0xC00+i))
+	constexpr unsigned CYCLE_ADDR = 0xC00;
+	constexpr unsigned CYCLEH_ADDR = 0xC80;
+	constexpr unsigned TIME_ADDR = 0xC01;
+	constexpr unsigned TIMEH_ADDR = 0xC81;
+	constexpr unsigned INSTRET_ADDR = 0xC02;
+	constexpr unsigned INSTRETH_ADDR = 0xC82;
 
-print("")
-for i in range(3,32):
-	print("CSR_HPMCOUNTER{}H_ADDR = 0x{:X},".format(i, 0xC80+i))
+// shadows for the above CSRs
+	constexpr unsigned MCYCLE_ADDR = 0xB00;
+	constexpr unsigned MCYCLEH_ADDR = 0xB80;
+	constexpr unsigned MTIME_ADDR = 0xB01;
+	constexpr unsigned MTIMEH_ADDR = 0xB81;
+	constexpr unsigned MINSTRET_ADDR = 0xB02;
+	constexpr unsigned MINSTRETH_ADDR = 0xB82;
 
-print("")
-for i in range(3,32):
-	print("CSR_MHPMCOUNTER{}_ADDR = 0x{:X},".format(i, 0xB00+i))
+// 32 bit machine CSRs
+	constexpr unsigned MVENDORID_ADDR = 0xF11;
+	constexpr unsigned MARCHID_ADDR = 0xF12;
+	constexpr unsigned MIMPID_ADDR = 0xF13;
+	constexpr unsigned MHARTID_ADDR = 0xF14;
 
-print("")
-for i in range(3,32):
-	print("CSR_MHPMCOUNTER{}H_ADDR = 0x{:X},".format(i, 0xB80+i))
-     */
-    CSR_HPMCOUNTER3_ADDR = 0xC03,
-	CSR_HPMCOUNTER4_ADDR = 0xC04,
-	CSR_HPMCOUNTER5_ADDR = 0xC05,
-	CSR_HPMCOUNTER6_ADDR = 0xC06,
-	CSR_HPMCOUNTER7_ADDR = 0xC07,
-	CSR_HPMCOUNTER8_ADDR = 0xC08,
-	CSR_HPMCOUNTER9_ADDR = 0xC09,
-	CSR_HPMCOUNTER10_ADDR = 0xC0A,
-	CSR_HPMCOUNTER11_ADDR = 0xC0B,
-	CSR_HPMCOUNTER12_ADDR = 0xC0C,
-	CSR_HPMCOUNTER13_ADDR = 0xC0D,
-	CSR_HPMCOUNTER14_ADDR = 0xC0E,
-	CSR_HPMCOUNTER15_ADDR = 0xC0F,
-	CSR_HPMCOUNTER16_ADDR = 0xC10,
-	CSR_HPMCOUNTER17_ADDR = 0xC11,
-	CSR_HPMCOUNTER18_ADDR = 0xC12,
-	CSR_HPMCOUNTER19_ADDR = 0xC13,
-	CSR_HPMCOUNTER20_ADDR = 0xC14,
-	CSR_HPMCOUNTER21_ADDR = 0xC15,
-	CSR_HPMCOUNTER22_ADDR = 0xC16,
-	CSR_HPMCOUNTER23_ADDR = 0xC17,
-	CSR_HPMCOUNTER24_ADDR = 0xC18,
-	CSR_HPMCOUNTER25_ADDR = 0xC19,
-	CSR_HPMCOUNTER26_ADDR = 0xC1A,
-	CSR_HPMCOUNTER27_ADDR = 0xC1B,
-	CSR_HPMCOUNTER28_ADDR = 0xC1C,
-	CSR_HPMCOUNTER29_ADDR = 0xC1D,
-	CSR_HPMCOUNTER30_ADDR = 0xC1E,
-	CSR_HPMCOUNTER31_ADDR = 0xC1F,
+	constexpr unsigned MSTATUS_ADDR = 0x300;
+	constexpr unsigned MISA_ADDR = 0x301;
+	constexpr unsigned MEDELEG_ADDR = 0x302;
+	constexpr unsigned MIDELEG_ADDR = 0x303;
+	constexpr unsigned MIE_ADDR = 0x304;
+	constexpr unsigned MTVEC_ADDR = 0x305;
+	constexpr unsigned MCOUNTEREN_ADDR = 0x306;
+	constexpr unsigned MCOUNTINHIBIT_ADDR = 0x320;
 
-	CSR_HPMCOUNTER3H_ADDR = 0xC83,
-	CSR_HPMCOUNTER4H_ADDR = 0xC84,
-	CSR_HPMCOUNTER5H_ADDR = 0xC85,
-	CSR_HPMCOUNTER6H_ADDR = 0xC86,
-	CSR_HPMCOUNTER7H_ADDR = 0xC87,
-	CSR_HPMCOUNTER8H_ADDR = 0xC88,
-	CSR_HPMCOUNTER9H_ADDR = 0xC89,
-	CSR_HPMCOUNTER10H_ADDR = 0xC8A,
-	CSR_HPMCOUNTER11H_ADDR = 0xC8B,
-	CSR_HPMCOUNTER12H_ADDR = 0xC8C,
-	CSR_HPMCOUNTER13H_ADDR = 0xC8D,
-	CSR_HPMCOUNTER14H_ADDR = 0xC8E,
-	CSR_HPMCOUNTER15H_ADDR = 0xC8F,
-	CSR_HPMCOUNTER16H_ADDR = 0xC90,
-	CSR_HPMCOUNTER17H_ADDR = 0xC91,
-	CSR_HPMCOUNTER18H_ADDR = 0xC92,
-	CSR_HPMCOUNTER19H_ADDR = 0xC93,
-	CSR_HPMCOUNTER20H_ADDR = 0xC94,
-	CSR_HPMCOUNTER21H_ADDR = 0xC95,
-	CSR_HPMCOUNTER22H_ADDR = 0xC96,
-	CSR_HPMCOUNTER23H_ADDR = 0xC97,
-	CSR_HPMCOUNTER24H_ADDR = 0xC98,
-	CSR_HPMCOUNTER25H_ADDR = 0xC99,
-	CSR_HPMCOUNTER26H_ADDR = 0xC9A,
-	CSR_HPMCOUNTER27H_ADDR = 0xC9B,
-	CSR_HPMCOUNTER28H_ADDR = 0xC9C,
-	CSR_HPMCOUNTER29H_ADDR = 0xC9D,
-	CSR_HPMCOUNTER30H_ADDR = 0xC9E,
-	CSR_HPMCOUNTER31H_ADDR = 0xC9F,
+	constexpr unsigned MSCRATCH_ADDR = 0x340;
+	constexpr unsigned MEPC_ADDR = 0x341;
+	constexpr unsigned MCAUSE_ADDR = 0x342;
+	constexpr unsigned MTVAL_ADDR = 0x343;
+	constexpr unsigned MIP_ADDR = 0x344;
 
-	CSR_MHPMCOUNTER3_ADDR = 0xB03,
-	CSR_MHPMCOUNTER4_ADDR = 0xB04,
-	CSR_MHPMCOUNTER5_ADDR = 0xB05,
-	CSR_MHPMCOUNTER6_ADDR = 0xB06,
-	CSR_MHPMCOUNTER7_ADDR = 0xB07,
-	CSR_MHPMCOUNTER8_ADDR = 0xB08,
-	CSR_MHPMCOUNTER9_ADDR = 0xB09,
-	CSR_MHPMCOUNTER10_ADDR = 0xB0A,
-	CSR_MHPMCOUNTER11_ADDR = 0xB0B,
-	CSR_MHPMCOUNTER12_ADDR = 0xB0C,
-	CSR_MHPMCOUNTER13_ADDR = 0xB0D,
-	CSR_MHPMCOUNTER14_ADDR = 0xB0E,
-	CSR_MHPMCOUNTER15_ADDR = 0xB0F,
-	CSR_MHPMCOUNTER16_ADDR = 0xB10,
-	CSR_MHPMCOUNTER17_ADDR = 0xB11,
-	CSR_MHPMCOUNTER18_ADDR = 0xB12,
-	CSR_MHPMCOUNTER19_ADDR = 0xB13,
-	CSR_MHPMCOUNTER20_ADDR = 0xB14,
-	CSR_MHPMCOUNTER21_ADDR = 0xB15,
-	CSR_MHPMCOUNTER22_ADDR = 0xB16,
-	CSR_MHPMCOUNTER23_ADDR = 0xB17,
-	CSR_MHPMCOUNTER24_ADDR = 0xB18,
-	CSR_MHPMCOUNTER25_ADDR = 0xB19,
-	CSR_MHPMCOUNTER26_ADDR = 0xB1A,
-	CSR_MHPMCOUNTER27_ADDR = 0xB1B,
-	CSR_MHPMCOUNTER28_ADDR = 0xB1C,
-	CSR_MHPMCOUNTER29_ADDR = 0xB1D,
-	CSR_MHPMCOUNTER30_ADDR = 0xB1E,
-	CSR_MHPMCOUNTER31_ADDR = 0xB1F,
+	constexpr unsigned PMPCFG0_ADDR = 0x3A0;
+	constexpr unsigned PMPCFG1_ADDR = 0x3A1;
+	constexpr unsigned PMPCFG2_ADDR = 0x3A2;
+	constexpr unsigned PMPCFG3_ADDR = 0x3A3;
 
-	CSR_MHPMCOUNTER3H_ADDR = 0xB83,
-	CSR_MHPMCOUNTER4H_ADDR = 0xB84,
-	CSR_MHPMCOUNTER5H_ADDR = 0xB85,
-	CSR_MHPMCOUNTER6H_ADDR = 0xB86,
-	CSR_MHPMCOUNTER7H_ADDR = 0xB87,
-	CSR_MHPMCOUNTER8H_ADDR = 0xB88,
-	CSR_MHPMCOUNTER9H_ADDR = 0xB89,
-	CSR_MHPMCOUNTER10H_ADDR = 0xB8A,
-	CSR_MHPMCOUNTER11H_ADDR = 0xB8B,
-	CSR_MHPMCOUNTER12H_ADDR = 0xB8C,
-	CSR_MHPMCOUNTER13H_ADDR = 0xB8D,
-	CSR_MHPMCOUNTER14H_ADDR = 0xB8E,
-	CSR_MHPMCOUNTER15H_ADDR = 0xB8F,
-	CSR_MHPMCOUNTER16H_ADDR = 0xB90,
-	CSR_MHPMCOUNTER17H_ADDR = 0xB91,
-	CSR_MHPMCOUNTER18H_ADDR = 0xB92,
-	CSR_MHPMCOUNTER19H_ADDR = 0xB93,
-	CSR_MHPMCOUNTER20H_ADDR = 0xB94,
-	CSR_MHPMCOUNTER21H_ADDR = 0xB95,
-	CSR_MHPMCOUNTER22H_ADDR = 0xB96,
-	CSR_MHPMCOUNTER23H_ADDR = 0xB97,
-	CSR_MHPMCOUNTER24H_ADDR = 0xB98,
-	CSR_MHPMCOUNTER25H_ADDR = 0xB99,
-	CSR_MHPMCOUNTER26H_ADDR = 0xB9A,
-	CSR_MHPMCOUNTER27H_ADDR = 0xB9B,
-	CSR_MHPMCOUNTER28H_ADDR = 0xB9C,
-	CSR_MHPMCOUNTER29H_ADDR = 0xB9D,
-	CSR_MHPMCOUNTER30H_ADDR = 0xB9E,
-	CSR_MHPMCOUNTER31H_ADDR = 0xB9F,
+	constexpr unsigned PMPADDR0_ADDR = 0x3B0;
+	constexpr unsigned PMPADDR1_ADDR = 0x3B1;
+	constexpr unsigned PMPADDR2_ADDR = 0x3B2;
+	constexpr unsigned PMPADDR3_ADDR = 0x3B3;
+	constexpr unsigned PMPADDR4_ADDR = 0x3B4;
+	constexpr unsigned PMPADDR5_ADDR = 0x3B5;
+	constexpr unsigned PMPADDR6_ADDR = 0x3B6;
+	constexpr unsigned PMPADDR7_ADDR = 0x3B7;
+	constexpr unsigned PMPADDR8_ADDR = 0x3B8;
+	constexpr unsigned PMPADDR9_ADDR = 0x3B9;
+	constexpr unsigned PMPADDR10_ADDR = 0x3BA;
+	constexpr unsigned PMPADDR11_ADDR = 0x3BB;
+	constexpr unsigned PMPADDR12_ADDR = 0x3BC;
+	constexpr unsigned PMPADDR13_ADDR = 0x3BD;
+	constexpr unsigned PMPADDR14_ADDR = 0x3BE;
+	constexpr unsigned PMPADDR15_ADDR = 0x3BF;
 
-	CSR_MHPMEVENT3_ADDR = 0x323,
-	CSR_MHPMEVENT4_ADDR = 0x324,
-	CSR_MHPMEVENT5_ADDR = 0x325,
-	CSR_MHPMEVENT6_ADDR = 0x326,
-	CSR_MHPMEVENT7_ADDR = 0x327,
-	CSR_MHPMEVENT8_ADDR = 0x328,
-	CSR_MHPMEVENT9_ADDR = 0x329,
-	CSR_MHPMEVENT10_ADDR = 0x32A,
-	CSR_MHPMEVENT11_ADDR = 0x32B,
-	CSR_MHPMEVENT12_ADDR = 0x32C,
-	CSR_MHPMEVENT13_ADDR = 0x32D,
-	CSR_MHPMEVENT14_ADDR = 0x32E,
-	CSR_MHPMEVENT15_ADDR = 0x32F,
-	CSR_MHPMEVENT16_ADDR = 0x330,
-	CSR_MHPMEVENT17_ADDR = 0x331,
-	CSR_MHPMEVENT18_ADDR = 0x332,
-	CSR_MHPMEVENT19_ADDR = 0x333,
-	CSR_MHPMEVENT20_ADDR = 0x334,
-	CSR_MHPMEVENT21_ADDR = 0x335,
-	CSR_MHPMEVENT22_ADDR = 0x336,
-	CSR_MHPMEVENT23_ADDR = 0x337,
-	CSR_MHPMEVENT24_ADDR = 0x338,
-	CSR_MHPMEVENT25_ADDR = 0x339,
-	CSR_MHPMEVENT26_ADDR = 0x33A,
-	CSR_MHPMEVENT27_ADDR = 0x33B,
-	CSR_MHPMEVENT28_ADDR = 0x33C,
-	CSR_MHPMEVENT29_ADDR = 0x33D,
-	CSR_MHPMEVENT30_ADDR = 0x33E,
-	CSR_MHPMEVENT31_ADDR = 0x33F,
+// 32 bit supervisor CSRs
+	constexpr unsigned SSTATUS_ADDR = 0x100;
+	constexpr unsigned SEDELEG_ADDR = 0x102;
+	constexpr unsigned SIDELEG_ADDR = 0x103;
+	constexpr unsigned SIE_ADDR = 0x104;
+	constexpr unsigned STVEC_ADDR = 0x105;
+	constexpr unsigned SCOUNTEREN_ADDR = 0x106;
+	constexpr unsigned SSCRATCH_ADDR = 0x140;
+	constexpr unsigned SEPC_ADDR = 0x141;
+	constexpr unsigned SCAUSE_ADDR = 0x142;
+	constexpr unsigned STVAL_ADDR = 0x143;
+	constexpr unsigned SIP_ADDR = 0x144;
+	constexpr unsigned SATP_ADDR = 0x180;
+
+// 32 bit user CSRs
+	constexpr unsigned USTATUS_ADDR = 0x000;
+	constexpr unsigned UIE_ADDR = 0x004;
+	constexpr unsigned UTVEC_ADDR = 0x005;
+	constexpr unsigned USCRATCH_ADDR = 0x040;
+	constexpr unsigned UEPC_ADDR = 0x041;
+	constexpr unsigned UCAUSE_ADDR = 0x042;
+	constexpr unsigned UTVAL_ADDR = 0x043;
+	constexpr unsigned UIP_ADDR = 0x044;
+
+
+// performance counters
+	constexpr unsigned HPMCOUNTER3_ADDR = 0xC03;
+	constexpr unsigned HPMCOUNTER4_ADDR = 0xC04;
+	constexpr unsigned HPMCOUNTER5_ADDR = 0xC05;
+	constexpr unsigned HPMCOUNTER6_ADDR = 0xC06;
+	constexpr unsigned HPMCOUNTER7_ADDR = 0xC07;
+	constexpr unsigned HPMCOUNTER8_ADDR = 0xC08;
+	constexpr unsigned HPMCOUNTER9_ADDR = 0xC09;
+	constexpr unsigned HPMCOUNTER10_ADDR = 0xC0A;
+	constexpr unsigned HPMCOUNTER11_ADDR = 0xC0B;
+	constexpr unsigned HPMCOUNTER12_ADDR = 0xC0C;
+	constexpr unsigned HPMCOUNTER13_ADDR = 0xC0D;
+	constexpr unsigned HPMCOUNTER14_ADDR = 0xC0E;
+	constexpr unsigned HPMCOUNTER15_ADDR = 0xC0F;
+	constexpr unsigned HPMCOUNTER16_ADDR = 0xC10;
+	constexpr unsigned HPMCOUNTER17_ADDR = 0xC11;
+	constexpr unsigned HPMCOUNTER18_ADDR = 0xC12;
+	constexpr unsigned HPMCOUNTER19_ADDR = 0xC13;
+	constexpr unsigned HPMCOUNTER20_ADDR = 0xC14;
+	constexpr unsigned HPMCOUNTER21_ADDR = 0xC15;
+	constexpr unsigned HPMCOUNTER22_ADDR = 0xC16;
+	constexpr unsigned HPMCOUNTER23_ADDR = 0xC17;
+	constexpr unsigned HPMCOUNTER24_ADDR = 0xC18;
+	constexpr unsigned HPMCOUNTER25_ADDR = 0xC19;
+	constexpr unsigned HPMCOUNTER26_ADDR = 0xC1A;
+	constexpr unsigned HPMCOUNTER27_ADDR = 0xC1B;
+	constexpr unsigned HPMCOUNTER28_ADDR = 0xC1C;
+	constexpr unsigned HPMCOUNTER29_ADDR = 0xC1D;
+	constexpr unsigned HPMCOUNTER30_ADDR = 0xC1E;
+	constexpr unsigned HPMCOUNTER31_ADDR = 0xC1F;
+
+	constexpr unsigned HPMCOUNTER3H_ADDR = 0xC83;
+	constexpr unsigned HPMCOUNTER4H_ADDR = 0xC84;
+	constexpr unsigned HPMCOUNTER5H_ADDR = 0xC85;
+	constexpr unsigned HPMCOUNTER6H_ADDR = 0xC86;
+	constexpr unsigned HPMCOUNTER7H_ADDR = 0xC87;
+	constexpr unsigned HPMCOUNTER8H_ADDR = 0xC88;
+	constexpr unsigned HPMCOUNTER9H_ADDR = 0xC89;
+	constexpr unsigned HPMCOUNTER10H_ADDR = 0xC8A;
+	constexpr unsigned HPMCOUNTER11H_ADDR = 0xC8B;
+	constexpr unsigned HPMCOUNTER12H_ADDR = 0xC8C;
+	constexpr unsigned HPMCOUNTER13H_ADDR = 0xC8D;
+	constexpr unsigned HPMCOUNTER14H_ADDR = 0xC8E;
+	constexpr unsigned HPMCOUNTER15H_ADDR = 0xC8F;
+	constexpr unsigned HPMCOUNTER16H_ADDR = 0xC90;
+	constexpr unsigned HPMCOUNTER17H_ADDR = 0xC91;
+	constexpr unsigned HPMCOUNTER18H_ADDR = 0xC92;
+	constexpr unsigned HPMCOUNTER19H_ADDR = 0xC93;
+	constexpr unsigned HPMCOUNTER20H_ADDR = 0xC94;
+	constexpr unsigned HPMCOUNTER21H_ADDR = 0xC95;
+	constexpr unsigned HPMCOUNTER22H_ADDR = 0xC96;
+	constexpr unsigned HPMCOUNTER23H_ADDR = 0xC97;
+	constexpr unsigned HPMCOUNTER24H_ADDR = 0xC98;
+	constexpr unsigned HPMCOUNTER25H_ADDR = 0xC99;
+	constexpr unsigned HPMCOUNTER26H_ADDR = 0xC9A;
+	constexpr unsigned HPMCOUNTER27H_ADDR = 0xC9B;
+	constexpr unsigned HPMCOUNTER28H_ADDR = 0xC9C;
+	constexpr unsigned HPMCOUNTER29H_ADDR = 0xC9D;
+	constexpr unsigned HPMCOUNTER30H_ADDR = 0xC9E;
+	constexpr unsigned HPMCOUNTER31H_ADDR = 0xC9F;
+
+	constexpr unsigned MHPMCOUNTER3_ADDR = 0xB03;
+	constexpr unsigned MHPMCOUNTER4_ADDR = 0xB04;
+	constexpr unsigned MHPMCOUNTER5_ADDR = 0xB05;
+	constexpr unsigned MHPMCOUNTER6_ADDR = 0xB06;
+	constexpr unsigned MHPMCOUNTER7_ADDR = 0xB07;
+	constexpr unsigned MHPMCOUNTER8_ADDR = 0xB08;
+	constexpr unsigned MHPMCOUNTER9_ADDR = 0xB09;
+	constexpr unsigned MHPMCOUNTER10_ADDR = 0xB0A;
+	constexpr unsigned MHPMCOUNTER11_ADDR = 0xB0B;
+	constexpr unsigned MHPMCOUNTER12_ADDR = 0xB0C;
+	constexpr unsigned MHPMCOUNTER13_ADDR = 0xB0D;
+	constexpr unsigned MHPMCOUNTER14_ADDR = 0xB0E;
+	constexpr unsigned MHPMCOUNTER15_ADDR = 0xB0F;
+	constexpr unsigned MHPMCOUNTER16_ADDR = 0xB10;
+	constexpr unsigned MHPMCOUNTER17_ADDR = 0xB11;
+	constexpr unsigned MHPMCOUNTER18_ADDR = 0xB12;
+	constexpr unsigned MHPMCOUNTER19_ADDR = 0xB13;
+	constexpr unsigned MHPMCOUNTER20_ADDR = 0xB14;
+	constexpr unsigned MHPMCOUNTER21_ADDR = 0xB15;
+	constexpr unsigned MHPMCOUNTER22_ADDR = 0xB16;
+	constexpr unsigned MHPMCOUNTER23_ADDR = 0xB17;
+	constexpr unsigned MHPMCOUNTER24_ADDR = 0xB18;
+	constexpr unsigned MHPMCOUNTER25_ADDR = 0xB19;
+	constexpr unsigned MHPMCOUNTER26_ADDR = 0xB1A;
+	constexpr unsigned MHPMCOUNTER27_ADDR = 0xB1B;
+	constexpr unsigned MHPMCOUNTER28_ADDR = 0xB1C;
+	constexpr unsigned MHPMCOUNTER29_ADDR = 0xB1D;
+	constexpr unsigned MHPMCOUNTER30_ADDR = 0xB1E;
+	constexpr unsigned MHPMCOUNTER31_ADDR = 0xB1F;
+
+	constexpr unsigned MHPMCOUNTER3H_ADDR = 0xB83;
+	constexpr unsigned MHPMCOUNTER4H_ADDR = 0xB84;
+	constexpr unsigned MHPMCOUNTER5H_ADDR = 0xB85;
+	constexpr unsigned MHPMCOUNTER6H_ADDR = 0xB86;
+	constexpr unsigned MHPMCOUNTER7H_ADDR = 0xB87;
+	constexpr unsigned MHPMCOUNTER8H_ADDR = 0xB88;
+	constexpr unsigned MHPMCOUNTER9H_ADDR = 0xB89;
+	constexpr unsigned MHPMCOUNTER10H_ADDR = 0xB8A;
+	constexpr unsigned MHPMCOUNTER11H_ADDR = 0xB8B;
+	constexpr unsigned MHPMCOUNTER12H_ADDR = 0xB8C;
+	constexpr unsigned MHPMCOUNTER13H_ADDR = 0xB8D;
+	constexpr unsigned MHPMCOUNTER14H_ADDR = 0xB8E;
+	constexpr unsigned MHPMCOUNTER15H_ADDR = 0xB8F;
+	constexpr unsigned MHPMCOUNTER16H_ADDR = 0xB90;
+	constexpr unsigned MHPMCOUNTER17H_ADDR = 0xB91;
+	constexpr unsigned MHPMCOUNTER18H_ADDR = 0xB92;
+	constexpr unsigned MHPMCOUNTER19H_ADDR = 0xB93;
+	constexpr unsigned MHPMCOUNTER20H_ADDR = 0xB94;
+	constexpr unsigned MHPMCOUNTER21H_ADDR = 0xB95;
+	constexpr unsigned MHPMCOUNTER22H_ADDR = 0xB96;
+	constexpr unsigned MHPMCOUNTER23H_ADDR = 0xB97;
+	constexpr unsigned MHPMCOUNTER24H_ADDR = 0xB98;
+	constexpr unsigned MHPMCOUNTER25H_ADDR = 0xB99;
+	constexpr unsigned MHPMCOUNTER26H_ADDR = 0xB9A;
+	constexpr unsigned MHPMCOUNTER27H_ADDR = 0xB9B;
+	constexpr unsigned MHPMCOUNTER28H_ADDR = 0xB9C;
+	constexpr unsigned MHPMCOUNTER29H_ADDR = 0xB9D;
+	constexpr unsigned MHPMCOUNTER30H_ADDR = 0xB9E;
+	constexpr unsigned MHPMCOUNTER31H_ADDR = 0xB9F;
+
+	constexpr unsigned MHPMEVENT3_ADDR = 0x323;
+	constexpr unsigned MHPMEVENT4_ADDR = 0x324;
+	constexpr unsigned MHPMEVENT5_ADDR = 0x325;
+	constexpr unsigned MHPMEVENT6_ADDR = 0x326;
+	constexpr unsigned MHPMEVENT7_ADDR = 0x327;
+	constexpr unsigned MHPMEVENT8_ADDR = 0x328;
+	constexpr unsigned MHPMEVENT9_ADDR = 0x329;
+	constexpr unsigned MHPMEVENT10_ADDR = 0x32A;
+	constexpr unsigned MHPMEVENT11_ADDR = 0x32B;
+	constexpr unsigned MHPMEVENT12_ADDR = 0x32C;
+	constexpr unsigned MHPMEVENT13_ADDR = 0x32D;
+	constexpr unsigned MHPMEVENT14_ADDR = 0x32E;
+	constexpr unsigned MHPMEVENT15_ADDR = 0x32F;
+	constexpr unsigned MHPMEVENT16_ADDR = 0x330;
+	constexpr unsigned MHPMEVENT17_ADDR = 0x331;
+	constexpr unsigned MHPMEVENT18_ADDR = 0x332;
+	constexpr unsigned MHPMEVENT19_ADDR = 0x333;
+	constexpr unsigned MHPMEVENT20_ADDR = 0x334;
+	constexpr unsigned MHPMEVENT21_ADDR = 0x335;
+	constexpr unsigned MHPMEVENT22_ADDR = 0x336;
+	constexpr unsigned MHPMEVENT23_ADDR = 0x337;
+	constexpr unsigned MHPMEVENT24_ADDR = 0x338;
+	constexpr unsigned MHPMEVENT25_ADDR = 0x339;
+	constexpr unsigned MHPMEVENT26_ADDR = 0x33A;
+	constexpr unsigned MHPMEVENT27_ADDR = 0x33B;
+	constexpr unsigned MHPMEVENT28_ADDR = 0x33C;
+	constexpr unsigned MHPMEVENT29_ADDR = 0x33D;
+	constexpr unsigned MHPMEVENT30_ADDR = 0x33E;
+	constexpr unsigned MHPMEVENT31_ADDR = 0x33F;
 };
 
 
@@ -580,44 +588,46 @@ struct csr_table {
 	std::unordered_map<unsigned, uint32_t*> register_mapping;
 
 	csr_table() {
-        register_mapping[CSR_MVENDORID_ADDR] = &mvendorid.reg;
-        register_mapping[CSR_MARCHID_ADDR] = &marchid.reg;
-        register_mapping[CSR_MIMPID_ADDR] = &mimpid.reg;
-        register_mapping[CSR_MHARTID_ADDR] = &mhartid.reg;
+		using namespace csr;
 
-        register_mapping[CSR_MSTATUS_ADDR] = &mstatus.reg;
-        register_mapping[CSR_MISA_ADDR] = &misa.reg;
-		register_mapping[CSR_MEDELEG_ADDR] = &medeleg.reg;
-		register_mapping[CSR_MIDELEG_ADDR] = &mideleg.reg;
-        register_mapping[CSR_MIE_ADDR] = &mie.reg;
-        register_mapping[CSR_MTVEC_ADDR] = &mtvec.reg;
-		register_mapping[CSR_MCOUNTEREN_ADDR] = &mcounteren.reg;
-		register_mapping[CSR_MCOUNTINHIBIT_ADDR] = &mcountinhibit.reg;
+        register_mapping[MVENDORID_ADDR] = &mvendorid.reg;
+        register_mapping[MARCHID_ADDR] = &marchid.reg;
+        register_mapping[MIMPID_ADDR] = &mimpid.reg;
+        register_mapping[MHARTID_ADDR] = &mhartid.reg;
 
-        register_mapping[CSR_MSCRATCH_ADDR] = &mscratch.reg;
-        register_mapping[CSR_MEPC_ADDR] = &mepc.reg;
-        register_mapping[CSR_MCAUSE_ADDR] = &mcause.reg;
-        register_mapping[CSR_MTVAL_ADDR] = &mtval.reg;
-        register_mapping[CSR_MIP_ADDR] = &mip.reg;
+        register_mapping[MSTATUS_ADDR] = &mstatus.reg;
+        register_mapping[MISA_ADDR] = &misa.reg;
+		register_mapping[MEDELEG_ADDR] = &medeleg.reg;
+		register_mapping[MIDELEG_ADDR] = &mideleg.reg;
+        register_mapping[MIE_ADDR] = &mie.reg;
+        register_mapping[MTVEC_ADDR] = &mtvec.reg;
+		register_mapping[MCOUNTEREN_ADDR] = &mcounteren.reg;
+		register_mapping[MCOUNTINHIBIT_ADDR] = &mcountinhibit.reg;
 
-        register_mapping[CSR_PMPADDR0_ADDR] = &pmpaddr0.reg;
-        register_mapping[CSR_PMPCFG0_ADDR] = &pmpcfg0.reg;
+        register_mapping[MSCRATCH_ADDR] = &mscratch.reg;
+        register_mapping[MEPC_ADDR] = &mepc.reg;
+        register_mapping[MCAUSE_ADDR] = &mcause.reg;
+        register_mapping[MTVAL_ADDR] = &mtval.reg;
+        register_mapping[MIP_ADDR] = &mip.reg;
 
-        register_mapping[CSR_SEDELEG_ADDR] = &sedeleg.reg;
-        register_mapping[CSR_SIDELEG_ADDR] = &sideleg.reg;
-		register_mapping[CSR_STVEC_ADDR] = &stvec.reg;
-		register_mapping[CSR_SCOUNTEREN_ADDR] = &scounteren.reg;
-		register_mapping[CSR_SSCRATCH_ADDR] = &sscratch.reg;
-		register_mapping[CSR_SEPC_ADDR] = &sepc.reg;
-		register_mapping[CSR_SCAUSE_ADDR] = &scause.reg;
-		register_mapping[CSR_STVAL_ADDR] = &stval.reg;
-        register_mapping[CSR_SATP_ADDR] = &satp.reg;
+        register_mapping[PMPADDR0_ADDR] = &pmpaddr0.reg;
+        register_mapping[PMPCFG0_ADDR] = &pmpcfg0.reg;
 
-		register_mapping[CSR_UTVEC_ADDR] = &utvec.reg;
-		register_mapping[CSR_USCRATCH_ADDR] = &uscratch.reg;
-		register_mapping[CSR_UEPC_ADDR] = &uepc.reg;
-		register_mapping[CSR_UCAUSE_ADDR] = &ucause.reg;
-		register_mapping[CSR_UTVAL_ADDR] = &utval.reg;
+        register_mapping[SEDELEG_ADDR] = &sedeleg.reg;
+        register_mapping[SIDELEG_ADDR] = &sideleg.reg;
+		register_mapping[STVEC_ADDR] = &stvec.reg;
+		register_mapping[SCOUNTEREN_ADDR] = &scounteren.reg;
+		register_mapping[SSCRATCH_ADDR] = &sscratch.reg;
+		register_mapping[SEPC_ADDR] = &sepc.reg;
+		register_mapping[SCAUSE_ADDR] = &scause.reg;
+		register_mapping[STVAL_ADDR] = &stval.reg;
+        register_mapping[SATP_ADDR] = &satp.reg;
+
+		register_mapping[UTVEC_ADDR] = &utvec.reg;
+		register_mapping[USCRATCH_ADDR] = &uscratch.reg;
+		register_mapping[UEPC_ADDR] = &uepc.reg;
+		register_mapping[UCAUSE_ADDR] = &ucause.reg;
+		register_mapping[UTVAL_ADDR] = &utval.reg;
 	}
 
 	bool is_valid_csr32_addr(unsigned addr) {
@@ -640,148 +650,148 @@ struct csr_table {
 
 
 #define SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32	\
-	case CSR_HPMCOUNTER3_ADDR:    \
-	case CSR_HPMCOUNTER4_ADDR:    \
-	case CSR_HPMCOUNTER5_ADDR:    \
-	case CSR_HPMCOUNTER6_ADDR:    \
-	case CSR_HPMCOUNTER7_ADDR:    \
-	case CSR_HPMCOUNTER8_ADDR:    \
-	case CSR_HPMCOUNTER9_ADDR:    \
-	case CSR_HPMCOUNTER10_ADDR:   \
-	case CSR_HPMCOUNTER11_ADDR:   \
-	case CSR_HPMCOUNTER12_ADDR:   \
-	case CSR_HPMCOUNTER13_ADDR:   \
-	case CSR_HPMCOUNTER14_ADDR:   \
-	case CSR_HPMCOUNTER15_ADDR:   \
-	case CSR_HPMCOUNTER16_ADDR:   \
-	case CSR_HPMCOUNTER17_ADDR:   \
-	case CSR_HPMCOUNTER18_ADDR:   \
-	case CSR_HPMCOUNTER19_ADDR:   \
-	case CSR_HPMCOUNTER20_ADDR:   \
-	case CSR_HPMCOUNTER21_ADDR:   \
-	case CSR_HPMCOUNTER22_ADDR:   \
-	case CSR_HPMCOUNTER23_ADDR:   \
-	case CSR_HPMCOUNTER24_ADDR:   \
-	case CSR_HPMCOUNTER25_ADDR:   \
-	case CSR_HPMCOUNTER26_ADDR:   \
-	case CSR_HPMCOUNTER27_ADDR:   \
-	case CSR_HPMCOUNTER28_ADDR:   \
-	case CSR_HPMCOUNTER29_ADDR:   \
-	case CSR_HPMCOUNTER30_ADDR:   \
-	case CSR_HPMCOUNTER31_ADDR:   \
-	case CSR_HPMCOUNTER3H_ADDR:   \
-	case CSR_HPMCOUNTER4H_ADDR:   \
-	case CSR_HPMCOUNTER5H_ADDR:   \
-	case CSR_HPMCOUNTER6H_ADDR:   \
-	case CSR_HPMCOUNTER7H_ADDR:   \
-	case CSR_HPMCOUNTER8H_ADDR:   \
-	case CSR_HPMCOUNTER9H_ADDR:   \
-	case CSR_HPMCOUNTER10H_ADDR:  \
-	case CSR_HPMCOUNTER11H_ADDR:  \
-	case CSR_HPMCOUNTER12H_ADDR:  \
-	case CSR_HPMCOUNTER13H_ADDR:  \
-	case CSR_HPMCOUNTER14H_ADDR:  \
-	case CSR_HPMCOUNTER15H_ADDR:  \
-	case CSR_HPMCOUNTER16H_ADDR:  \
-	case CSR_HPMCOUNTER17H_ADDR:  \
-	case CSR_HPMCOUNTER18H_ADDR:  \
-	case CSR_HPMCOUNTER19H_ADDR:  \
-	case CSR_HPMCOUNTER20H_ADDR:  \
-	case CSR_HPMCOUNTER21H_ADDR:  \
-	case CSR_HPMCOUNTER22H_ADDR:  \
-	case CSR_HPMCOUNTER23H_ADDR:  \
-	case CSR_HPMCOUNTER24H_ADDR:  \
-	case CSR_HPMCOUNTER25H_ADDR:  \
-	case CSR_HPMCOUNTER26H_ADDR:  \
-	case CSR_HPMCOUNTER27H_ADDR:  \
-	case CSR_HPMCOUNTER28H_ADDR:  \
-	case CSR_HPMCOUNTER29H_ADDR:  \
-	case CSR_HPMCOUNTER30H_ADDR:  \
-	case CSR_HPMCOUNTER31H_ADDR:  \
-	case CSR_MHPMCOUNTER3_ADDR:   \
-	case CSR_MHPMCOUNTER4_ADDR:   \
-	case CSR_MHPMCOUNTER5_ADDR:   \
-	case CSR_MHPMCOUNTER6_ADDR:   \
-	case CSR_MHPMCOUNTER7_ADDR:   \
-	case CSR_MHPMCOUNTER8_ADDR:   \
-	case CSR_MHPMCOUNTER9_ADDR:   \
-	case CSR_MHPMCOUNTER10_ADDR:  \
-	case CSR_MHPMCOUNTER11_ADDR:  \
-	case CSR_MHPMCOUNTER12_ADDR:  \
-	case CSR_MHPMCOUNTER13_ADDR:  \
-	case CSR_MHPMCOUNTER14_ADDR:  \
-	case CSR_MHPMCOUNTER15_ADDR:  \
-	case CSR_MHPMCOUNTER16_ADDR:  \
-	case CSR_MHPMCOUNTER17_ADDR:  \
-	case CSR_MHPMCOUNTER18_ADDR:  \
-	case CSR_MHPMCOUNTER19_ADDR:  \
-	case CSR_MHPMCOUNTER20_ADDR:  \
-	case CSR_MHPMCOUNTER21_ADDR:  \
-	case CSR_MHPMCOUNTER22_ADDR:  \
-	case CSR_MHPMCOUNTER23_ADDR:  \
-	case CSR_MHPMCOUNTER24_ADDR:  \
-	case CSR_MHPMCOUNTER25_ADDR:  \
-	case CSR_MHPMCOUNTER26_ADDR:  \
-	case CSR_MHPMCOUNTER27_ADDR:  \
-	case CSR_MHPMCOUNTER28_ADDR:  \
-	case CSR_MHPMCOUNTER29_ADDR:  \
-	case CSR_MHPMCOUNTER30_ADDR:  \
-	case CSR_MHPMCOUNTER31_ADDR:  \
-	case CSR_MHPMCOUNTER3H_ADDR:  \
-	case CSR_MHPMCOUNTER4H_ADDR:  \
-	case CSR_MHPMCOUNTER5H_ADDR:  \
-	case CSR_MHPMCOUNTER6H_ADDR:  \
-	case CSR_MHPMCOUNTER7H_ADDR:  \
-	case CSR_MHPMCOUNTER8H_ADDR:  \
-	case CSR_MHPMCOUNTER9H_ADDR:  \
-	case CSR_MHPMCOUNTER10H_ADDR: \
-	case CSR_MHPMCOUNTER11H_ADDR: \
-	case CSR_MHPMCOUNTER12H_ADDR: \
-	case CSR_MHPMCOUNTER13H_ADDR: \
-	case CSR_MHPMCOUNTER14H_ADDR: \
-	case CSR_MHPMCOUNTER15H_ADDR: \
-	case CSR_MHPMCOUNTER16H_ADDR: \
-	case CSR_MHPMCOUNTER17H_ADDR: \
-	case CSR_MHPMCOUNTER18H_ADDR: \
-	case CSR_MHPMCOUNTER19H_ADDR: \
-	case CSR_MHPMCOUNTER20H_ADDR: \
-	case CSR_MHPMCOUNTER21H_ADDR: \
-	case CSR_MHPMCOUNTER22H_ADDR: \
-	case CSR_MHPMCOUNTER23H_ADDR: \
-	case CSR_MHPMCOUNTER24H_ADDR: \
-	case CSR_MHPMCOUNTER25H_ADDR: \
-	case CSR_MHPMCOUNTER26H_ADDR: \
-	case CSR_MHPMCOUNTER27H_ADDR: \
-	case CSR_MHPMCOUNTER28H_ADDR: \
-	case CSR_MHPMCOUNTER29H_ADDR: \
-	case CSR_MHPMCOUNTER30H_ADDR: \
-	case CSR_MHPMCOUNTER31H_ADDR: \
-	case CSR_MHPMEVENT3_ADDR:     \
-	case CSR_MHPMEVENT4_ADDR:     \
-	case CSR_MHPMEVENT5_ADDR:     \
-	case CSR_MHPMEVENT6_ADDR:     \
-	case CSR_MHPMEVENT7_ADDR:     \
-	case CSR_MHPMEVENT8_ADDR:     \
-	case CSR_MHPMEVENT9_ADDR:     \
-	case CSR_MHPMEVENT10_ADDR:    \
-	case CSR_MHPMEVENT11_ADDR:    \
-	case CSR_MHPMEVENT12_ADDR:    \
-	case CSR_MHPMEVENT13_ADDR:    \
-	case CSR_MHPMEVENT14_ADDR:    \
-	case CSR_MHPMEVENT15_ADDR:    \
-	case CSR_MHPMEVENT16_ADDR:    \
-	case CSR_MHPMEVENT17_ADDR:    \
-	case CSR_MHPMEVENT18_ADDR:    \
-	case CSR_MHPMEVENT19_ADDR:    \
-	case CSR_MHPMEVENT20_ADDR:    \
-	case CSR_MHPMEVENT21_ADDR:    \
-	case CSR_MHPMEVENT22_ADDR:    \
-	case CSR_MHPMEVENT23_ADDR:    \
-	case CSR_MHPMEVENT24_ADDR:    \
-	case CSR_MHPMEVENT25_ADDR:    \
-	case CSR_MHPMEVENT26_ADDR:    \
-	case CSR_MHPMEVENT27_ADDR:    \
-	case CSR_MHPMEVENT28_ADDR:    \
-	case CSR_MHPMEVENT29_ADDR:    \
-	case CSR_MHPMEVENT30_ADDR:    \
-	case CSR_MHPMEVENT31_ADDR
+	case HPMCOUNTER3_ADDR:    \
+	case HPMCOUNTER4_ADDR:    \
+	case HPMCOUNTER5_ADDR:    \
+	case HPMCOUNTER6_ADDR:    \
+	case HPMCOUNTER7_ADDR:    \
+	case HPMCOUNTER8_ADDR:    \
+	case HPMCOUNTER9_ADDR:    \
+	case HPMCOUNTER10_ADDR:   \
+	case HPMCOUNTER11_ADDR:   \
+	case HPMCOUNTER12_ADDR:   \
+	case HPMCOUNTER13_ADDR:   \
+	case HPMCOUNTER14_ADDR:   \
+	case HPMCOUNTER15_ADDR:   \
+	case HPMCOUNTER16_ADDR:   \
+	case HPMCOUNTER17_ADDR:   \
+	case HPMCOUNTER18_ADDR:   \
+	case HPMCOUNTER19_ADDR:   \
+	case HPMCOUNTER20_ADDR:   \
+	case HPMCOUNTER21_ADDR:   \
+	case HPMCOUNTER22_ADDR:   \
+	case HPMCOUNTER23_ADDR:   \
+	case HPMCOUNTER24_ADDR:   \
+	case HPMCOUNTER25_ADDR:   \
+	case HPMCOUNTER26_ADDR:   \
+	case HPMCOUNTER27_ADDR:   \
+	case HPMCOUNTER28_ADDR:   \
+	case HPMCOUNTER29_ADDR:   \
+	case HPMCOUNTER30_ADDR:   \
+	case HPMCOUNTER31_ADDR:   \
+	case HPMCOUNTER3H_ADDR:   \
+	case HPMCOUNTER4H_ADDR:   \
+	case HPMCOUNTER5H_ADDR:   \
+	case HPMCOUNTER6H_ADDR:   \
+	case HPMCOUNTER7H_ADDR:   \
+	case HPMCOUNTER8H_ADDR:   \
+	case HPMCOUNTER9H_ADDR:   \
+	case HPMCOUNTER10H_ADDR:  \
+	case HPMCOUNTER11H_ADDR:  \
+	case HPMCOUNTER12H_ADDR:  \
+	case HPMCOUNTER13H_ADDR:  \
+	case HPMCOUNTER14H_ADDR:  \
+	case HPMCOUNTER15H_ADDR:  \
+	case HPMCOUNTER16H_ADDR:  \
+	case HPMCOUNTER17H_ADDR:  \
+	case HPMCOUNTER18H_ADDR:  \
+	case HPMCOUNTER19H_ADDR:  \
+	case HPMCOUNTER20H_ADDR:  \
+	case HPMCOUNTER21H_ADDR:  \
+	case HPMCOUNTER22H_ADDR:  \
+	case HPMCOUNTER23H_ADDR:  \
+	case HPMCOUNTER24H_ADDR:  \
+	case HPMCOUNTER25H_ADDR:  \
+	case HPMCOUNTER26H_ADDR:  \
+	case HPMCOUNTER27H_ADDR:  \
+	case HPMCOUNTER28H_ADDR:  \
+	case HPMCOUNTER29H_ADDR:  \
+	case HPMCOUNTER30H_ADDR:  \
+	case HPMCOUNTER31H_ADDR:  \
+	case MHPMCOUNTER3_ADDR:   \
+	case MHPMCOUNTER4_ADDR:   \
+	case MHPMCOUNTER5_ADDR:   \
+	case MHPMCOUNTER6_ADDR:   \
+	case MHPMCOUNTER7_ADDR:   \
+	case MHPMCOUNTER8_ADDR:   \
+	case MHPMCOUNTER9_ADDR:   \
+	case MHPMCOUNTER10_ADDR:  \
+	case MHPMCOUNTER11_ADDR:  \
+	case MHPMCOUNTER12_ADDR:  \
+	case MHPMCOUNTER13_ADDR:  \
+	case MHPMCOUNTER14_ADDR:  \
+	case MHPMCOUNTER15_ADDR:  \
+	case MHPMCOUNTER16_ADDR:  \
+	case MHPMCOUNTER17_ADDR:  \
+	case MHPMCOUNTER18_ADDR:  \
+	case MHPMCOUNTER19_ADDR:  \
+	case MHPMCOUNTER20_ADDR:  \
+	case MHPMCOUNTER21_ADDR:  \
+	case MHPMCOUNTER22_ADDR:  \
+	case MHPMCOUNTER23_ADDR:  \
+	case MHPMCOUNTER24_ADDR:  \
+	case MHPMCOUNTER25_ADDR:  \
+	case MHPMCOUNTER26_ADDR:  \
+	case MHPMCOUNTER27_ADDR:  \
+	case MHPMCOUNTER28_ADDR:  \
+	case MHPMCOUNTER29_ADDR:  \
+	case MHPMCOUNTER30_ADDR:  \
+	case MHPMCOUNTER31_ADDR:  \
+	case MHPMCOUNTER3H_ADDR:  \
+	case MHPMCOUNTER4H_ADDR:  \
+	case MHPMCOUNTER5H_ADDR:  \
+	case MHPMCOUNTER6H_ADDR:  \
+	case MHPMCOUNTER7H_ADDR:  \
+	case MHPMCOUNTER8H_ADDR:  \
+	case MHPMCOUNTER9H_ADDR:  \
+	case MHPMCOUNTER10H_ADDR: \
+	case MHPMCOUNTER11H_ADDR: \
+	case MHPMCOUNTER12H_ADDR: \
+	case MHPMCOUNTER13H_ADDR: \
+	case MHPMCOUNTER14H_ADDR: \
+	case MHPMCOUNTER15H_ADDR: \
+	case MHPMCOUNTER16H_ADDR: \
+	case MHPMCOUNTER17H_ADDR: \
+	case MHPMCOUNTER18H_ADDR: \
+	case MHPMCOUNTER19H_ADDR: \
+	case MHPMCOUNTER20H_ADDR: \
+	case MHPMCOUNTER21H_ADDR: \
+	case MHPMCOUNTER22H_ADDR: \
+	case MHPMCOUNTER23H_ADDR: \
+	case MHPMCOUNTER24H_ADDR: \
+	case MHPMCOUNTER25H_ADDR: \
+	case MHPMCOUNTER26H_ADDR: \
+	case MHPMCOUNTER27H_ADDR: \
+	case MHPMCOUNTER28H_ADDR: \
+	case MHPMCOUNTER29H_ADDR: \
+	case MHPMCOUNTER30H_ADDR: \
+	case MHPMCOUNTER31H_ADDR: \
+	case MHPMEVENT3_ADDR:     \
+	case MHPMEVENT4_ADDR:     \
+	case MHPMEVENT5_ADDR:     \
+	case MHPMEVENT6_ADDR:     \
+	case MHPMEVENT7_ADDR:     \
+	case MHPMEVENT8_ADDR:     \
+	case MHPMEVENT9_ADDR:     \
+	case MHPMEVENT10_ADDR:    \
+	case MHPMEVENT11_ADDR:    \
+	case MHPMEVENT12_ADDR:    \
+	case MHPMEVENT13_ADDR:    \
+	case MHPMEVENT14_ADDR:    \
+	case MHPMEVENT15_ADDR:    \
+	case MHPMEVENT16_ADDR:    \
+	case MHPMEVENT17_ADDR:    \
+	case MHPMEVENT18_ADDR:    \
+	case MHPMEVENT19_ADDR:    \
+	case MHPMEVENT20_ADDR:    \
+	case MHPMEVENT21_ADDR:    \
+	case MHPMEVENT22_ADDR:    \
+	case MHPMEVENT23_ADDR:    \
+	case MHPMEVENT24_ADDR:    \
+	case MHPMEVENT25_ADDR:    \
+	case MHPMEVENT26_ADDR:    \
+	case MHPMEVENT27_ADDR:    \
+	case MHPMEVENT28_ADDR:    \
+	case MHPMEVENT29_ADDR:    \
+	case MHPMEVENT30_ADDR:    \
+	case MHPMEVENT31_ADDR
