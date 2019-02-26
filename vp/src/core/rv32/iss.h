@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+#include <functional>
 
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
