@@ -544,6 +544,7 @@ void ISS::exec_step() {
 
 		case Opcode::AMOSWAP_W: {
 			execute_amo(instr, [](int32_t a, int32_t b) {
+                (void) a;
 				return b;
 			});
 		} break;
