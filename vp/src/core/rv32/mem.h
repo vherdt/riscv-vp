@@ -48,6 +48,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         trans.set_address(addr);
         trans.set_data_ptr(data);
         trans.set_data_length(num_bytes);
+        trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
         sc_core::sc_time local_delay = quantum_keeper.get_local_time();
 
@@ -55,6 +56,15 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 
         assert(local_delay >= quantum_keeper.get_local_time());
         quantum_keeper.set(local_delay);
+
+        if (trans.is_response_error()) {
+            if (cmd == tlm::TLM_READ_COMMAND)
+                raise_trap(EXC_LOAD_PAGE_FAULT, addr);
+            else if (cmd == tlm::TLM_WRITE_COMMAND)
+                raise_trap(EXC_STORE_AMO_PAGE_FAULT, addr);
+            else
+                throw std::runtime_error("TLM command must be read or write");
+        }
     }
 
     template <typename T>

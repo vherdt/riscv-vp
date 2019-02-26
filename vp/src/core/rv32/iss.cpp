@@ -747,9 +747,9 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
                 RAISE_ILLEGAL_INSTRUCTION();
             break;
 
-	    case MTVEC_ADDR: std::cout << "set: MTVEC" << std::endl; write(csrs.mtvec, MTVEC_MASK); break;
-		case STVEC_ADDR: std::cout << "set: STVEC" << std::endl; write(csrs.stvec, MTVEC_MASK); break;
-		case UTVEC_ADDR: std::cout << "set: UTVEC" << std::endl; write(csrs.utvec, MTVEC_MASK); break;
+	    case MTVEC_ADDR: write(csrs.mtvec, MTVEC_MASK); break;
+		case STVEC_ADDR: write(csrs.stvec, MTVEC_MASK); break;
+		case UTVEC_ADDR: write(csrs.utvec, MTVEC_MASK); break;
 
 		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break;
 		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
