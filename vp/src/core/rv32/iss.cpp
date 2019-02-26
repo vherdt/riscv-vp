@@ -873,21 +873,28 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 
 
 void ISS::trigger_external_interrupt() {
-	// std::cout << "[vp::iss] trigger external interrupt" << std::endl;
+	if (trace)
+		std::cout << "[vp::iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.meip = true;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 void ISS::clear_external_interrupt() {
+	if (trace)
+		std::cout << "[vp::iss] clear external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.meip = false;
 }
 
 void ISS::trigger_timer_interrupt(bool status) {
+	if (trace)
+		std::cout << "[vp::iss] trigger timer interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.mtip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 void ISS::trigger_software_interrupt(bool status) {
+	if (trace)
+		std::cout << "[vp::iss] trigger software interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.msip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
@@ -924,6 +931,9 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 
 
 void ISS::prepare_interrupt(const PendingInterrupts &e) {
+    if (trace)
+        std::cout << "[vp::iss] prepare interrupt, pending=" << e.pending << ", target-mode=" << e.target_mode << std::endl;
+
 	csr_mip x{e.pending};
 
 	ExceptionCode exc;

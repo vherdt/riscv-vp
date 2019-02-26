@@ -72,7 +72,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 		// NOTE: can use different techniques for each gateway, in this case a
 		// simple non queued edge trigger
 		assert(irq_id > 0 && irq_id < NumberInterrupts);
-		// std::cout << "[vp::plic] incoming interrupt " << irq_id << std::endl;
+		//std::cout << "[vp::plic] incoming interrupt " << irq_id << std::endl;
 
 		unsigned idx = irq_id / 32;
 		unsigned off = irq_id % 32;
@@ -125,6 +125,8 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			return;
 		}
 
+        //std::cout << "[vp::plic] register access callback, read=" << r.read << ", write=" << r.write << std::endl;
+
 		if (r.read) {
 			for (unsigned i=0; i<NumberCores; ++i) {
 				if (r.vptr == &hart_claim_response[i]) {
@@ -133,7 +135,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 					unsigned min_id = hart_get_next_pending_interrupt(0, false);
 					hart_claim_response[i] = min_id;  // zero means no more interrupt to claim
 					clear_pending_interrupt(min_id);
-					// std::cout << "[vp::plic] claim interrupt " << min_id << std::endl;
+					//std::cout << "[vp::plic] claim interrupt " << min_id << std::endl;
 					break;
 				}
 			}
@@ -153,8 +155,8 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 					} else {
 						hart_eip[i] = false;
 						target_harts[i]->clear_external_interrupt();
+                        //std::cout << "[vp::plic] clear eip" << std::endl;
 					}
-					// std::cout << "[vp::plic] clear eip" << std::endl;
 					break;
 				}
 			}
@@ -188,7 +190,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			for (unsigned i=0; i<NumberCores; ++i) {
 				if (!hart_eip[i]) {
 					if (hart_has_pending_enabled_interrupts(i)) {
-						// std::cout << "[vp::plic] trigger interrupt" << std::endl;
+						//std::cout << "[vp::plic] trigger interrupt" << std::endl;
 						hart_eip[i] = true;
 						target_harts[i]->trigger_external_interrupt();
 					}

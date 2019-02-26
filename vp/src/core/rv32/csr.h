@@ -160,10 +160,6 @@ struct csr_mie {
 };
 
 struct csr_mip {
-	inline bool any_pending() {
-		return msip || mtip || meip;
-	}
-
 	union {
 		uint32_t reg = 0;
 		struct {
@@ -282,7 +278,7 @@ namespace csr {
 	}
 
 
-	constexpr uint32_t MIE_MASK = 0b101100111011;
+	constexpr uint32_t MIE_MASK = 0b101110111011;
 	constexpr uint32_t SIE_MASK = 0b001100110011;
 	constexpr uint32_t UIE_MASK = 0b000100010001;
 

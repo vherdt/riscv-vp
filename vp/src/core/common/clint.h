@@ -88,13 +88,13 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 			update_and_get_mtime();
 
 			for (unsigned i=0; i<NumberOfCores; ++i) {
-				//std::cout << "[clint] process mtimecmp[" << i << "]=" << mtimecmp << ", mtime=" << mtime << std::endl;
+				//std::cout << "[vp::clint] process mtimecmp[" << i << "]=" << mtimecmp[i] << ", mtime=" << mtime << std::endl;
 				auto cmp = mtimecmp[i];
 				if (cmp > 0 && mtime >= cmp) {
-					//std::cout << "[clint] set timer interrupt for core " << i << std::endl;
+					//std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
 					target_harts[i]->trigger_timer_interrupt(true);
 				} else {
-					//std::cout << "[clint] unset timer interrupt for core " << i << std::endl;
+					//std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
 					target_harts[i]->trigger_timer_interrupt(false);
 					if (cmp > 0) {
 						auto time = sc_core::sc_time::from_value(mtime * scaler);
@@ -127,15 +127,13 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 
 			*it->second = *((uint32_t *)trans.get_data_ptr());
 
-			// std::cout << "[clint] write mtimecmp=" << mtimecmp << ", mtime="
-			// << mtime << std::endl;
-
 			if (addr < 0x4000) {
 			    // write to msip register
 			    unsigned idx = addr / 4;
 			    msip[idx] &= 0x1;
 			    target_harts[idx]->trigger_software_interrupt(msip[idx] != 0);
 			} else if (addr >= 0x4000 && addr < 0xBFF8) {
+				//std::cout << "[vp::clint] write mtimecmp[addr=" << addr << "]=" << *it->second << ", mtime=" << mtime << std::endl;
                 irq_event.notify(delay); // write to mtimecmp, update timer interrupts
 			} else {
 			    assert (false && "unmapped access");
