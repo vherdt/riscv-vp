@@ -867,7 +867,8 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
             throw std::runtime_error("unknown privilege level " + std::to_string(return_mode));
 	}
 
-	printf("[vp::iss] return from trap handler, time %s, pc %8x, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
+	if (trace)
+	    printf("[vp::iss] return from trap handler, time %s, pc %8x, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
 }
 
 
