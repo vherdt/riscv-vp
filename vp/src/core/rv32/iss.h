@@ -289,16 +289,19 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void show();
 };
 
+
 /* Do not call the run function of the ISS directly but use one of the Runner
  * wrappers. */
 struct DirectCoreRunner : public sc_core::sc_module {
 	ISS &core;
+	std::string thread_name;
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
 	DirectCoreRunner(ISS &core)
             : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
-        SC_THREAD(run);
+		thread_name = "run" + std::to_string(core.get_hart_id());
+        SC_NAMED_THREAD(run, thread_name.c_str());
     }
 
 	void run() {
