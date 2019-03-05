@@ -21,7 +21,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	std::array<uint32_t, NumberInterrupts> interrupt_priorities{};
 
 	// how many 32bit entries are required to hold all interrupts
-	static constexpr unsigned NumberInterruptEntries = NumberInterrupts + NumberInterrupts%32;
+	static constexpr unsigned NumberInterruptEntries = NumberInterrupts + (32-NumberInterrupts%32);  // clamp to next number divisible by 32
 
 	std::array<uint32_t, NumberInterruptEntries> pending_interrupts{};
 
