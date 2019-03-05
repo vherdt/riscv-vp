@@ -10,6 +10,9 @@ if [ ! -f "$source" ]; then
 	wget http://www.accellera.org/images/downloads/standards/systemc/$source
 fi
 
+##--enable-pthreads
+##../configure CXX=clang++ CC=clang ...
+
 tar xzf $source
 # inject custom main function as well as thread and method stubs to avoid catching exceptions
 cp systemc-2.3.3-debug-patches/sc_main_main.cpp systemc-$version/src/sysc/kernel/
