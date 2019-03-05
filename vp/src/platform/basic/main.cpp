@@ -99,6 +99,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		desc.add_options()
 		("help", "produce help message")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr), "set memory start address")
+		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
 		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
 		("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
 		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
