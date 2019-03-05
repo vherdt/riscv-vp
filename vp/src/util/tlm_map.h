@@ -202,7 +202,12 @@ struct RegisterMapping : public AbstractMapping {
 
 		assert(handler && "no callback function provided");
 
-		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND, r.vptr, *new_vptr, fn, delay, addr});
+        // introduce *nv* to get rid of "use of uninitialized value" warnings
+        uint32_t nv = 0;
+        if (cmd == tlm::TLM_WRITE_COMMAND)
+        	nv = *new_vptr;
+
+		handler({cmd == tlm::TLM_READ_COMMAND, cmd == tlm::TLM_WRITE_COMMAND, r.vptr, nv, fn, delay, addr});
 		return true;
 	}
 };
