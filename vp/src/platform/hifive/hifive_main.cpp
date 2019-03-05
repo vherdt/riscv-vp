@@ -73,6 +73,7 @@ struct Options {
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 	bool trace_mode = false;
+	bool intercept_syscalls = false;
 
 	unsigned int tlm_global_quantum = 10;
 
@@ -95,14 +96,16 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")("debug-mode", po::bool_switch(&opt.use_debug_runner),
-		                                                   "start execution in debugger (using gdb rsp interface)")(
-			"trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")(
-		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
-		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
+		desc.add_options()
+		("help", "produce help message")
+		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
+		("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
+		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
+		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
+		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
+		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
+		("use-dmi", po::bool_switch(), "use instr and data dmi")
+		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -184,6 +187,10 @@ int sc_main(int argc, char **argv) {
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
 	          opt.dram_end_addr - 4);  // -4 to not overlap with the next region
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
+	sys.register_core(&core);
+
+	if (opt.intercept_syscalls)
+		core.sys = &sys;
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);

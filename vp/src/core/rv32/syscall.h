@@ -85,6 +85,8 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 		assert (trans.get_data_length() == 4);
 		auto hart_id = *((uint32_t *)trans.get_data_ptr());
 
+		assert ((cores.find(hart_id) != cores.end()) && "core not registered in syscall handler");
+
         execute_syscall(cores[hart_id]);
 	}
 
