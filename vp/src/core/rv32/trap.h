@@ -41,6 +41,6 @@ struct SimulationTrap {
 };
 
 
-inline void raise_trap(ExceptionCode exc, unsigned long mtval) {
+inline void raise_trap(ExceptionCode exc, unsigned long mtval) throw () {
     throw SimulationTrap({exc, mtval});
 }
