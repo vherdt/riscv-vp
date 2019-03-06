@@ -159,8 +159,9 @@ void ISS::exec_step() {
 	switch (op) {
 		case Opcode::UNDEF:
 			if (trace)
-            	std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
-		    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
+			raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			break;
 
 		case Opcode::ADDI:
 			regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();
@@ -354,10 +355,13 @@ void ISS::exec_step() {
 		    	switch (prv) {
 		    		case MachineMode:
 						raise_trap(EXC_ECALL_M_MODE, last_pc);
+						break;
 		    		case SupervisorMode:
 						raise_trap(EXC_ECALL_S_MODE, last_pc);
+						break;
 					case UserMode:
 						raise_trap(EXC_ECALL_U_MODE, last_pc);
+						break;
 		    		default:
 		    			throw std::runtime_error("unknown privilege level " + std::to_string(prv));
 		    	}
@@ -932,8 +936,9 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 
 
 void ISS::prepare_interrupt(const PendingInterrupts &e) {
-    if (trace)
-        std::cout << "[vp::iss] prepare interrupt, pending=" << e.pending << ", target-mode=" << e.target_mode << std::endl;
+	if (trace){
+		std::cout << "[vp::iss] prepare interrupt, pending=" << e.pending << ", target-mode=" << e.target_mode << std::endl;
+	}
 
 	csr_mip x{e.pending};
 
@@ -1008,8 +1013,9 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 
 
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
-    if (trace)
-        printf("[vp::iss] switch to trap handler, time %s, last_pc %8x, pc %8x, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
+    if (trace){
+    	printf("[vp::iss] switch to trap handler, time %s, last_pc %8x, pc %8x, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
+    }
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
 	release_lr_sc_reservation();
