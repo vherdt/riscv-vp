@@ -13,9 +13,11 @@ struct SPI : public sc_core::sc_module {
 
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
+	uint32_t fctrl = 1;
 
 	enum {
-		SCKDIV_REG_ADDR = 0x0,
+		SCKDIV_REG_ADDR = 0x000,
+		FCTRL_REG_ADDR  = 0x060,
 	};
 
 	vp::map::LocalRouter router = {"SPI"};
@@ -26,6 +28,7 @@ struct SPI : public sc_core::sc_module {
 		router
 		    .add_register_bank({
 		        {SCKDIV_REG_ADDR, &sckdiv},
+				{FCTRL_REG_ADDR, &fctrl},
 		    })
 		    .register_handler(this, &SPI::register_access_callback);
 	}
