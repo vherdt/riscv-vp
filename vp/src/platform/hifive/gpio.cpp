@@ -34,11 +34,12 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 	server.setupConnection("1339");
 	server.registerOnChange(bind(&GPIO::asyncOnchange, this, placeholders::_1, placeholders::_2));
 	serverThread = thread(bind(&GpioServer::startListening, &server));
+	serverThread.detach();
 }
 
 GPIO::~GPIO() {
 	server.quit();
-	serverThread.join();
+	//serverThread.join();
 }
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
