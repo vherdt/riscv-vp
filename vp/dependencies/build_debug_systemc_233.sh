@@ -15,9 +15,9 @@ fi
 
 tar xzf $source
 # inject custom main function as well as thread and method stubs to avoid catching exceptions
-cp systemc-2.3.3-debug-patches/sc_main_main.cpp systemc-$version/src/sysc/kernel/
-cp systemc-2.3.3-debug-patches/sc_thread_process.cpp systemc-$version/src/sysc/kernel/
-cp systemc-2.3.3-debug-patches/sc_method_process.h systemc-$version/src/sysc/kernel/
+cp debug-patches-systemc-2.3.3/sc_main_main.cpp systemc-$version/src/sysc/kernel/
+cp debug-patches-systemc-2.3.3/sc_thread_process.cpp systemc-$version/src/sysc/kernel/
+cp debug-patches-systemc-2.3.3/sc_method_process.h systemc-$version/src/sysc/kernel/
 cd systemc-$version
 mkdir build && cd build
 ../configure CXXFLAGS='-std=c++14' --prefix=$PREFIX --enable-debug --with-arch-suffix=

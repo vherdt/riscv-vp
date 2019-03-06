@@ -31,6 +31,7 @@ public:
     T *get_mem_ptr_to_global_addr(uint64_t addr) {
         assert (contains(addr));
         assert ((addr + sizeof(T)) <= end);
+        assert ((addr % sizeof(T)) == 0 && "unaligned access");
         return reinterpret_cast<T*>(mem + (addr - start));
     }
 

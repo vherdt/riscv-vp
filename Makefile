@@ -2,7 +2,7 @@ vps: vp/build/Makefile vp/dependencies/systemc-dist
 	make install -C vp/build -j6
 
 vp/dependencies/systemc-dist:
-	cd vp/dependencies/ && ./build_systemc_232.sh
+	cd vp/dependencies/ && ./build_systemc_233.sh
 
 all: vps vp-display vp-breadboard
 

@@ -128,6 +128,25 @@ struct timing_if {
 };
 
 
+/* Buffer to be used between the ISS and instruction memory interface to cache compressed instructions.
+ * In case the ISS does not support compressed instructions, then this buffer is not necessary and the ISS
+ * can use the memory interface directly. */
+struct InstructionBuffer {
+	instr_memory_if *instr_mem = nullptr;
+	uint32_t last_fetch_addr = 0;
+	uint32_t buffer = 0;
+
+	uint32_t load_instr(uint64_t addr) {
+		if (addr == (last_fetch_addr + 2))
+			return (buffer >> 16);
+
+		last_fetch_addr = addr;
+		buffer = instr_mem->load_instr32(addr);
+		return buffer;
+	}
+};
+
+
 struct PendingInterrupts {
     PrivilegeLevel target_mode;
     uint32_t pending;
@@ -230,15 +249,16 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         }
     }
 
-    inline void trap_check_natural_alignment(uint32_t addr) {
-        if (unlikely(addr & 0x3)) {
-            raise_trap(EXC_INSTR_ADDR_MISALIGNED, addr);
-        }
+    template <unsigned Alignment>
+    inline void trap_check_addr_alignment(uint32_t addr) {
+		if (unlikely(addr % Alignment)) {
+			raise_trap(EXC_INSTR_ADDR_MISALIGNED, addr);
+		}
     }
 
     inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
         uint32_t addr = regs[instr.rs1()];
-        trap_check_natural_alignment(addr);
+        trap_check_addr_alignment<4>(addr);
         uint32_t data;
         try {
             data = mem->atomic_load_word(addr);

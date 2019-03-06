@@ -109,7 +109,13 @@ void ISS::exec_step() {
 	assert (((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
 	try {
-        auto mem_word = instr_mem->load_instr(pc);
+		uint32_t mem_word;
+		/* distinguish here to avoid misaligned (native C++) DMI access. NOTE: Perhaps use an instruction buffer instead. */
+		if (pc & 0x1) {
+			 mem_word = instr_mem->load_instr16(pc);
+		} else {
+			mem_word = instr_mem->load_instr32(pc);
+		}
         instr = Instruction(mem_word);
     } catch (SimulationTrap &e) {
 	    op = Opcode::UNDEF;
@@ -268,11 +274,13 @@ void ISS::exec_step() {
 
 		case Opcode::SH: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			trap_check_addr_alignment<2>(addr);
 			mem->store_half(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SW: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			trap_check_addr_alignment<4>(addr);
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
 
@@ -283,11 +291,13 @@ void ISS::exec_step() {
 
 		case Opcode::LH: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<2>(addr);
 			regs[instr.rd()] = mem->load_half(addr);
 		} break;
 
 		case Opcode::LW: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<4>(addr);
 			regs[instr.rd()] = mem->load_word(addr);
 		} break;
 
@@ -298,6 +308,7 @@ void ISS::exec_step() {
 
 		case Opcode::LHU: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<2>(addr);
 			regs[instr.rd()] = mem->load_uhalf(addr);
 		} break;
 
@@ -532,14 +543,14 @@ void ISS::exec_step() {
 
 		case Opcode::LR_W: {
 			uint32_t addr = regs[instr.rs1()];
-            trap_check_natural_alignment(addr);
+			trap_check_addr_alignment<4>(addr);
             regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
             lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
 		} break;
 
 		case Opcode::SC_W: {
             uint32_t addr = regs[instr.rs1()];
-            trap_check_natural_alignment(addr);
+			trap_check_addr_alignment<4>(addr);
             uint32_t val  = regs[instr.rs2()];
             regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
             regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
