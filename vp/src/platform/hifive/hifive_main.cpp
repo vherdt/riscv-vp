@@ -193,7 +193,7 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
-	          opt.dram_end_addr - 4);  // -4 to not overlap with the next region
+	          opt.dram_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 

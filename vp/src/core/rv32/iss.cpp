@@ -13,7 +13,7 @@
 
 const char *regnames[] = {
     "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
-    "s0/sp(x8)", "s1   (x9)", "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)", "a5  (x15)",
+    "s0/fp(x8)", "s1   (x9)", "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)", "a5  (x15)",
     "a6  (x16)", "a7  (x17)", "s2  (x18)", "s3  (x19)", "s4  (x20)", "s5  (x21)", "s6  (x22)", "s7  (x23)",
     "s8  (x24)", "s9  (x25)", "s10 (x26)", "s11 (x27)", "t3  (x28)", "t4  (x29)", "t5  (x30)", "t6  (x31)",
 };
@@ -274,13 +274,13 @@ void ISS::exec_step() {
 
 		case Opcode::SH: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
-			trap_check_addr_alignment<2>(addr);
+			trap_check_addr_alignment<2, false>(addr);
 			mem->store_half(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SW: {
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
-			trap_check_addr_alignment<4>(addr);
+			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
 
@@ -291,13 +291,13 @@ void ISS::exec_step() {
 
 		case Opcode::LH: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-			trap_check_addr_alignment<2>(addr);
+			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_half(addr);
 		} break;
 
 		case Opcode::LW: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-			trap_check_addr_alignment<4>(addr);
+			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->load_word(addr);
 		} break;
 
@@ -308,7 +308,7 @@ void ISS::exec_step() {
 
 		case Opcode::LHU: {
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-			trap_check_addr_alignment<2>(addr);
+			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_uhalf(addr);
 		} break;
 
@@ -543,14 +543,14 @@ void ISS::exec_step() {
 
 		case Opcode::LR_W: {
 			uint32_t addr = regs[instr.rs1()];
-			trap_check_addr_alignment<4>(addr);
+			trap_check_addr_alignment<4, true>(addr);
             regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
             lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
 		} break;
 
 		case Opcode::SC_W: {
             uint32_t addr = regs[instr.rs1()];
-			trap_check_addr_alignment<4>(addr);
+			trap_check_addr_alignment<4, false>(addr);
             uint32_t val  = regs[instr.rs2()];
             regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
             regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
@@ -1118,6 +1118,8 @@ void ISS::run_step() {
 			switch_to_trap_handler(x.target_mode);
 		}
 	} catch (SimulationTrap &e) {
+	    if (trace)
+	        std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
 		auto target_mode = prepare_trap(e);
 		switch_to_trap_handler(target_mode);
 	}
@@ -1126,6 +1128,8 @@ void ISS::run_step() {
 	// (reset it after every instruction, instead of checking *rd != zero*
 	// before every register write)
 	regs.regs[regs.zero] = 0;
+
+    assert (regs.regs[regs.sp] % 4 == 0);
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back

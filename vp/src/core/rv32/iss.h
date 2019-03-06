@@ -249,16 +249,16 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         }
     }
 
-    template <unsigned Alignment>
+    template <unsigned Alignment, bool isLoad>
     inline void trap_check_addr_alignment(uint32_t addr) {
 		if (unlikely(addr % Alignment)) {
-			raise_trap(EXC_INSTR_ADDR_MISALIGNED, addr);
+			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
 		}
     }
 
     inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
         uint32_t addr = regs[instr.rs1()];
-        trap_check_addr_alignment<4>(addr);
+        trap_check_addr_alignment<4, false>(addr);
         uint32_t data;
         try {
             data = mem->atomic_load_word(addr);

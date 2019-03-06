@@ -180,7 +180,7 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
-	          opt.mem_end_addr - 4);  // -4 to not overlap with the next region
+	          opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
