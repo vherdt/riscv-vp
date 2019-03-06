@@ -1118,18 +1118,16 @@ void ISS::run_step() {
 			switch_to_trap_handler(x.target_mode);
 		}
 	} catch (SimulationTrap &e) {
-	    if (trace)
-	        std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
-		auto target_mode = prepare_trap(e);
-		switch_to_trap_handler(target_mode);
+        if (trace)
+            std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+        auto target_mode = prepare_trap(e);
+        switch_to_trap_handler(target_mode);
 	}
 
 	// NOTE: writes to zero register are supposedly allowed but must be ignored
 	// (reset it after every instruction, instead of checking *rd != zero*
 	// before every register write)
 	regs.regs[regs.zero] = 0;
-
-    assert (regs.regs[regs.sp] % 4 == 0);
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
