@@ -60,6 +60,8 @@ struct Options {
 	addr_t uart0_end_addr = 0x10013FFF;
 	addr_t spi0_start_addr = 0x10014000;
 	addr_t spi0_end_addr = 0x10014FFF;
+    addr_t spi1_start_addr = 0x10024000;
+    addr_t spi1_end_addr = 0x10024FFF;
     addr_t spi2_start_addr = 0x10034000;
     addr_t spi2_end_addr = 0x10034FFF;
 	addr_t gpio0_start_addr = 0x10012000;
@@ -145,7 +147,7 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<1, 12> bus("SimpleBus");
+	SimpleBus<1, 13> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
@@ -154,6 +156,7 @@ int sc_main(int argc, char **argv) {
 	AON aon("AON");
 	PRCI prci("PRCI");
 	SPI spi0("SPI0");
+    SPI spi1("SPI1");
     SPI spi2("SPI2");
 	UART uart0("UART0");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
@@ -185,7 +188,8 @@ int sc_main(int argc, char **argv) {
 	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
 	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
     bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
-    bus.ports[11] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
+    bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr);
+    bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
@@ -209,7 +213,8 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[8].bind(maskROM.tsock);
 	bus.isocks[9].bind(gpio0.tsock);
     bus.isocks[10].bind(sys.tsock);
-    bus.isocks[11].bind(spi2.tsock);
+    bus.isocks[11].bind(spi1.tsock);
+    bus.isocks[12].bind(spi2.tsock);
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
