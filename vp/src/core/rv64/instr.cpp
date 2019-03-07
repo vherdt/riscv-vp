@@ -158,6 +158,64 @@ constexpr uint32_t WFI_ENCODING        = 0b00010000010100000000000001110011;
 constexpr uint32_t SFENCE_VMA_MASK     = 0b11111110000000000111111111111111;
 constexpr uint32_t SFENCE_VMA_ENCODING = 0b00010010000000000000000001110011;
 
+//-- RV64IMA Extension
+constexpr uint32_t LWU_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t LWU_ENCODING        = 0b00000000000000000110000000000011;
+constexpr uint32_t LD_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t LD_ENCODING         = 0b00000000000000000011000000000011;
+constexpr uint32_t SD_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t SD_ENCODING         = 0b00000000000000000011000000100011;
+constexpr uint32_t ADDIW_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t ADDIW_ENCODING      = 0b00000000000000000000000000011011;
+constexpr uint32_t SLLIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLIW_ENCODING      = 0b00000000000000000001000000011011;
+constexpr uint32_t SRLIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLIW_ENCODING      = 0b00000000000000000101000000011011;
+constexpr uint32_t SRAIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAIW_ENCODING      = 0b01000000000000000101000000011011;
+constexpr uint32_t ADDW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t ADDW_ENCODING       = 0b00000000000000000000000000111011;
+constexpr uint32_t SUBW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SUBW_ENCODING       = 0b01000000000000000000000000111011;
+constexpr uint32_t SLLW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLW_ENCODING       = 0b00000000000000000001000000111011;
+constexpr uint32_t SRLW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLW_ENCODING       = 0b00000000000000000101000000111011;
+constexpr uint32_t SRAW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAW_ENCODING       = 0b01000000000000000101000000111011;
+constexpr uint32_t MULW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t MULW_ENCODING       = 0b00000010000000000000000000111011;
+constexpr uint32_t DIVW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t DIVW_ENCODING       = 0b00000010000000000100000000111011;
+constexpr uint32_t DIVUW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t DIVUW_ENCODING      = 0b00000010000000000101000000111011;
+constexpr uint32_t REMW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t REMW_ENCODING       = 0b00000010000000000110000000111011;
+constexpr uint32_t REMUW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t REMUW_ENCODING      = 0b00000010000000000111000000111011;
+constexpr uint32_t LR_D_MASK           = 0b11111001111100000111000001111111;
+constexpr uint32_t LR_D_ENCODING       = 0b00010000000000000011000000101111;
+constexpr uint32_t SC_D_MASK           = 0b11111000000000000111000001111111;
+constexpr uint32_t SC_D_ENCODING       = 0b00011000000000000011000000101111;
+constexpr uint32_t AMOSWAP_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOSWAP_D_ENCODING  = 0b00001000000000000011000000101111;
+constexpr uint32_t AMOADD_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOADD_D_ENCODING   = 0b00000000000000000011000000101111;
+constexpr uint32_t AMOXOR_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOXOR_D_ENCODING   = 0b00100000000000000011000000101111;
+constexpr uint32_t AMOAND_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOAND_D_ENCODING   = 0b01100000000000000011000000101111;
+constexpr uint32_t AMOOR_D_MASK        = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOOR_D_ENCODING    = 0b01000000000000000011000000101111;
+constexpr uint32_t AMOMIN_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMIN_D_ENCODING   = 0b10000000000000000011000000101111;
+constexpr uint32_t AMOMAX_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAX_D_ENCODING   = 0b10100000000000000011000000101111;
+constexpr uint32_t AMOMINU_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMINU_D_ENCODING  = 0b11000000000000000011000000101111;
+constexpr uint32_t AMOMAXU_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAXU_D_ENCODING  = 0b11100000000000000011000000101111;
+
 
 #define MATCH_AND_RETURN_INSTR2(instr, result)							    \
 		if (unlikely((data() & (instr ## _MASK)) != (instr ## _ENCODING)))	\
@@ -983,9 +1041,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F3_LHU:
                     MATCH_AND_RETURN_INSTR(LHU);
 			    case F3_LWU:
-			        return LWU;
+			        MATCH_AND_RETURN_INSTR(LWU);
 			    case F3_LD:
-			        return LD;
+			        MATCH_AND_RETURN_INSTR(LD);
 			}
 			break;
 		}
@@ -999,7 +1057,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F3_SW:
                     MATCH_AND_RETURN_INSTR(SW);
 			    case F3_SD:
-			        return SD;
+                    MATCH_AND_RETURN_INSTR(SD);
 			}
 			break;
 		}
@@ -1047,15 +1105,15 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
         case OP_ADDIW: {
             switch (instr.funct3()) {
                 case F3_ADDIW:
-                    return ADDIW;
+                    MATCH_AND_RETURN_INSTR(ADDIW);
                 case F3_SLLIW:
-                    return SLLIW;
+                    MATCH_AND_RETURN_INSTR(SLLIW);
                 case F3_SRLIW: {
                     switch (instr.funct7()) {
                         case F7_SRLIW:
-                            return SRLIW;
+                            MATCH_AND_RETURN_INSTR(SRLIW);
                         case F7_SRAIW:
-                            return SRAIW;
+                            MATCH_AND_RETURN_INSTR(SRAIW);
                     }
                 }
             }
@@ -1123,35 +1181,35 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
                 case F7_ADDW:
                     switch (instr.funct3()) {
                         case F3_ADDW:
-                            return ADDW;
+                            MATCH_AND_RETURN_INSTR(ADDW);
                         case F3_SLLW:
-                            return SLLW;
+                            MATCH_AND_RETURN_INSTR(SLLW);
                         case F3_SRLW:
-                            return SRLW;
+                            MATCH_AND_RETURN_INSTR(SRLW);
                     }
                     break;
 
                 case F7_SUBW:
                     switch (instr.funct3()) {
                         case F3_SUBW:
-                            return SUBW;
+                            MATCH_AND_RETURN_INSTR(SUBW);
                         case F3_SRAW:
-                            return SRAW;
+                            MATCH_AND_RETURN_INSTR(SRAW);
                     }
                     break;
 
             	case F7_MULW:
 					switch (instr.funct3()) {
 						case F3_MULW:
-							return MULW;
+                            MATCH_AND_RETURN_INSTR(MULW);
 						case F3_DIVW:
-							return DIVW;
+                            MATCH_AND_RETURN_INSTR(DIVW);
 						case F3_DIVUW:
-							return DIVUW;
+                            MATCH_AND_RETURN_INSTR(DIVUW);
 						case F3_REMW:
-							return REMW;
+                            MATCH_AND_RETURN_INSTR(REMW);
 						case F3_REMUW:
-							return REMUW;
+                            MATCH_AND_RETURN_INSTR(REMUW);
 					}
 					break;
             }
@@ -1213,55 +1271,55 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
                     MATCH_AND_RETURN_INSTR(SC_W);
 				case F5_AMOSWAP_W:
 				    if (instr.funct3() == F3_AMO_D) {
-                        return AMOSWAP_D;
+                        MATCH_AND_RETURN_INSTR(AMOSWAP_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOSWAP_W);
                     }
 				case F5_AMOADD_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOADD_D;
+                        MATCH_AND_RETURN_INSTR(AMOADD_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOADD_W);
                     }
 				case F5_AMOXOR_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOXOR_D;
+                        MATCH_AND_RETURN_INSTR(AMOXOR_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOXOR_W);
                     }
 				case F5_AMOAND_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOAND_D;
+                        MATCH_AND_RETURN_INSTR(AMOAND_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOAND_W);
                     }
 				case F5_AMOOR_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOOR_D;
+                        MATCH_AND_RETURN_INSTR(AMOOR_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOOR_W);
                     }
 				case F5_AMOMIN_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOMIN_D;
+                        MATCH_AND_RETURN_INSTR(AMOMIN_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOMIN_W);
                     }
 				case F5_AMOMAX_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOMAX_D;
+                        MATCH_AND_RETURN_INSTR(AMOMAX_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOMAX_W);
                     }
 				case F5_AMOMINU_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOMINU_D;
+                        MATCH_AND_RETURN_INSTR(AMOMINU_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOMINU_W);
                     }
 				case F5_AMOMAXU_W:
                     if (instr.funct3() == F3_AMO_D) {
-                        return AMOMAXU_D;
+                        MATCH_AND_RETURN_INSTR(AMOMAXU_D);
                     } else {
                         MATCH_AND_RETURN_INSTR(AMOMAXU_W);
                     }
