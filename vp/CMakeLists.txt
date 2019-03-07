@@ -19,4 +19,7 @@ find_package( Boost REQUIRED COMPONENTS iostreams program_options )
 find_package( SystemC REQUIRED )
 include_directories( ${SystemC_INCLUDE_DIRS} )
 
+find_package( SoftFloat )
+include_directories( ${SoftFloat_INCLUDE_DIRS} )
+
 subdirs(src)
