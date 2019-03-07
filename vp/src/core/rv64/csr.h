@@ -66,7 +66,6 @@ struct csr_misa {
 
 	void init() {
 		extensions = I | M | A | C | N | U | S;  // IMAC + NUS
-		wiri = 0;
 		mxl = 2;  // RV64
 	}
 };
@@ -294,11 +293,13 @@ namespace csr {
 	constexpr uint64_t SEDELEG_MASK = 0b1011000111111111;
 	constexpr uint64_t SIDELEG_MASK = MIDELEG_MASK;
 
-	constexpr uint64_t MSTATUS_MASK = 0b1000000000000000000000000000000000000000011111111111100110111011;
-	constexpr uint64_t SSTATUS_MASK = 0b1000000000000000000000000000000000000000000011011110000100110011;
-	constexpr uint64_t USTATUS_MASK = 0b0000000000000000000000000000000000000000000000000000000000010001;
+	constexpr uint64_t MSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000011111111111100110111011;
+	constexpr uint64_t MSTATUS_READ_MASK  = 0b1000000000000000000000000000111100000000011111111111100110111011;
+	constexpr uint64_t SSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000000011011110000100110011;
+	constexpr uint64_t SSTATUS_READ_MASK  = 0b1000000000000000000000000000001100000000000011011110000100110011;
+	constexpr uint64_t USTATUS_MASK       = 0b0000000000000000000000000000000000000000000000000000000000010001;
 
-	constexpr uint64_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
+	constexpr uint64_t PMPADDR_MASK       = 0b0000000000111111111111111111111111111111111111111111111111111111;
 
 
 // 64 bit timer csrs
@@ -639,13 +640,13 @@ struct csr_table {
 	    return register_mapping.find(addr) != register_mapping.end();
 	}
 
-	void default_write64(unsigned addr, uint32_t value) {
+	void default_write64(unsigned addr, uint64_t value) {
 	    auto it = register_mapping.find(addr);
 	    ensure ((it != register_mapping.end()) && "validate address before calling this function");
 	    *it->second = value;
 	}
 
-	uint32_t default_read64(unsigned addr) {
+	uint64_t default_read64(unsigned addr) {
         auto it = register_mapping.find(addr);
         ensure ((it != register_mapping.end()) && "validate address before calling this function");
         return *it->second;

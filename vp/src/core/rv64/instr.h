@@ -5,6 +5,13 @@
 #include <iostream>
 #include <array>
 
+
+enum Architecture {
+	RV32 = 1,
+	RV64 = 2,
+	RV128 = 3,
+};
+
 namespace Opcode {
 // opcode masks used to decode an instruction
 enum Parts {
@@ -349,9 +356,9 @@ struct Instruction {
 		return BIT_SLICE(instr, 6, 5);
 	}
 
-	Opcode::Mapping decode_normal();
+	Opcode::Mapping decode_normal(Architecture arch);
 
-	Opcode::Mapping decode_and_expand_compressed();
+	Opcode::Mapping decode_and_expand_compressed(Architecture arch);
 
 	inline uint32_t csr() {
 		// cast to unsigned to avoid sign extension when shifting

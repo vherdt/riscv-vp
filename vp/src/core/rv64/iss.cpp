@@ -137,15 +137,15 @@ void ISS::exec_step() {
 	}
 
 	if (instr.is_compressed()) {
-		op = instr.decode_and_expand_compressed();
+		op = instr.decode_and_expand_compressed(RV64);
 		pc += 2;
 	} else {
-		op = instr.decode_normal();
+		op = instr.decode_normal(RV64);
 		pc += 4;
 	}
 
 	if (trace) {
-		printf("core %2lu: prv %1x: pc %8lx: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr[op]);
+		printf("core %2lu: prv %1x: pc %8lx: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr.at(op));
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -816,7 +816,7 @@ void ISS::exec_step() {
 			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-			if (!has_pending_enabled_interrupts())
+			if (!has_local_pending_enabled_interrupts())
 				sc_core::wait(wfi_event);
 			break;
 
@@ -898,8 +898,8 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:	// not implemented
 			return 0;
 
-		case MSTATUS_ADDR: return read(csrs.mstatus, MSTATUS_MASK);
-		case SSTATUS_ADDR: return read(csrs.mstatus, SSTATUS_MASK);
+		case MSTATUS_ADDR: return read(csrs.mstatus, MSTATUS_READ_MASK);
+		case SSTATUS_ADDR: return read(csrs.mstatus, SSTATUS_READ_MASK);
 		case USTATUS_ADDR: return read(csrs.mstatus, USTATUS_MASK);
 
 		case MIP_ADDR: return read(csrs.mip, MIP_READ_MASK);
@@ -949,8 +949,8 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
 		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break;
 
-		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_MASK); break;
-		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_MASK); break;
+		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_WRITE_MASK); break;
+		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_WRITE_MASK); break;
 		case USTATUS_ADDR: write(csrs.mstatus, USTATUS_MASK); break;
 
 		case MIP_ADDR: write(csrs.mip, MIP_WRITE_MASK); break;

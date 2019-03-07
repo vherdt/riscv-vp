@@ -296,6 +296,10 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         return compute_pending_interrupts().target_mode != NoneMode;
     }
 
+	bool has_local_pending_enabled_interrupts() {
+		return csrs.mie.reg & csrs.mip.reg;
+	}
+
 	void return_from_trap_handler(PrivilegeLevel return_mode);
 
 	void switch_to_trap_handler(PrivilegeLevel target_mode);
