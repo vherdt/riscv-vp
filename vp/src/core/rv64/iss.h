@@ -7,8 +7,8 @@
 #include "syscall_if.h"
 #include "mem_if.h"
 #include "csr.h"
-#include "instr.h"
-#include "trap.h"
+#include "core/common/instr.h"
+#include "core/common/trap.h"
 
 #include <assert.h>
 #include <stdint.h>

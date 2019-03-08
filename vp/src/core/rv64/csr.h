@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 #include "util/common.h"
-#include "trap.h"
+#include "core/common/trap.h"
 
 
 typedef uint32_t PrivilegeLevel;

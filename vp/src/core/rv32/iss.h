@@ -4,11 +4,11 @@
 #include "core/common/clint_if.h"
 #include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
+#include "core/common/trap.h"
+#include "core/common/instr.h"
 #include "syscall_if.h"
 #include "mem_if.h"
 #include "csr.h"
-#include "instr.h"
-#include "trap.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -201,17 +201,17 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
 	          uint32_t entrypoint, uint32_t sp);
 
-	virtual void trigger_external_interrupt() override;
+	void trigger_external_interrupt() override;
 
-	virtual void clear_external_interrupt() override;
+	void clear_external_interrupt() override;
 
-	virtual void trigger_timer_interrupt(bool status) override;
+	void trigger_timer_interrupt(bool status) override;
 
-    virtual void trigger_software_interrupt(bool status) override;
+    void trigger_software_interrupt(bool status) override;
 
-	virtual void sys_exit() override;
-	virtual uint32_t read_register(unsigned idx) override;
-	virtual void write_register(unsigned idx, uint32_t value) override;
+	void sys_exit() override;
+	uint32_t read_register(unsigned idx) override;
+	void write_register(unsigned idx, uint32_t value) override;
 
 	uint32_t get_hart_id();
 

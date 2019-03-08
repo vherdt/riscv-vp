@@ -1,7 +1,7 @@
 #pragma once
 
 #include "iss.h"
-#include "dmi.h"
+#include "core/common/dmi.h"
 
 
 /* For optimization, use DMI to fetch instructions */

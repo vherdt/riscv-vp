@@ -1,5 +1,4 @@
 #include "iss.h"
-#include "trap.h"
 
 // to save *cout* format setting, see *ISS::show*
 #include <boost/io/ios_state.hpp>

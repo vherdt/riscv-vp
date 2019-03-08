@@ -1,5 +1,4 @@
 #include "iss.h"
-#include "trap.h"
 
 // to save *cout* format setting, see *ISS::show*
 #include <boost/io/ios_state.hpp>
@@ -124,10 +123,10 @@ void ISS::exec_step() {
 	}
 
 	if (instr.is_compressed()) {
-		op = instr.decode_and_expand_compressed();
+		op = instr.decode_and_expand_compressed(RV32);
 		pc += 2;
 	} else {
-		op = instr.decode_normal();
+		op = instr.decode_normal(RV32);
 		pc += 4;
 	}
 

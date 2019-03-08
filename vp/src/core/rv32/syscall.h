@@ -50,9 +50,7 @@
 #define SYS_dup 23
 
 // custom extensions
-#define SYS_host_error \
-	1  // indicate an error, i.e. this instruction should never be reached so
-	   // something went wrong during exec.
+#define SYS_host_error 1      // indicate an error, i.e. this instruction should never be reached so something went wrong during exec.
 #define SYS_host_test_pass 2  // RISC-V test execution successfully completed
 #define SYS_host_test_fail 3  // RISC-V test execution failed
 

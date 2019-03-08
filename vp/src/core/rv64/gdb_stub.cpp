@@ -5,6 +5,7 @@
 #include <netinet/ip.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <byteswap.h>
 
 #include <cassert>
 #include <cstdint>
@@ -20,19 +21,18 @@
 #include <boost/lexical_cast.hpp>
 
 std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
-	// assert (start >= 0);
 	assert(nbytes > 0);
 
-	uint32_t read_offset = boost::lexical_cast<uint32_t>(start);
-	uint32_t read_size = boost::lexical_cast<uint32_t>(nbytes);
+	uint64_t read_offset = boost::lexical_cast<uint64_t>(start);
+	uint64_t read_size = boost::lexical_cast<uint64_t>(nbytes);
 
 	std::stringstream stream;
 	if (read_offset >= mem_offset) {
 		assert((read_offset + read_size) <= (mem_offset + mem_size));
 
-		uint32_t local_offset = read_offset - mem_offset;
+		auto local_offset = read_offset - mem_offset;
 		stream << std::setfill('0') << std::hex;
-		for (uint32_t i = 0; i < read_size; ++i) {
+		for (uint64_t i = 0; i < read_size; ++i) {
 			uint8_t byte = mem[local_offset + i];
 			stream << std::setw(2) << (unsigned)byte;
 		}
@@ -48,39 +48,37 @@ std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
 std::string debug_memory_mapping::zero_memory(int nbytes) {
 	assert(nbytes > 0);
 
-	uint32_t read_size = boost::lexical_cast<uint32_t>(nbytes);
+	uint64_t read_size = boost::lexical_cast<uint64_t>(nbytes);
 
 	std::stringstream stream;
 	stream << std::setfill('0') << std::hex;
-	for (uint32_t i = 0; i < read_size; ++i) {
+	for (uint64_t i = 0; i < read_size; ++i) {
 		stream << std::setw(2) << 0;
 	}
 	return stream.str();
 }
 
 void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
-	// assert (start >= 0);
 	assert(nbytes > 0);
 	assert(data.length() % 2 == 0);
 
-	uint32_t write_offset = boost::lexical_cast<uint32_t>(start);
-	uint32_t write_size = boost::lexical_cast<uint32_t>(nbytes);
+	uint64_t write_offset = boost::lexical_cast<uint64_t>(start);
+	uint64_t write_size = boost::lexical_cast<uint64_t>(nbytes);
 
 	assert(write_offset >= mem_offset);
 	assert((write_offset + write_size) <= (mem_offset + mem_size));
 
-	uint32_t local_offset = write_offset - mem_offset;
+	auto local_offset = write_offset - mem_offset;
 
-	for (unsigned i = 0; i < write_size; ++i) {
-		std::string bytes = data.substr(i * 2, 2);
+	for (uint64_t i = 0; i < write_size; ++i) {
+		std::string bytes = data.substr(i*2, 2);
 		uint8_t byte = (uint8_t)std::strtol(bytes.c_str(), NULL, 16);
 		mem[local_offset + i] = byte;
 	}
 }
 
 // reasons for halt as defined in: include/gdb/signals.h
-// NOTE: this is only an excerpt, more signals are defined, please note the
-// numbers might be not up to date ...
+// NOTE: this is only an excerpt, more signals are defined, please note the numbers might be not up to date ...
 enum target_signal {
 	TARGET_SIGNAL_FIRST = 0,
 	TARGET_SIGNAL_HUP = 1,
@@ -113,10 +111,6 @@ std::string compute_checksum_string(const std::string &msg) {
 
 std::string DebugCoreRunner::receive_packet(int conn) {
 	int nbytes = ::recv(conn, iobuf, bufsize, 0);
-	if (nbytes <= 0) {
-		std::cerr << "recv error" << strerror(errno) << std::endl;
-		return std::string("err");
-	}
 	assert(nbytes <= (long)bufsize);
 
 	// std::cout << "recv: " << buffer << std::endl;
@@ -223,6 +217,11 @@ uint32_t swap_byte_order(uint32_t n) {
 	return htonl(n);
 }
 
+uint64_t swap_byte_order(uint64_t n) {
+    return bswap_64(n);
+}
+
+
 void DebugCoreRunner::handle_gdb_loop(int conn) {
 	while (true) {
 		std::string msg = receive_packet(conn);
@@ -231,9 +230,6 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			break;
 		} else if (msg == "+") {
 			// NOTE: just ignore this message, nothing to do in this case
-		} else if (msg == "err") {
-			// error from receive packet. Ignore...
-			std::cerr << "Received packet unknown" << std::endl;
 		} else if (boost::starts_with(msg, "qSupported")) {
 			send_packet(conn, "PacketSize=1024");
 		} else if (msg == "vMustReplyEmpty") {
@@ -260,15 +256,15 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			// data for all register using two digits per byte
 			std::stringstream stream;
 			stream << std::setfill('0') << std::hex;
-			for (auto v : regfile.regs) {
-				stream << std::setw(8) << swap_byte_order(v);
+			for (uint64_t v : regfile.regs) {
+				stream << std::setw(16) << bswap_64(v); //swap_byte_order(v);
 			}
 			send_packet(conn, stream.str());
 		} else if (boost::starts_with(msg, "p")) {
 			long n = strtol(msg.c_str() + 1, 0, 16);
 			assert(n >= 0);
 
-			uint32_t reg_value;
+			uint64_t reg_value;
 			if (n < 32) {
 				reg_value = regfile[n];
 			} else if (n == 32) {
@@ -284,7 +280,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			}
 
 			std::stringstream stream;
-			stream << std::setfill('0') << std::hex << std::setw(8) << swap_byte_order(reg_value);
+			stream << std::setfill('0') << std::hex << std::setw(16) << bswap_64(reg_value); //swap_byte_order(reg_value);
 			send_packet(conn, stream.str());
 		} else if (boost::starts_with(msg, "m")) {
 			memory_access_t m = parse_memory_access(msg);
@@ -354,9 +350,8 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			core.breakpoints.erase(s.addr);
 			send_packet(conn, "OK");
 		} else if (is_any_watchpoint_or_hw_breakpoint(msg)) {
-			send_packet(conn, "");  // NOTE: empty string means unsupported
-			                        // here, use OK to say it is supported
-			break;
+			//NOTE: empty string means unsupported here, use OK to say it is supported
+			send_packet(conn, "");
 		} else {
 			std::cout << "unsupported message '" << msg << "' detected, terminating ..." << std::endl;
 			break;

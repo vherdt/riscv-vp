@@ -192,8 +192,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
-	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
-	          opt.dram_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
+	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.dram_end_addr));
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 

@@ -12,21 +12,23 @@
 #include <boost/lexical_cast.hpp>
 
 // see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
-// for syscall implementation in the risc-v C lib (many are ignored and just
-// return -1)
+// for syscall implementation in the risc-v C lib (many are ignored and just return -1)
 
-typedef int32_t reg_t;
+typedef int64_t rv64_long;
 
-typedef reg_t guest_long;
+typedef int64_t rv64_time_t;
 
-typedef int32_t rv32g_time_t;
-
-struct rv32g_timespec {
-	int32_t tv_sec;
-	int32_t tv_nsec;
+struct rv64_timeval {
+	rv64_time_t tv_sec;
+	rv64_time_t tv_usec;
 };
 
-struct rv32g_stat {
+struct rv64_timespec {
+	rv64_time_t tv_sec;
+	rv64_time_t tv_nsec;
+};
+
+struct rv64_stat {
 	uint64_t st_dev;
 	uint64_t st_ino;
 	uint32_t st_mode;
@@ -39,48 +41,22 @@ struct rv32g_stat {
 	int32_t st_blksize;
 	int32_t __pad2;
 	int64_t st_blocks;
-	rv32g_timespec st_atim;
-	rv32g_timespec st_mtim;
-	rv32g_timespec st_ctim;
+	rv64_timespec st_atim;
+	rv64_timespec st_mtim;
+	rv64_timespec st_ctim;
 	int32_t __glibc_reserved[2];
 };
 
-namespace rv_sc {                   // from
-	                                // riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
-constexpr uint32_t RDONLY = 0x0000; /* +1 == FREAD */
-constexpr uint32_t WRONLY = 0x0001; /* +1 == FWRITE */
-constexpr uint32_t RDWR = 0x0002;   /* +1 == FREAD|FWRITE */
-constexpr uint32_t APPEND = 0x0008;
-constexpr uint32_t CREAT = 0x0200;
-constexpr uint32_t TRUNC = 0x0400;
-}  // namespace rv_sc
-
-int translateRVFlagsToHost(const int flags) {
-	int ret = 0;
-	ret |= flags & rv_sc::RDONLY ? O_RDONLY : 0;
-	ret |= flags & rv_sc::WRONLY ? O_WRONLY : 0;
-	ret |= flags & rv_sc::RDWR ? O_RDWR : 0;
-	ret |= flags & rv_sc::APPEND ? O_APPEND : 0;
-	ret |= flags & rv_sc::CREAT ? O_CREAT : 0;
-	ret |= flags & rv_sc::TRUNC ? O_TRUNC : 0;
-
-	if (ret == 0 && flags != 0) {
-		throw std::runtime_error("unsupported flag");
-	}
-
-	return ret;
-}
-
-void _copy_timespec(rv32g_timespec *dst, timespec *src) {
+void _copy_timespec(rv64_timespec *dst, timespec *src) {
 	dst->tv_sec = src->tv_sec;
 	dst->tv_nsec = src->tv_nsec;
 }
 
-int sys_fstat(SyscallHandler *sys, int fd, rv32g_stat *s_addr) {
+int sys_fstat(SyscallHandler *sys, int fd, rv64_stat *s_addr) {
 	struct stat x;
 	int ans = fstat(fd, &x);
 	if (ans == 0) {
-		rv32g_stat *p = (rv32g_stat *)sys->guest_to_host_pointer(s_addr);
+		rv64_stat *p = (rv64_stat *)sys->guest_to_host_pointer(s_addr);
 		p->st_dev = x.st_dev;
 		p->st_ino = x.st_ino;
 		p->st_mode = x.st_mode;
@@ -98,7 +74,7 @@ int sys_fstat(SyscallHandler *sys, int fd, rv32g_stat *s_addr) {
 	return ans;
 }
 
-int sys_gettimeofday(SyscallHandler *sys, struct timeval *tp, void *tzp) {
+int sys_gettimeofday(SyscallHandler *sys, rv64_timeval *tp, void *tzp) {
 	/*
 	 * timeval is using a struct with two long arguments.
 	 * The second argument tzp currently is not used by riscv code.
@@ -108,16 +84,57 @@ int sys_gettimeofday(SyscallHandler *sys, struct timeval *tp, void *tzp) {
 	struct timeval x;
 	int ans = gettimeofday(&x, 0);
 
-	guest_long *p = (guest_long *)sys->guest_to_host_pointer(tp);
+	rv64_long *p = (rv64_long *)sys->guest_to_host_pointer(tp);
 	p[0] = x.tv_sec;
 	p[1] = x.tv_usec;
 	return ans;
 }
 
+int sys_time(SyscallHandler *sys, rv64_time_t *tloc) {
+	time_t host_ans = time(0);
+
+	rv64_time_t guest_ans = boost::lexical_cast<rv64_time_t>(host_ans);
+
+	if (tloc != 0) {
+		rv64_time_t *p = (rv64_time_t *)sys->guest_to_host_pointer(tloc);
+		*p = guest_ans;
+	}
+
+	return boost::lexical_cast<int>(guest_ans);
+}
+
+
+namespace rv_sc {
+	// see: riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+	constexpr uint32_t RDONLY = 0x0000; /* +1 == FREAD */
+	constexpr uint32_t WRONLY = 0x0001; /* +1 == FWRITE */
+	constexpr uint32_t RDWR = 0x0002;   /* +1 == FREAD|FWRITE */
+	constexpr uint32_t APPEND = 0x0008;
+	constexpr uint32_t CREAT = 0x0200;
+	constexpr uint32_t TRUNC = 0x0400;
+}
+
+int translateRVFlagsToHost(const int flags) {
+	int ret = 0;
+	ret |= flags & rv_sc::RDONLY ? O_RDONLY : 0;
+	ret |= flags & rv_sc::WRONLY ? O_WRONLY : 0;
+	ret |= flags & rv_sc::RDWR ? O_RDWR : 0;
+	ret |= flags & rv_sc::APPEND ? O_APPEND : 0;
+	ret |= flags & rv_sc::CREAT ? O_CREAT : 0;
+	ret |= flags & rv_sc::TRUNC ? O_TRUNC : 0;
+
+	if (ret == 0 && flags != 0) {
+		throw std::runtime_error("unsupported flag");
+	}
+
+	return ret;
+}
+
+
 int sys_brk(SyscallHandler *sys, void *addr) {
 	if (addr == 0) {
-		return sys->hp;  // riscv newlib expects brk to return current heap
-		                 // address when zero is passed in
+		// riscv newlib expects brk to return current heap address when zero is passed in
+		return boost::lexical_cast<int>(sys->hp);
 	} else {
 		// NOTE: can also shrink again
 		auto n = (uintptr_t)addr;
@@ -126,7 +143,8 @@ int sys_brk(SyscallHandler *sys, void *addr) {
 		if (sys->hp > sys->max_heap)
 			sys->max_heap = sys->hp;
 
-		return n;  // same for brk increase/decrease
+		// same for brk increase/decrease
+		return boost::lexical_cast<int>(n);
 	}
 }
 
@@ -181,36 +199,22 @@ int sys_close(int fd) {
 	}
 }
 
-int sys_time(SyscallHandler *sys, rv32g_time_t *tloc) {
-	time_t host_ans = time(0);
-
-	rv32g_time_t guest_ans = boost::lexical_cast<rv32g_time_t>(host_ans);
-
-	if (tloc != 0) {
-		rv32g_time_t *p = (rv32g_time_t *)sys->guest_to_host_pointer(tloc);
-		*p = guest_ans;
-	}
-
-	return guest_ans;
-}
-
 // TODO: add support for additional syscalls if necessary
 int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
-	// NOTE: when linking with CRT, the most basic example only calls
-	// *gettimeofday* and finally *exit*
+	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 
 	switch (n) {
 		case SYS_fstat:
-			return sys_fstat(this, _a0, (rv32g_stat *)_a1);
+			return sys_fstat(this, _a0, (rv64_stat *)_a1);
 
 		case SYS_gettimeofday:
-			return sys_gettimeofday(this, (struct timeval *)_a0, (void *)_a1);
+			return sys_gettimeofday(this, (rv64_timeval *)_a0, (void *)_a1);
 
 		case SYS_brk:
 			return sys_brk(this, (void *)_a0);
 
 		case SYS_time:
-			return sys_time(this, (rv32g_time_t *)_a0);
+			return sys_time(this, (rv64_time_t *)_a0);
 
 		case SYS_write:
 			return sys_write(this, _a0, (void *)_a1, _a2);
