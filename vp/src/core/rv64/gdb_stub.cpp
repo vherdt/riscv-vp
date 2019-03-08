@@ -20,24 +20,34 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>
 
-std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
-	assert(nbytes > 0);
 
-	uint64_t read_offset = boost::lexical_cast<uint64_t>(start);
-	uint64_t read_size = boost::lexical_cast<uint64_t>(nbytes);
+bool DebugMemoryInterface::_do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
+	tlm::tlm_generic_payload trans;
+	trans.set_command(cmd);
+	trans.set_address(addr);
+	trans.set_data_ptr(data);
+	trans.set_data_length(num_bytes);
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
+	isock->transport_dbg(trans);
+
+	return !trans.is_response_error();
+}
+
+std::string DebugMemoryInterface::read_memory(uint64_t start, unsigned nbytes) {
 	std::stringstream stream;
-	if (read_offset >= mem_offset) {
-		assert((read_offset + read_size) <= (mem_offset + mem_size));
+	std::vector<uint8_t> buf(nbytes);
 
-		auto local_offset = read_offset - mem_offset;
+	bool ok = _do_transaction(tlm::TLM_READ_COMMAND, start, buf.data(), buf.size());
+	if (ok) {
 		stream << std::setfill('0') << std::hex;
-		for (uint64_t i = 0; i < read_size; ++i) {
-			uint8_t byte = mem[local_offset + i];
+		for (unsigned i = 0; i < nbytes; ++i) {
+			uint8_t byte = buf[i];
 			stream << std::setw(2) << (unsigned)byte;
 		}
 	} else {
-		for (uint32_t i = 0; i < read_size; ++i) {
+		std::cout << "WARNING: debug read transaction to address=" << start << " with size=" << nbytes << " failed -> return zero memory." << std::endl;
+		for (unsigned i = 0; i < nbytes; ++i) {
 			stream << "00";
 		}
 	}
@@ -45,37 +55,34 @@ std::string debug_memory_mapping::read_memory(unsigned start, int nbytes) {
 	return stream.str();
 }
 
-std::string debug_memory_mapping::zero_memory(int nbytes) {
-	assert(nbytes > 0);
-
-	uint64_t read_size = boost::lexical_cast<uint64_t>(nbytes);
-
-	std::stringstream stream;
-	stream << std::setfill('0') << std::hex;
-	for (uint64_t i = 0; i < read_size; ++i) {
-		stream << std::setw(2) << 0;
-	}
-	return stream.str();
-}
-
-void debug_memory_mapping::write_memory(unsigned start, int nbytes, const std::string &data) {
-	assert(nbytes > 0);
+void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const std::string &data) {
 	assert(data.length() % 2 == 0);
 
-	uint64_t write_offset = boost::lexical_cast<uint64_t>(start);
-	uint64_t write_size = boost::lexical_cast<uint64_t>(nbytes);
+	std::vector<uint8_t> buf(nbytes / 2);
 
-	assert(write_offset >= mem_offset);
-	assert((write_offset + write_size) <= (mem_offset + mem_size));
-
-	auto local_offset = write_offset - mem_offset;
-
-	for (uint64_t i = 0; i < write_size; ++i) {
+	for (uint64_t i = 0; i < nbytes; ++i) {
 		std::string bytes = data.substr(i*2, 2);
 		uint8_t byte = (uint8_t)std::strtol(bytes.c_str(), NULL, 16);
-		mem[local_offset + i] = byte;
+		buf.at(i) = byte;
+	}
+
+	bool ok = _do_transaction(tlm::TLM_WRITE_COMMAND, start, buf.data(), buf.size());
+	if (!ok) {
+		std::cout << "WARNING: debug write transaction to address=" << start << " with size=" << nbytes << " failed -> ignore write access." << std::endl;
 	}
 }
+
+
+std::string DebugCoreRunner::read_memory(unsigned start, int nbytes) {
+	assert(nbytes > 0);
+	return dbg_mem_if->read_memory(start, boost::lexical_cast<unsigned>(nbytes));
+}
+
+void DebugCoreRunner::write_memory(unsigned start, int nbytes, const std::string &data) {
+	assert(nbytes > 0);
+    dbg_mem_if->write_memory(start, boost::lexical_cast<unsigned>(nbytes), data);
+}
+
 
 // reasons for halt as defined in: include/gdb/signals.h
 // NOTE: this is only an excerpt, more signals are defined, please note the numbers might be not up to date ...
@@ -284,21 +291,12 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 			send_packet(conn, stream.str());
 		} else if (boost::starts_with(msg, "m")) {
 			memory_access_t m = parse_memory_access(msg);
-			std::string ans;
-			// NOTE: reading from a memory mapped device is currently not
-			// supported (can implement a *debug-read* method on the bus or
-			// similar)
-			if ((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size)) {
-				ans = memory.read_memory(m.start, m.nbytes);
-			} else {  // NOTE: out of bound memory access
-				ans = memory.zero_memory(m.nbytes);
-			}
+			std::string ans = read_memory(m.start, m.nbytes);
 			send_packet(conn, ans);
 		} else if (boost::starts_with(msg, "M")) {
 			memory_access_t m = parse_memory_access(msg);
-			assert((m.start + m.nbytes) <= (memory.mem_offset + memory.mem_size));  // NOTE: out of bound memory access
 			std::string data = msg.substr(msg.find(":") + 1);
-			memory.write_memory(m.start, m.nbytes, data);
+			write_memory(m.start, m.nbytes, data);
 			send_packet(conn, "OK");
 		} else if (boost::starts_with(msg, "X")) {
 			send_packet(conn, "");  // binary data unsupported, gdb will send
@@ -319,9 +317,7 @@ void DebugCoreRunner::handle_gdb_loop(int conn) {
 				} else if (core.status == CoreExecStatus::Terminated) {
 					send_packet(conn, "S03");
 				} else {
-					assert(false &&
-					       "invalid core status (apparently still marked as "
-					       "runnable)");
+					assert(false && "invalid core status (apparently still marked as runnable)");
 				}
 			} catch (std::exception &e) {
 				send_packet(conn, "S04");

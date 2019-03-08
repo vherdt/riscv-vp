@@ -5,6 +5,7 @@
 #include <netinet/ip.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <byteswap.h>
 
 #include <cassert>
 #include <cstdint>
