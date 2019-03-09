@@ -216,6 +216,132 @@ constexpr uint32_t AMOMINU_D_ENCODING  = 0b11000000000000000011000000101111;
 constexpr uint32_t AMOMAXU_D_MASK      = 0b11111000000000000111000001111111;
 constexpr uint32_t AMOMAXU_D_ENCODING  = 0b11100000000000000011000000101111;
 
+// RV32/64FD Extension
+constexpr uint32_t FLW_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t FLW_ENCODING        = 0b00000000000000000010000000000111;
+constexpr uint32_t FSW_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t FSW_ENCODING        = 0b00000000000000000010000000100111;
+constexpr uint32_t FMADD_S_MASK        = 0b00000110000000000000000001111111;
+constexpr uint32_t FMADD_S_ENCODING    = 0b00000000000000000000000001000011;
+constexpr uint32_t FMSUB_S_MASK        = 0b00000110000000000000000001111111;
+constexpr uint32_t FMSUB_S_ENCODING    = 0b00000000000000000000000001000111;
+constexpr uint32_t FNMADD_S_MASK       = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMADD_S_ENCODING   = 0b00000000000000000000000001001111;
+constexpr uint32_t FNMSUB_S_MASK       = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMSUB_S_ENCODING   = 0b00000000000000000000000001001011;
+constexpr uint32_t FADD_S_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FADD_S_ENCODING     = 0b00000000000000000000000001010011;
+constexpr uint32_t FSUB_S_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FSUB_S_ENCODING     = 0b00001000000000000000000001010011;
+constexpr uint32_t FMUL_S_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FMUL_S_ENCODING     = 0b00010000000000000000000001010011;
+constexpr uint32_t FDIV_S_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FDIV_S_ENCODING     = 0b00011000000000000000000001010011;
+constexpr uint32_t FSQRT_S_MASK        = 0b11111111111100000000000001111111;
+constexpr uint32_t FSQRT_S_ENCODING    = 0b01011000000000000000000001010011;
+constexpr uint32_t FSGNJ_S_MASK        = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJ_S_ENCODING    = 0b00100000000000000000000001010011;
+constexpr uint32_t FSGNJN_S_MASK       = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJN_S_ENCODING   = 0b00100000000000000001000001010011;
+constexpr uint32_t FSGNJX_S_MASK       = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJX_S_ENCODING   = 0b00100000000000000010000001010011;
+constexpr uint32_t FMIN_S_MASK         = 0b11111110000000000111000001111111;
+constexpr uint32_t FMIN_S_ENCODING     = 0b00101000000000000000000001010011;
+constexpr uint32_t FMAX_S_MASK         = 0b11111110000000000111000001111111;
+constexpr uint32_t FMAX_S_ENCODING     = 0b00101000000000000001000001010011;
+constexpr uint32_t FCVT_W_S_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_W_S_ENCODING   = 0b11000000000000000000000001010011;
+constexpr uint32_t FCVT_WU_S_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_WU_S_ENCODING  = 0b11000000000100000000000001010011;
+constexpr uint32_t FMV_X_W_MASK        = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_X_W_ENCODING    = 0b11100000000000000000000001010011;
+constexpr uint32_t FEQ_S_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FEQ_S_ENCODING      = 0b10100000000000000010000001010011;
+constexpr uint32_t FLT_S_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FLT_S_ENCODING      = 0b10100000000000000001000001010011;
+constexpr uint32_t FLE_S_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FLE_S_ENCODING      = 0b10100000000000000000000001010011;
+constexpr uint32_t FCLASS_S_MASK       = 0b11111111111100000111000001111111;
+constexpr uint32_t FCLASS_S_ENCODING   = 0b11100000000000000001000001010011;
+constexpr uint32_t FCVT_S_W_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_W_ENCODING   = 0b11010000000000000000000001010011;
+constexpr uint32_t FCVT_S_WU_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_WU_ENCODING  = 0b11010000000100000000000001010011;
+constexpr uint32_t FMV_W_X_MASK        = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_W_X_ENCODING    = 0b11110000000000000000000001010011;
+constexpr uint32_t FCVT_L_S_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_L_S_ENCODING   = 0b11000000001000000000000001010011;
+constexpr uint32_t FCVT_LU_S_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_LU_S_ENCODING  = 0b11000000001100000000000001010011;
+constexpr uint32_t FCVT_S_L_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_L_ENCODING   = 0b11010000001000000000000001010011;
+constexpr uint32_t FCVT_S_LU_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_LU_ENCODING  = 0b11010000001100000000000001010011;
+constexpr uint32_t FLD_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t FLD_ENCODING        = 0b00000000000000000011000000000111;
+constexpr uint32_t FSD_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t FSD_ENCODING        = 0b00000000000000000011000000100111;
+constexpr uint32_t FMADD_D_MASK        = 0b00000110000000000000000001111111;
+constexpr uint32_t FMADD_D_ENCODING    = 0b00000000000000001000000001000011;
+constexpr uint32_t FMSUB_D_MASK        = 0b00000110000000000000000001111111;
+constexpr uint32_t FMSUB_D_ENCODING    = 0b00000000000000001000000001000111;
+constexpr uint32_t FNMSUB_D_MASK       = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMSUB_D_ENCODING   = 0b00000000000000001000000001001011;
+constexpr uint32_t FNMADD_D_MASK       = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMADD_D_ENCODING   = 0b00000000000000001000000001001111;
+constexpr uint32_t FADD_D_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FADD_D_ENCODING     = 0b00000010000000000000000001010011;
+constexpr uint32_t FSUB_D_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FSUB_D_ENCODING     = 0b00001010000000000000000001010011;
+constexpr uint32_t FMUL_D_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FMUL_D_ENCODING     = 0b00010010000000000000000001010011;
+constexpr uint32_t FDIV_D_MASK         = 0b11111110000000000000000001111111;
+constexpr uint32_t FDIV_D_ENCODING     = 0b00011010000000000000000001010011;
+constexpr uint32_t FSQRT_D_MASK        = 0b11111111111100000000000001111111;
+constexpr uint32_t FSQRT_D_ENCODING    = 0b01011010000000000000000001010011;
+constexpr uint32_t FSGNJ_D_MASK        = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJ_D_ENCODING    = 0b00100010000000000000000001010011;
+constexpr uint32_t FSGNJN_D_MASK       = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJN_D_ENCODING   = 0b00100010000000000001000001010011;
+constexpr uint32_t FSGNJX_D_MASK       = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJX_D_ENCODING   = 0b00100010000000000010000001010011;
+constexpr uint32_t FMIN_D_MASK         = 0b11111110000000000111000001111111;
+constexpr uint32_t FMIN_D_ENCODING     = 0b00101010000000000000000001010011;
+constexpr uint32_t FMAX_D_MASK         = 0b11111110000000000111000001111111;
+constexpr uint32_t FMAX_D_ENCODING     = 0b00101010000000000001000001010011;
+constexpr uint32_t FCVT_S_D_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_D_ENCODING   = 0b01000000000100000000000001010011;
+constexpr uint32_t FCVT_D_S_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_S_ENCODING   = 0b01000010000000000000000001010011;
+constexpr uint32_t FEQ_D_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FEQ_D_ENCODING      = 0b10100010000000000010000001010011;
+constexpr uint32_t FLT_D_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FLT_D_ENCODING      = 0b10100010000000000001000001010011;
+constexpr uint32_t FLE_D_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t FLE_D_ENCODING      = 0b10100010000000000000000001010011;
+constexpr uint32_t FCLASS_D_MASK       = 0b11111111111100000111000001111111;
+constexpr uint32_t FCLASS_D_ENCODING   = 0b11100010000000000001000001010011;
+constexpr uint32_t FCVT_W_D_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_W_D_ENCODING   = 0b11000010000000000000000001010011;
+constexpr uint32_t FCVT_WU_D_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_WU_D_ENCODING  = 0b11000010000100000000000001010011;
+constexpr uint32_t FCVT_D_W_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_W_ENCODING   = 0b11010010000000000000000001010011;
+constexpr uint32_t FCVT_D_WU_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_WU_ENCODING  = 0b11010010000100000000000001010011;
+constexpr uint32_t FCVT_L_D_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_L_D_ENCODING   = 0b11000010001000000000000001010011;
+constexpr uint32_t FCVT_LU_D_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_LU_D_ENCODING  = 0b11000010001100000000000001010011;
+constexpr uint32_t FMV_X_D_MASK        = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_X_D_ENCODING    = 0b11100010000000000000000001010011;
+constexpr uint32_t FCVT_D_L_MASK       = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_L_ENCODING   = 0b11010010001000000000000001010011;
+constexpr uint32_t FCVT_D_LU_MASK      = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_LU_ENCODING  = 0b11010010001100000000000001010011;
+constexpr uint32_t FMV_D_X_MASK        = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_D_X_ENCODING    = 0b11110010000000000000000001010011;
+
 
 #define MATCH_AND_RETURN_INSTR2(instr, result)							    \
 		if (unlikely((data() & (instr ## _MASK)) != (instr ## _ENCODING)))	\
@@ -232,9 +358,16 @@ enum Opcode {
 	C_Illegal,
 	C_Reserved,
 	C_ADDI4SPN,
+	C_FLD,
+	C_LQ, // RV128
 	C_LW,
+	C_FLW,
 	C_LD,
+
+	C_FSD,
+	C_SQ, // RV128
 	C_SW,
+	C_FSW,
 	C_SD,
 
 	// quadrant one
@@ -260,14 +393,20 @@ enum Opcode {
 
 	// quadrant two
 	C_SLLI,
+	C_FLDSP,
+	C_LQSP, // RV128
 	C_LWSP,
+	C_FLWSP,
 	C_LDSP,
 	C_JR,
 	C_MV,
 	C_EBREAK,
 	C_JALR,
 	C_ADD,
+	C_FSDSP,
+	C_SQSP, // RV128
 	C_SWSP,
+	C_FSWSP,
 	C_SDSP,
 };
 }
@@ -394,6 +533,75 @@ std::array<const char*, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
 	"AMOMINU_D",
 	"AMOMAXU_D",
 
+	// RV32F standard extension
+	"FLW",
+	"FSW",
+	"FMADD_S",
+	"FMSUB_S",
+	"FNMADD_S",
+	"FNMSUB_S",
+	"FADD_S",
+	"FSUB_S",
+	"FMUL_S",
+	"FDIV_S",
+	"FSQRT_S",
+	"FSGNJ_S",
+	"FSGNJN_S",
+	"FSGNJX_S",
+	"FMIN_S",
+	"FMAX_S",
+	"FCVT_W_S",
+	"FCVT_WU_S",
+	"FMV_X_W",
+	"FEQ_S",
+	"FLT_S",
+	"FLE_S",
+	"FCLASS_S",
+	"FCVT_S_W",
+	"FCVT_S_WU",
+	"FMV_W_X",
+
+	// RV64F standard extension (addition to RV32F)
+	"FCVT_L_S",
+	"FCVT_LU_S",
+	"FCVT_S_L",
+	"FCVT_S_LU",
+
+	// RV32D standard extension
+	"FLD",
+	"FSD",
+	"FMADD_D",
+	"FMSUB_D",
+	"FNMSUB_D",
+	"FNMADD_D",
+	"FADD_D",
+	"FSUB_D",
+	"FMUL_D",
+	"FDIV_D",
+	"FSQRT_D",
+	"FSGNJ_D",
+	"FSGNJN_D",
+	"FSGNJX_D",
+	"FMIN_D",
+	"FMAX_D",
+	"FCVT_S_D",
+	"FCVT_D_S",
+	"FEQ_D",
+	"FLT_D",
+	"FLE_D",
+	"FCLASS_D",
+	"FCVT_W_D",
+	"FCVT_WU_D",
+	"FCVT_D_W",
+	"FCVT_D_WU",
+
+	// RV64D standard extension (addition to RV32D)
+	"FCVT_L_D",
+	"FCVT_LU_D",
+	"FMV_X_D",
+	"FCVT_D_L",
+	"FCVT_D_LU",
+	"FMV_D_X",
 
     // privileged instructions
     "URET",
@@ -458,6 +666,56 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case AMOMAX_D:
 		case AMOMINU_D:
 		case AMOMAXU_D:
+        case FADD_S:
+        case FSUB_S:
+        case FMUL_S:
+        case FDIV_S:
+        case FSQRT_S:
+        case FSGNJ_S:
+        case FSGNJN_S:
+        case FSGNJX_S:
+        case FMIN_S:
+        case FMAX_S:
+        case FCVT_W_S:
+        case FCVT_WU_S:
+        case FMV_X_W:
+        case FEQ_S:
+        case FLT_S:
+        case FLE_S:
+        case FCLASS_S:
+        case FCVT_S_W:
+        case FCVT_S_WU:
+        case FMV_W_X:
+        case FCVT_L_S:
+        case FCVT_LU_S:
+        case FCVT_S_L:
+        case FCVT_S_LU:
+        case FADD_D:
+        case FSUB_D:
+        case FMUL_D:
+        case FDIV_D:
+        case FSQRT_D:
+        case FSGNJ_D:
+        case FSGNJN_D:
+        case FSGNJX_D:
+        case FMIN_D:
+        case FMAX_D:
+        case FCVT_S_D:
+        case FCVT_D_S:
+        case FEQ_D:
+        case FLT_D:
+        case FLE_D:
+        case FCLASS_D:
+        case FCVT_W_D:
+        case FCVT_WU_D:
+        case FCVT_D_W:
+        case FCVT_D_WU:
+        case FCVT_L_D:
+        case FCVT_LU_D:
+        case FMV_X_D:
+        case FCVT_D_L:
+        case FCVT_D_LU:
+        case FMV_D_X:
 			return Type::R;
 		case JALR:
 		case LB:
@@ -477,11 +735,15 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case SLLIW:
 		case SRLIW:
 		case SRAIW:
+        case FLW:
+        case FLD:
 			return Type::I;
 		case SB:
 		case SH:
 		case SW:
 		case SD:
+		case FSW:
+		case FSD:
 			return Type::S;
 		case BEQ:
 		case BNE:
@@ -495,6 +757,15 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 			return Type::U;
 		case JAL:
 			return Type::J;
+        case FMADD_S:
+        case FMSUB_S:
+        case FNMSUB_S:
+        case FNMADD_S:
+        case FMADD_D:
+        case FMSUB_D:
+        case FNMSUB_D:
+        case FNMADD_D:
+            return Type::R4;
 
 		default:
 			return Type::UNKNOWN;
@@ -594,6 +865,14 @@ struct InstructionFactory {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 3 | (3 << 12));
 	}
 
+	static T FLW(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 7 | (2 << 12));
+	}
+
+	static T FLD(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 7 | (3 << 12));
+	}
+
 	static T SW(unsigned rs1, unsigned rs2, int S_imm) {
 		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
 		         ((rs2 & 0x1f) << 20) | 35 | (2 << 12));
@@ -602,6 +881,16 @@ struct InstructionFactory {
 	static T SD(unsigned rs1, unsigned rs2, int S_imm) {
 		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
 				 ((rs2 & 0x1f) << 20) | 35 | (3 << 12));
+	}
+
+	static T FSW(unsigned rs1, unsigned rs2, int S_imm) {
+		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
+				 ((rs2 & 0x1f) << 20) | 39 | (2 << 12));
+	}
+
+	static T FSD(unsigned rs1, unsigned rs2, int S_imm) {
+		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
+				 ((rs2 & 0x1f) << 20) | 39 | (3 << 12));
 	}
 
 	static T LUI(unsigned rd, int U_imm) {
@@ -679,20 +968,32 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 					else
 						return C_ADDI4SPN;
 
+				case 0b001:
+					return C_FLD;
+
 				case 0b010:
 					return C_LW;
 
 				case 0b011:
-					return C_LD;
+					if (arch == RV32)
+						return C_FLW;
+					else
+						return C_LD;
 
 				case 0b100:
 					return C_Reserved;
+
+				case 0b101:
+					return C_FSD;
 
 				case 0b110:
 					return C_SW;
 
 				case 0b111:
-					return C_SD;
+					if (arch == RV32)
+						return C_FSW;
+					else
+						return C_SD;
 			}
 			break;
 
@@ -770,8 +1071,17 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 				case 0b000:
 					return C_SLLI;
 
+				case 0b001:
+					return C_FLDSP;
+
 				case 0b010:
 					return C_LWSP;
+
+				case 0b011:
+					if (arch == RV32)
+						return C_FLWSP;
+					else
+						return C_LDSP;
 
 				case 0b100:
 					if (instr.c_b12()) {
@@ -792,14 +1102,17 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 						}
 					}
 
-				case 0b011:
-					return C_LDSP;
+				case 0b101:
+					return C_FSDSP;
 
 				case 0b110:
 					return C_SWSP;
 
 				case 0b111:
-					return C_SDSP;
+					if (arch == RV32)
+						return C_FSWSP;
+					else
+						return C_SDSP;
 			}
 			break;
 
@@ -817,6 +1130,13 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 
 	switch (op) {
 		case C_Illegal:
+			return UNDEF;
+
+		// RV128 currently not supported
+		case C_LQ:
+		case C_LQSP:
+		case C_SQ:
+		case C_SQSP:
 			return UNDEF;
 
 		case C_Reserved:
@@ -862,17 +1182,33 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			instr = InstructionFactory::LW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
 			return LW;
 
-		case C_SW:
-			instr = InstructionFactory::SW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
-			return SW;
-
 		case C_LD:
 			instr = InstructionFactory::LD(instr.c_rs2_small(), instr.c_rd_small(), C_LD_UIMM(instr.data()));
 			return LD;
 
+		case C_FLW:
+			instr = InstructionFactory::FLW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
+			return FLW;
+
+		case C_FLD:
+			instr = InstructionFactory::FLD(instr.c_rs2_small(), instr.c_rd_small(), C_LD_UIMM(instr.data()));
+			return FLD;
+
+		case C_SW:
+			instr = InstructionFactory::SW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
+			return SW;
+
 		case C_SD:
 			instr = InstructionFactory::SD(instr.c_rd_small(), instr.c_rs2_small(), C_SD_UIMM(instr.data()));
 			return SD;
+
+		case C_FSW:
+			instr = InstructionFactory::FSW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
+			return FSW;
+
+		case C_FSD:
+			instr = InstructionFactory::FSD(instr.c_rd_small(), instr.c_rs2_small(), C_SD_UIMM(instr.data()));
+			return FSD;
 
 		case C_ADDI4SPN: {
 			unsigned n = C_ADDI4SPN_NZUIMM(instr.data());
@@ -958,17 +1294,33 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			instr = InstructionFactory::LW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return LW;
 
-		case C_SWSP:
-			instr = InstructionFactory::SW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
-			return SW;
-
 		case C_LDSP:
 			instr = InstructionFactory::LD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
 			return LD;
 
+		case C_FLWSP:
+			instr = InstructionFactory::FLW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
+			return FLW;
+
+		case C_FLDSP:
+			instr = InstructionFactory::FLD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
+			return FLD;
+
+		case C_SWSP:
+			instr = InstructionFactory::SW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
+			return SW;
+
 		case C_SDSP:
 			instr = InstructionFactory::SD(2, instr.c_rs2(), C_SDSP_UIMM(instr.data()));
 			return SD;
+
+		case C_FSWSP:
+			instr = InstructionFactory::FSW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
+			return FSW;
+
+		case C_FSDSP:
+			instr = InstructionFactory::FSD(2, instr.c_rs2(), C_SDSP_UIMM(instr.data()));
+			return FSD;
 
 		case C_EBREAK:
 			instr = InstructionFactory::EBREAK();
@@ -1324,7 +1676,212 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
                         MATCH_AND_RETURN_INSTR(AMOMAXU_W);
                     }
 			}
+			break;
 		}
+
+
+		// RV32/64 FD Extension
+		case OP_FMADD_S:
+			switch (instr.funct2()) {
+				case F2_FMADD_S:
+					MATCH_AND_RETURN_INSTR(FMADD_S);
+				case F2_FMADD_D:
+					MATCH_AND_RETURN_INSTR(FMADD_D);
+			}
+			break;
+
+		case OP_FADD_S:
+			switch (instr.funct7()) {
+				case F7_FADD_S:
+					MATCH_AND_RETURN_INSTR(FADD_S);
+				case F7_FADD_D:
+					MATCH_AND_RETURN_INSTR(FADD_D);
+				case F7_FSUB_S:
+					MATCH_AND_RETURN_INSTR(FSUB_S);
+				case F7_FSUB_D:
+					MATCH_AND_RETURN_INSTR(FSUB_D);
+				case F7_FCVT_D_S:
+					MATCH_AND_RETURN_INSTR(FCVT_D_S);
+				case F7_FMUL_S:
+					MATCH_AND_RETURN_INSTR(FMUL_S);
+				case F7_FMUL_D:
+					MATCH_AND_RETURN_INSTR(FMUL_D);
+				case F7_FDIV_S:
+					MATCH_AND_RETURN_INSTR(FDIV_S);
+				case F7_FDIV_D:
+					MATCH_AND_RETURN_INSTR(FDIV_D);
+				case F7_FLE_S:
+					switch (instr.funct3()) {
+						case F3_FLE_S:
+							MATCH_AND_RETURN_INSTR(FLE_S);
+						case F3_FLT_S:
+							MATCH_AND_RETURN_INSTR(FLT_S);
+						case F3_FEQ_S:
+							MATCH_AND_RETURN_INSTR(FEQ_S);
+					}
+					break;
+				case F7_FSGNJ_D:
+					switch (instr.funct3()) {
+						case F3_FSGNJ_D:
+							MATCH_AND_RETURN_INSTR(FSGNJ_D);
+						case F3_FSGNJN_D:
+							MATCH_AND_RETURN_INSTR(FSGNJN_D);
+						case F3_FSGNJX_D:
+							MATCH_AND_RETURN_INSTR(FSGNJX_D);
+					}
+					break;
+				case F7_FMIN_S:
+					switch (instr.funct3()) {
+						case F3_FMIN_S:
+							MATCH_AND_RETURN_INSTR(FMIN_S);
+						case F3_FMAX_S:
+							MATCH_AND_RETURN_INSTR(FMAX_S);
+					}
+					break;
+				case F7_FMIN_D:
+					switch (instr.funct3()) {
+						case F3_FMIN_D:
+							MATCH_AND_RETURN_INSTR(FMIN_D);
+						case F3_FMAX_D:
+							MATCH_AND_RETURN_INSTR(FMAX_D);
+					}
+					break;
+				case F7_FCVT_S_D:
+					MATCH_AND_RETURN_INSTR(FCVT_S_D);
+				case F7_FSGNJ_S:
+					switch (instr.funct3()) {
+						case F3_FSGNJ_S:
+							MATCH_AND_RETURN_INSTR(FSGNJ_S);
+						case F3_FSGNJN_S:
+							MATCH_AND_RETURN_INSTR(FSGNJN_S);
+						case F3_FSGNJX_S:
+							MATCH_AND_RETURN_INSTR(FSGNJX_S);
+					}
+					break;
+				case F7_FLE_D:
+					switch (instr.funct3()) {
+						case F3_FLE_D:
+							MATCH_AND_RETURN_INSTR(FLE_D);
+						case F3_FLT_D:
+							MATCH_AND_RETURN_INSTR(FLT_D);
+						case F3_FEQ_D:
+							MATCH_AND_RETURN_INSTR(FEQ_D);
+					}
+					break;
+				case F7_FCVT_S_W:
+					switch (instr.rs2()) {
+						case RS2_FCVT_S_W:
+							MATCH_AND_RETURN_INSTR(FCVT_S_W);
+						case RS2_FCVT_S_WU:
+							MATCH_AND_RETURN_INSTR(FCVT_S_WU);
+						case RS2_FCVT_S_L:
+							MATCH_AND_RETURN_INSTR(FCVT_S_L);
+						case RS2_FCVT_S_LU:
+							MATCH_AND_RETURN_INSTR(FCVT_S_LU);
+					}
+					break;
+				case F7_FCVT_D_W:
+					switch (instr.rs2()) {
+						case RS2_FCVT_D_W:
+							MATCH_AND_RETURN_INSTR(FCVT_D_W);
+						case RS2_FCVT_D_WU:
+							MATCH_AND_RETURN_INSTR(FCVT_D_WU);
+						case RS2_FCVT_D_L:
+							MATCH_AND_RETURN_INSTR(FCVT_D_L);
+						case RS2_FCVT_D_LU:
+							MATCH_AND_RETURN_INSTR(FCVT_D_LU);
+					}
+					break;
+				case F7_FCVT_W_D:
+					switch (instr.rs2()) {
+						case RS2_FCVT_W_D:
+							MATCH_AND_RETURN_INSTR(FCVT_W_D);
+						case RS2_FCVT_WU_D:
+							MATCH_AND_RETURN_INSTR(FCVT_WU_D);
+						case RS2_FCVT_L_D:
+							MATCH_AND_RETURN_INSTR(FCVT_L_D);
+						case RS2_FCVT_LU_D:
+							MATCH_AND_RETURN_INSTR(FCVT_LU_D);
+					}
+					break;
+				case F7_FSQRT_S:
+					MATCH_AND_RETURN_INSTR(FSQRT_S);
+				case F7_FSQRT_D:
+					MATCH_AND_RETURN_INSTR(FSQRT_D);
+				case F7_FCVT_W_S:
+					switch (instr.rs2()) {
+						case RS2_FCVT_W_S:
+							MATCH_AND_RETURN_INSTR(FCVT_W_S);
+						case RS2_FCVT_WU_S:
+							MATCH_AND_RETURN_INSTR(FCVT_WU_S);
+						case RS2_FCVT_L_S:
+							MATCH_AND_RETURN_INSTR(FCVT_L_S);
+						case RS2_FCVT_LU_S:
+							MATCH_AND_RETURN_INSTR(FCVT_LU_S);
+					}
+					break;
+				case F7_FMV_X_W:
+					switch (instr.funct3()) {
+						case F3_FMV_X_W:
+							MATCH_AND_RETURN_INSTR(FMV_X_W);
+						case F3_FCLASS_S:
+							MATCH_AND_RETURN_INSTR(FCLASS_S);
+					}
+					break;
+				case F7_FMV_X_D:
+					switch (instr.funct3()) {
+						case F3_FMV_X_D:
+							MATCH_AND_RETURN_INSTR(FMV_X_D);
+						case F3_FCLASS_D:
+							MATCH_AND_RETURN_INSTR(FCLASS_D);
+					}
+					break;
+				case F7_FMV_W_X:
+					MATCH_AND_RETURN_INSTR(FMV_W_X);
+				case F7_FMV_D_X:
+					MATCH_AND_RETURN_INSTR(FMV_D_X);
+			}
+			break;
+		case OP_FLW:
+			switch (instr.funct3()) {
+				case F3_FLW:
+					MATCH_AND_RETURN_INSTR(FLW);
+				case F3_FLD:
+					MATCH_AND_RETURN_INSTR(FLD);
+			}
+			break;
+		case OP_FSW:
+			switch (instr.funct3()) {
+				case F3_FSW:
+					MATCH_AND_RETURN_INSTR(FSW);
+				case F3_FSD:
+					MATCH_AND_RETURN_INSTR(FSD);
+			}
+			break;
+		case OP_FMSUB_S:
+			switch (instr.funct2()) {
+				case F2_FMSUB_S:
+					MATCH_AND_RETURN_INSTR(FMSUB_S);
+				case F2_FMSUB_D:
+					MATCH_AND_RETURN_INSTR(FMSUB_D);
+			}
+			break;
+		case OP_FNMSUB_S:
+			switch (instr.funct2()) {
+				case F2_FNMSUB_S:
+					MATCH_AND_RETURN_INSTR(FNMSUB_S);
+				case F2_FNMSUB_D:
+					MATCH_AND_RETURN_INSTR(FNMSUB_D);
+			}
+			break;
+		case OP_FNMADD_S:
+			switch (instr.funct2()) {
+				case F2_FNMADD_S:
+					MATCH_AND_RETURN_INSTR(FNMADD_S);
+				case F2_FNMADD_D:
+					MATCH_AND_RETURN_INSTR(FNMADD_D);
+			}
+			break;
 	}
 
 	return UNDEF;

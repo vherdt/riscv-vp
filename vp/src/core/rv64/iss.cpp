@@ -153,6 +153,13 @@ void ISS::exec_step() {
 				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
 				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
+			case Opcode::Type::R4:
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT ", " COLORFRMT,
+					   COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+					   COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+					   COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]),
+					   COLORPRINT(regcolors[instr.rs3()], regnames[instr.rs3()]));
+				break;
 			case Opcode::Type::I:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
 				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), instr.I_imm());
@@ -915,6 +922,15 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
             if (csrs.mstatus.tvm)
                 RAISE_ILLEGAL_INSTRUCTION();
             break;
+
+	    case FCSR_ADDR:
+	        return read(csrs.fcsr, FCSR_MASK);
+
+		case FFLAGS_ADDR:
+			return csrs.fcsr.fflags;
+
+		case FRM_ADDR:
+			return csrs.fcsr.frm;
 	}
 
 	if (!csrs.is_valid_csr64_addr(addr))
@@ -988,6 +1004,18 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 
 		case MCOUNTINHIBIT_ADDR:
 			write(csrs.mcountinhibit, MCOUNTINHIBIT_MASK);
+			break;
+
+        case FCSR_ADDR:
+            write(csrs.fcsr, FCSR_MASK);
+            break;
+
+		case FFLAGS_ADDR:
+			csrs.fcsr.fflags = value;
+			break;
+
+		case FRM_ADDR:
+			csrs.fcsr.frm = value;
 			break;
 
 	    default:

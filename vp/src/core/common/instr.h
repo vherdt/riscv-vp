@@ -8,6 +8,17 @@
 #include "core_defs.h"
 
 
+// floating-point rounding modes
+constexpr unsigned FRM_RNE = 0b000;	// Round to Nearest, ties to Even
+constexpr unsigned FRM_RTZ = 0b001; // Round towards Zero
+constexpr unsigned FRM_RDN = 0b010; // Round Down (towards -inf)
+constexpr unsigned FRM_RUP = 0b011; // Round Down (towards +inf)
+constexpr unsigned FRM_RMM = 0b100; // Round to Nearest, ties to Max Magnitude
+constexpr unsigned FRM_DYN = 0b111; // In instruction’s rm field, selects dynamic rounding mode; In Rounding Mode register, Invalid
+
+constexpr uint32_t F_NAN = 0x7fc00000;
+
+
 namespace Opcode {
 // opcode masks used to decode an instruction
 enum Parts {
@@ -143,6 +154,89 @@ enum Parts {
     F3_REMW = 0b110,
     F3_REMUW = 0b111,
 
+    // F and D extension
+	OP_FMADD_S = 0b1000011,
+	F2_FMADD_S = 0b00,
+	F2_FMADD_D = 0b01,
+	OP_FADD_S = 0b1010011,
+	F7_FADD_S = 0b0000000,
+	F7_FADD_D = 0b0000001,
+	F7_FSUB_S = 0b0000100,
+	F7_FSUB_D = 0b0000101,
+	F7_FCVT_D_S = 0b0100001,
+	F7_FMUL_S = 0b0001000,
+	F7_FMUL_D = 0b0001001,
+	F7_FDIV_S = 0b0001100,
+	F7_FDIV_D = 0b0001101,
+	F7_FLE_S = 0b1010000,
+	F3_FLE_S = 0b000,
+	F3_FLT_S = 0b001,
+	F3_FEQ_S = 0b010,
+	F7_FSGNJ_D = 0b0010001,
+	F3_FSGNJ_D = 0b000,
+	F3_FSGNJN_D = 0b001,
+	F3_FSGNJX_D = 0b010,
+	F7_FMIN_S = 0b0010100,
+	F3_FMIN_S = 0b000,
+	F3_FMAX_S = 0b001,
+	F7_FMIN_D = 0b0010101,
+	F3_FMIN_D = 0b000,
+	F3_FMAX_D = 0b001,
+	F7_FCVT_S_D = 0b0100000,
+	F7_FSGNJ_S = 0b0010000,
+	F3_FSGNJ_S = 0b000,
+	F3_FSGNJN_S = 0b001,
+	F3_FSGNJX_S = 0b010,
+	F7_FLE_D = 0b1010001,
+	F3_FLE_D = 0b000,
+	F3_FLT_D = 0b001,
+	F3_FEQ_D = 0b010,
+	F7_FCVT_S_W = 0b1101000,
+	RS2_FCVT_S_W = 0b00000,
+	RS2_FCVT_S_WU = 0b00001,
+	RS2_FCVT_S_L = 0b00010,
+	RS2_FCVT_S_LU = 0b00011,
+	F7_FCVT_D_W = 0b1101001,
+	RS2_FCVT_D_W = 0b00000,
+	RS2_FCVT_D_WU = 0b00001,
+	RS2_FCVT_D_L = 0b00010,
+	RS2_FCVT_D_LU = 0b00011,
+	F7_FCVT_W_D = 0b1100001,
+	RS2_FCVT_W_D = 0b00000,
+	RS2_FCVT_WU_D = 0b00001,
+	RS2_FCVT_L_D = 0b00010,
+	RS2_FCVT_LU_D = 0b00011,
+	F7_FSQRT_S = 0b0101100,
+	F7_FSQRT_D = 0b0101101,
+	F7_FCVT_W_S = 0b1100000,
+	RS2_FCVT_W_S = 0b00000,
+	RS2_FCVT_WU_S = 0b00001,
+	RS2_FCVT_L_S = 0b00010,
+	RS2_FCVT_LU_S = 0b00011,
+	F7_FMV_X_W = 0b1110000,
+	F3_FMV_X_W = 0b000,
+	F3_FCLASS_S = 0b001,
+	F7_FMV_X_D = 0b1110001,
+	F3_FMV_X_D = 0b000,
+	F3_FCLASS_D = 0b001,
+	F7_FMV_W_X = 0b1111000,
+	F7_FMV_D_X = 0b1111001,
+	OP_FLW = 0b0000111,
+	F3_FLW = 0b010,
+	F3_FLD = 0b011,
+	OP_FSW = 0b0100111,
+	F3_FSW = 0b010,
+	F3_FSD = 0b011,
+	OP_FMSUB_S = 0b1000111,
+	F2_FMSUB_S = 0b00,
+	F2_FMSUB_D = 0b01,
+	OP_FNMSUB_S = 0b1001011,
+	F2_FNMSUB_S = 0b00,
+	F2_FNMSUB_D = 0b01,
+	OP_FNMADD_S = 0b1001111,
+	F2_FNMADD_S = 0b00,
+	F2_FNMADD_D = 0b01,
+
 	// reserved opcodes for custom instructions
 	OP_CUST1 = 0b0101011,
 	OP_CUST0 = 0b0001011,
@@ -262,6 +356,76 @@ enum Mapping {
 	AMOMINU_D,
 	AMOMAXU_D,
 
+	// RV32F standard extension
+	FLW,
+	FSW,
+	FMADD_S,
+	FMSUB_S,
+	FNMADD_S,
+	FNMSUB_S,
+	FADD_S,
+	FSUB_S,
+	FMUL_S,
+	FDIV_S,
+	FSQRT_S,
+	FSGNJ_S,
+	FSGNJN_S,
+	FSGNJX_S,
+	FMIN_S,
+	FMAX_S,
+	FCVT_W_S,
+	FCVT_WU_S,
+	FMV_X_W,
+	FEQ_S,
+	FLT_S,
+	FLE_S,
+	FCLASS_S,
+	FCVT_S_W,
+	FCVT_S_WU,
+	FMV_W_X,
+
+	// RV64F standard extension (addition to RV32F)
+	FCVT_L_S,
+	FCVT_LU_S,
+	FCVT_S_L,
+	FCVT_S_LU,
+
+	// RV32D standard extension
+	FLD,
+	FSD,
+	FMADD_D,
+	FMSUB_D,
+	FNMSUB_D,
+	FNMADD_D,
+	FADD_D,
+	FSUB_D,
+	FMUL_D,
+	FDIV_D,
+	FSQRT_D,
+	FSGNJ_D,
+	FSGNJN_D,
+	FSGNJX_D,
+	FMIN_D,
+	FMAX_D,
+	FCVT_S_D,
+	FCVT_D_S,
+	FEQ_D,
+	FLT_D,
+	FLE_D,
+	FCLASS_D,
+	FCVT_W_D,
+	FCVT_WU_D,
+	FCVT_D_W,
+	FCVT_D_WU,
+
+	// RV64D standard extension (addition to RV32D)
+	FCVT_L_D,
+	FCVT_LU_D,
+	FMV_X_D,
+	FCVT_D_L,
+	FCVT_D_LU,
+	FMV_D_X,
+
 	// privileged instructions
 	URET,
 	SRET,
@@ -281,6 +445,7 @@ enum class Type {
 	B,
 	U,
 	J,
+	R4,
 };
 
 extern std::array<const char*, NUMBER_OF_INSTRUCTIONS> mappingStr;
@@ -373,6 +538,10 @@ struct Instruction {
         return (BIT_RANGE(instr, 24, 20) >> 20);
     }
 
+	inline int32_t funct2() {
+		return (BIT_RANGE(instr, 26, 25) >> 25);
+	}
+
 	inline int32_t funct3() {
 		return (BIT_RANGE(instr, 14, 12) >> 12);
 	}
@@ -450,6 +619,10 @@ struct Instruction {
 	inline uint32_t rs2() {
 		return BIT_RANGE(instr, 24, 20) >> 20;
 	}
+
+    inline uint32_t rs3() {
+        return BIT_RANGE((uint32_t)instr, 31, 27) >> 27;
+    }
 
 	inline uint32_t rd() {
 		return BIT_RANGE(instr, 11, 7) >> 7;

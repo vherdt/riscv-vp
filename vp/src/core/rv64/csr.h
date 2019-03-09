@@ -270,6 +270,29 @@ struct csr_satp {
 };
 
 
+/* Actually 32 bit large, but use 64 value for consistency and simply set the read/write mask accordingly. */
+struct csr_fcsr {
+	union {
+		uint64_t reg = 0;
+		struct {
+			union {
+				struct {
+					unsigned NX : 1; // invalid operation
+					unsigned UF : 1; // divide by zero
+					unsigned OF : 1; // overflow
+					unsigned DZ : 1; // underlow
+					unsigned NV : 1; // inexact
+				};
+				unsigned fflags : 5;
+			};
+			unsigned frm : 3;
+			unsigned reserved : 24;
+			unsigned _ : 32;
+		};
+	};
+};
+
+
 namespace csr {
 template<typename T>
 inline bool is_bitset(T &csr, unsigned bitpos) {
@@ -304,6 +327,8 @@ constexpr uint64_t SSTATUS_READ_MASK = 0b100000000000000000000000000000110000000
 constexpr uint64_t USTATUS_MASK = 0b0000000000000000000000000000000000000000000000000000000000010001;
 
 constexpr uint64_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
+
+constexpr uint64_t FCSR_MASK   = 0b11111111;
 
 
 // 64 bit timer csrs
@@ -383,6 +408,10 @@ constexpr unsigned UCAUSE_ADDR = 0x042;
 constexpr unsigned UTVAL_ADDR = 0x043;
 constexpr unsigned UIP_ADDR = 0x044;
 
+// floating point CSRs
+constexpr unsigned FFLAGS_ADDR = 0x001;
+constexpr unsigned FRM_ADDR = 0x002;
+constexpr unsigned FCSR_ADDR = 0x003;
 
 // performance counters
 constexpr unsigned HPMCOUNTER3_ADDR = 0xC03;
@@ -584,6 +613,8 @@ struct csr_table {
 	csr_mcause ucause;
 	csr_64 utval;
 
+	csr_fcsr fcsr;
+
 
 	std::unordered_map<unsigned, uint64_t *> register_mapping;
 
@@ -638,6 +669,8 @@ struct csr_table {
 		register_mapping[UEPC_ADDR] = &uepc.reg;
 		register_mapping[UCAUSE_ADDR] = &ucause.reg;
 		register_mapping[UTVAL_ADDR] = &utval.reg;
+
+		register_mapping[FCSR_ADDR] = &fcsr.reg;
 	}
 
 	bool is_valid_csr64_addr(unsigned addr) {
