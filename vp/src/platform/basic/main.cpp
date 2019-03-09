@@ -24,6 +24,8 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace rv32;
+
 struct Options {
 	typedef unsigned int addr_t;
 
@@ -150,7 +152,7 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 12> bus("SimpleBus");
+	SimpleBus<3, 12> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	PLIC<1, 64, 32> plic("PLIC");
@@ -163,6 +165,7 @@ int sc_main(int argc, char **argv) {
 	Flashcontroller flashController("Flashcontroller", opt.flash_device);
 	EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
 	Display display("Display");
+    DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -203,6 +206,7 @@ int sc_main(int argc, char **argv) {
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
+    dbg_if.isock.bind(bus.tsocks[2]);
 
 	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");     // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
@@ -233,8 +237,7 @@ int sc_main(int argc, char **argv) {
 
 	core.trace = opt.trace_mode; // switch for printing instructions
 	if (opt.use_debug_runner) {
-		debug_memory_mapping dmm({mem.data, opt.mem_start_addr, mem.size});
-		new DebugCoreRunner(core, dmm);
+		new DebugCoreRunner<ISS, RV32>(core, &dbg_if);
 	} else {
 		new DirectCoreRunner(core);
 	}

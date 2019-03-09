@@ -6,6 +6,8 @@
 #include <boost/lexical_cast.hpp>
 
 
+using namespace rv64;
+
 // GCC and clang support these types on x64 machines
 // perhaps use boost::multiprecision::int128_t instead
 // see: https://stackoverflow.com/questions/18439520/is-there-a-128-bit-integer-in-c
@@ -84,7 +86,7 @@ void RegFile::show() {
 }
 
 ISS::ISS(uint64_t hart_id)
-    : systemc_name("core-" + std::to_string(hart_id)) {
+    : systemc_name("Core-" + std::to_string(hart_id)) {
     csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();

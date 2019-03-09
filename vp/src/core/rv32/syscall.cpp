@@ -11,6 +11,8 @@
 
 #include <boost/lexical_cast.hpp>
 
+using namespace rv32;
+
 // see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
 

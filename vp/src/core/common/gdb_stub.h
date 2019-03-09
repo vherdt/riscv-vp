@@ -1,7 +1,14 @@
 #ifndef RISCV_ISA_GDB_STUB_H
 #define RISCV_ISA_GDB_STUB_H
 
-#include "iss.h"
+#include <type_traits>
+#include <string>
+
+#include <tlm_utils/simple_initiator_socket.h>
+#include <systemc>
+
+#include "core_defs.h"
+#include "trap.h"
 
 
 struct DebugMemoryInterface : public sc_core::sc_module {
@@ -10,7 +17,7 @@ struct DebugMemoryInterface : public sc_core::sc_module {
     DebugMemoryInterface(sc_core::sc_module_name) {
     }
 
-    bool _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes);
+    unsigned _do_dbg_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes);
 
     std::string read_memory(uint64_t start, unsigned nbytes);
 
@@ -18,10 +25,13 @@ struct DebugMemoryInterface : public sc_core::sc_module {
 };
 
 
-//template <typename Core, unsigned Arch>
+template <typename Core, unsigned Arch>
 struct DebugCoreRunner : public sc_core::sc_module {
-	ISS &core;
-	RegFile &regfile;
+    static_assert(Arch == RV32 || Arch == RV64, "architecture not supported");
+
+    typedef typename std::conditional<Arch == RV32, uint32_t, uint64_t>::type reg_t;
+
+	Core &core;
 	static constexpr size_t bufsize = 1024 * 8;
 	char iobuf[bufsize]{};
 
@@ -30,8 +40,8 @@ struct DebugCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DebugCoreRunner);
 
-	DebugCoreRunner(ISS &core, DebugMemoryInterface *mm)
-	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")), core(core), regfile(core.regs), dbg_mem_if(mm) {
+	DebugCoreRunner(Core &core, DebugMemoryInterface *mm)
+	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")), core(core), dbg_mem_if(mm) {
 		SC_THREAD(run);
 		core.debug_mode = true;
 	}
@@ -47,5 +57,7 @@ private:
 
 	void handle_gdb_loop(int conn);
 };
+
+#include "gdb_stub.tpp"
 
 #endif  // RISCV_ISA_GDB_STUB_H

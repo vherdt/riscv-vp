@@ -3,6 +3,7 @@
 #include "iss.h"
 #include "core/common/dmi.h"
 
+namespace rv64 {
 
 /* For optimization, use DMI to fetch instructions */
 struct InstrMemoryProxy : public instr_memory_if {
@@ -216,3 +217,5 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         bus_lock->unlock(iss.get_hart_id());
     }
 };
+
+} // namespace rv64

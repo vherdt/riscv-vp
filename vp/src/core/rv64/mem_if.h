@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+namespace rv64 {
+
 struct instr_memory_if {
     virtual ~instr_memory_if() {}
 
@@ -36,3 +38,5 @@ struct data_memory_if {
     virtual int64_t atomic_load_reserved_double(uint64_t addr) = 0;
     virtual bool atomic_store_conditional_double(uint64_t addr, uint64_t value) = 0;
 };
+
+} // namespace rv64

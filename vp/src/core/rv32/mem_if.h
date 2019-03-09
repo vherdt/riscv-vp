@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+namespace rv32 {
+
 struct instr_memory_if {
     virtual ~instr_memory_if() {}
 
@@ -28,3 +30,5 @@ struct data_memory_if {
     virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) = 0;
     virtual void atomic_unlock() = 0;
 };
+
+} // namespace rv32

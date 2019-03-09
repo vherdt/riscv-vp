@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+namespace rv32 {
 
 /* The syscall handler is using this interface to access and control the ISS. */
 struct iss_syscall_if {
@@ -23,3 +24,5 @@ struct syscall_emulator_if {
 
     virtual void execute_syscall(iss_syscall_if *core) = 0;
 };
+
+} // namespace rv32

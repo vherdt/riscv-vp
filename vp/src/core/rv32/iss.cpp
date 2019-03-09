@@ -5,6 +5,8 @@
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
+using namespace rv32;
+
 
 #define RAISE_ILLEGAL_INSTRUCTION()  \
     raise_trap(EXC_ILLEGAL_INSTR, instr.data());
@@ -72,7 +74,7 @@ void RegFile::show() {
 }
 
 ISS::ISS(uint32_t hart_id)
-    : systemc_name("core-" + std::to_string(hart_id)) {
+    : systemc_name("Core-" + std::to_string(hart_id)) {
     csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();

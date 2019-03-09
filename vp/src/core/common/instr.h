@@ -5,12 +5,8 @@
 #include <iostream>
 #include <array>
 
+#include "core_defs.h"
 
-enum Architecture {
-	RV32 = 1,
-	RV64 = 2,
-	RV128 = 3,
-};
 
 namespace Opcode {
 // opcode masks used to decode an instruction

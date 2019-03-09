@@ -14,6 +14,8 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace rv32;
+
 struct Options {
     typedef unsigned int addr_t;
 

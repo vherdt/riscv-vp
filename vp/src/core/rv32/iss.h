@@ -26,6 +26,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
+namespace rv32 {
 
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;
@@ -152,12 +153,6 @@ struct PendingInterrupts {
     uint32_t pending;
 };
 
-
-enum class CoreExecStatus {
-	Runnable,
-	HitBreakpoint,
-	Terminated,
-};
 
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
@@ -341,3 +336,5 @@ struct DirectCoreRunner : public sc_core::sc_module {
         sc_core::sc_stop();
 	}
 };
+
+} // namespace rv32
