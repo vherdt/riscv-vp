@@ -12,9 +12,11 @@
  - **New:** Compressed instructions (C)
  - **New:** Peripherals, e.g. display, flash controller, preliminary ethernet
  - **New:** Example configuration for the SiFive HiFive1 board available
- - **New:** Zephyr operating system (https://www.zephyrproject.org/) support
+ - **New:** Zephyr operating system support
  - **New:** Support for simulation of multi-core platforms
  - **New:** Supervisor- and user-mode (including user traps) privilege levels
+ - **New:** Floating-point extension (F) for the RV32 core
+ - **New:** RV64GC core (i.e. RV64IMAFDC)
 
 For related information, e.g. verification, please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. 
 We accept pull requests and in general contributions are very welcome. 
@@ -53,10 +55,11 @@ make
 
 #### 2) Build this RISC-V Virtual Prototype:
 
-i) in *vp/dependencies* folder (will download and compile SystemC):
+i) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
 
 ```bash
-./build_systemc_232.sh
+./build_systemc_233.sh
+./build_softfloat.sh
 ```
 
 
