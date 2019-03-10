@@ -265,19 +265,19 @@ struct csr_fcsr {
 	union {
 		uint32_t reg = 0;
 		struct {
-			union {
-				struct {
-					unsigned NX : 1; // invalid operation
-					unsigned UF : 1; // divide by zero
-					unsigned OF : 1; // overflow
-					unsigned DZ : 1; // underlow
-					unsigned NV : 1; // inexact
-				};
-				unsigned fflags : 5;
-			};
+			unsigned fflags : 5;
 			unsigned frm : 3;
 			unsigned reserved : 24;
 		};
+		// fflags accessed separately
+        struct {
+            unsigned NX : 1; // invalid operation
+            unsigned UF : 1; // divide by zero
+            unsigned OF : 1; // overflow
+            unsigned DZ : 1; // underlow
+            unsigned NV : 1; // inexact
+            unsigned _  : 27;
+        };
 	};
 };
 

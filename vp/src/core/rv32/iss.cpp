@@ -665,16 +665,16 @@ void ISS::exec_step() {
         case Opcode::FMIN_S: {
 			fp_prepare_instr();
 
-			if (f32_isSignalingNaN(fp_regs[instr.rs1()]) && f32_isSignalingNaN(fp_regs[instr.rs2()]))
-				fp_regs[instr.rd()] = float32_t{defaultNaNF32UI};
-			else {
-				if (f32_isSignalingNaN(fp_regs[instr.rs1()]))
-					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
-				else if (f32_isSignalingNaN(fp_regs[instr.rs2()]))
+			bool rs1_smaller = f32_lt_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()]) ||
+							   (f32_eq(fp_regs[instr.rs1()], fp_regs[instr.rs2()]) && f32_isNegative(fp_regs[instr.rs1()]));
+
+			if (f32_isNaN(fp_regs[instr.rs1()]) && f32_isNaN(fp_regs[instr.rs2()])) {
+				fp_regs[instr.rd()] = f32_defaultNaN;
+			} else {
+				if (rs1_smaller)
 					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
 				else
-					fp_regs[instr.rd()] = f32_le_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()])
-										  ? fp_regs[instr.rs1()] : fp_regs[instr.rs2()];
+					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
 			}
 
 			fp_finish_instr();
@@ -683,16 +683,16 @@ void ISS::exec_step() {
 		case Opcode::FMAX_S: {
 			fp_prepare_instr();
 
-			if (f32_isSignalingNaN(fp_regs[instr.rs1()]) && f32_isSignalingNaN(fp_regs[instr.rs2()]))
-				fp_regs[instr.rd()] = float32_t{defaultNaNF32UI};
-			else {
-				if (f32_isSignalingNaN(fp_regs[instr.rs1()]))
-					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
-				else if (f32_isSignalingNaN(fp_regs[instr.rs2()]))
+			bool rs1_greater = f32_lt_quiet(fp_regs[instr.rs2()], fp_regs[instr.rs1()]) ||
+								(f32_eq(fp_regs[instr.rs2()], fp_regs[instr.rs1()]) && f32_isNegative(fp_regs[instr.rs2()]));
+
+			if (f32_isNaN(fp_regs[instr.rs1()]) && f32_isNaN(fp_regs[instr.rs2()])) {
+                fp_regs[instr.rd()] = f32_defaultNaN;
+            } else {
+				if (rs1_greater)
 					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
 				else
-					fp_regs[instr.rd()] = f32_le_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()])
-										  ? fp_regs[instr.rs2()] : fp_regs[instr.rs1()];
+					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
 			}
 
 			fp_finish_instr();
@@ -774,7 +774,7 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 			auto f1 = fp_regs[instr.rs1()];
 			auto f2 = fp_regs[instr.rs2()];
-			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) ^ (f2.v & F32_SIGN_BIT)};
+			fp_regs[instr.rd()] = float32_t{f1.v ^ (f2.v & F32_SIGN_BIT)};
             fp_set_dirty();
 		} break;
 

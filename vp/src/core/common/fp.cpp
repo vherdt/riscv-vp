@@ -1,9 +1,11 @@
 #include "fp.h"
 
+/*
 extern "C" {
 #include <softfloat/internals.h>
 #include <softfloat/specialize.h>
 }
+ */
 
 
 // These f32/64_classify functions are from the official Spike simulator (the softfloat library part):
@@ -34,6 +36,7 @@ HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE
 MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 *****************************************************************************************************/
 
+/*
 uint_fast16_t f32_classify( float32_t a )
 {
     union ui32_f32 uA;
@@ -90,3 +93,4 @@ uint_fast16_t f64_classify( float64_t a )
             ( isNaN &&  isSNaN )                       << 8 |
             ( isNaN && !isSNaN )                       << 9;
 }
+ */
