@@ -11,6 +11,12 @@
 
 namespace rv32 {
 
+constexpr unsigned FS_OFF = 0b00;
+constexpr unsigned FS_INITIAL = 0b01;
+constexpr unsigned FS_CLEAN = 0b10;
+constexpr unsigned FS_DIRTY = 0b11;
+
+
 typedef uint32_t PrivilegeLevel;
 
 constexpr uint32_t MachineMode = 0b11;
@@ -255,6 +261,27 @@ struct csr_satp {
 };
 
 
+struct csr_fcsr {
+	union {
+		uint32_t reg = 0;
+		struct {
+			union {
+				struct {
+					unsigned NX : 1; // invalid operation
+					unsigned UF : 1; // divide by zero
+					unsigned OF : 1; // overflow
+					unsigned DZ : 1; // underlow
+					unsigned NV : 1; // inexact
+				};
+				unsigned fflags : 5;
+			};
+			unsigned frm : 3;
+			unsigned reserved : 24;
+		};
+	};
+};
+
+
 /*
  * Add new subclasses with specific consistency check (e.g. by adding virtual
  * write_low, write_high functions) if necessary.
@@ -304,6 +331,8 @@ constexpr uint32_t SIDELEG_MASK = MIDELEG_MASK;
 constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111100110111011;
 constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110000100110011;
 constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
+
+constexpr uint32_t FCSR_MASK    = 0b11111111;
 
 
 // 64 bit timer csrs
@@ -388,6 +417,11 @@ constexpr unsigned UEPC_ADDR = 0x041;
 constexpr unsigned UCAUSE_ADDR = 0x042;
 constexpr unsigned UTVAL_ADDR = 0x043;
 constexpr unsigned UIP_ADDR = 0x044;
+
+// floating point CSRs
+constexpr unsigned FFLAGS_ADDR = 0x001;
+constexpr unsigned FRM_ADDR = 0x002;
+constexpr unsigned FCSR_ADDR = 0x003;
 
 
 // performance counters
@@ -590,6 +624,8 @@ struct csr_table {
 	csr_mcause ucause;
 	csr_32 utval;
 
+	csr_fcsr fcsr;
+
 
 	std::unordered_map<unsigned, uint32_t *> register_mapping;
 
@@ -650,6 +686,8 @@ struct csr_table {
 		register_mapping[UEPC_ADDR] = &uepc.reg;
 		register_mapping[UCAUSE_ADDR] = &ucause.reg;
 		register_mapping[UTVAL_ADDR] = &utval.reg;
+
+		register_mapping[FCSR_ADDR] = &fcsr.reg;
 	}
 
 	bool is_valid_csr32_addr(unsigned addr) {

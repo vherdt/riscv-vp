@@ -613,6 +613,206 @@ void ISS::exec_step() {
 			});
 		} break;
 
+		// RV32F Extension
+
+        case Opcode::FLW: {
+            uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+            trap_check_addr_alignment<4, true>(addr);
+            fp_regs[instr.rd()] = float32_t{ (uint32_t)mem->load_word(addr) };
+        } break;
+
+        case Opcode::FSW: {
+            uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+            trap_check_addr_alignment<4, false>(addr);
+            mem->store_word(addr, fp_regs[instr.rs2()].v);
+        } break;
+
+        case Opcode::FADD_S: {
+			fp_prepare_instr();
+        	fp_setup_rm();
+			fp_regs[instr.rd()] = f32_add(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+			fp_finish_instr();
+        } break;
+
+		case Opcode::FSUB_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_sub(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FMUL_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_mul(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FDIV_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_div(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+			fp_finish_instr();
+		} break;
+
+        case Opcode::FSQRT_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_sqrt(fp_regs[instr.rs1()]);
+			fp_finish_instr();
+        } break;
+
+        case Opcode::FMIN_S: {
+			fp_prepare_instr();
+
+			if (f32_isSignalingNaN(fp_regs[instr.rs1()]) && f32_isSignalingNaN(fp_regs[instr.rs2()]))
+				fp_regs[instr.rd()] = float32_t{defaultNaNF32UI};
+			else {
+				if (f32_isSignalingNaN(fp_regs[instr.rs1()]))
+					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
+				else if (f32_isSignalingNaN(fp_regs[instr.rs2()]))
+					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
+				else
+					fp_regs[instr.rd()] = f32_le_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()])
+										  ? fp_regs[instr.rs1()] : fp_regs[instr.rs2()];
+			}
+
+			fp_finish_instr();
+        } break;
+
+		case Opcode::FMAX_S: {
+			fp_prepare_instr();
+
+			if (f32_isSignalingNaN(fp_regs[instr.rs1()]) && f32_isSignalingNaN(fp_regs[instr.rs2()]))
+				fp_regs[instr.rd()] = float32_t{defaultNaNF32UI};
+			else {
+				if (f32_isSignalingNaN(fp_regs[instr.rs1()]))
+					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
+				else if (f32_isSignalingNaN(fp_regs[instr.rs2()]))
+					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
+				else
+					fp_regs[instr.rd()] = f32_le_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()])
+										  ? fp_regs[instr.rs2()] : fp_regs[instr.rs1()];
+			}
+
+			fp_finish_instr();
+		} break;
+
+        case Opcode::FMADD_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_mulAdd(fp_regs[instr.rs1()], fp_regs[instr.rs2()], fp_regs[instr.rs3()]);
+			fp_finish_instr();
+        } break;
+
+		case Opcode::FMSUB_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_mulAdd(fp_regs[instr.rs1()], fp_regs[instr.rs2()], f32_neg(fp_regs[instr.rs3()]));
+			fp_finish_instr();
+		} break;
+
+        case Opcode::FNMADD_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_mulAdd(f32_neg(fp_regs[instr.rs1()]), fp_regs[instr.rs2()], f32_neg(fp_regs[instr.rs3()]));
+			fp_finish_instr();
+        } break;
+
+		case Opcode::FNMSUB_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = f32_mulAdd(f32_neg(fp_regs[instr.rs1()]), fp_regs[instr.rs2()], fp_regs[instr.rs3()]);
+			fp_finish_instr();
+		} break;
+
+        case Opcode::FCVT_W_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			regs[instr.rd()] = f32_to_i32(fp_regs[instr.rs1()], softfloat_roundingMode, true);
+			fp_finish_instr();
+        } break;
+
+		case Opcode::FCVT_WU_S: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			regs[instr.rd()] = f32_to_ui32(fp_regs[instr.rs1()], softfloat_roundingMode, true);
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FCVT_S_W: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = i32_to_f32(regs[instr.rs1()]);
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FCVT_S_WU: {
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs[instr.rd()] = ui32_to_f32(regs[instr.rs1()]);
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FSGNJ_S: {
+			fp_prepare_instr();
+			auto f1 = fp_regs[instr.rs1()];
+			auto f2 = fp_regs[instr.rs2()];
+			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) | (f2.v & F32_SIGN_BIT)};
+			fp_set_dirty();
+		} break;
+
+		case Opcode::FSGNJN_S: {
+			fp_prepare_instr();
+			auto f1 = fp_regs[instr.rs1()];
+			auto f2 = fp_regs[instr.rs2()];
+			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) | (~f2.v & F32_SIGN_BIT)};
+            fp_set_dirty();
+		} break;
+
+		case Opcode::FSGNJX_S: {
+			fp_prepare_instr();
+			auto f1 = fp_regs[instr.rs1()];
+			auto f2 = fp_regs[instr.rs2()];
+			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) ^ (f2.v & F32_SIGN_BIT)};
+            fp_set_dirty();
+		} break;
+
+		case Opcode::FMV_W_X: {
+			fp_prepare_instr();
+			fp_regs[instr.rd()] = float32_t{ (uint32_t)regs[instr.rs1()] };
+            fp_set_dirty();
+		} break;
+
+		case Opcode::FMV_X_W: {
+			fp_prepare_instr();
+			regs[instr.rd()] = fp_regs[instr.rs1()].v;
+		} break;
+
+        case Opcode::FEQ_S: {
+            fp_prepare_instr();
+            regs[instr.rd()] = f32_eq(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_update_exception_flags();
+        } break;
+
+        case Opcode::FLT_S: {
+            fp_prepare_instr();
+            regs[instr.rd()] = f32_lt(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_update_exception_flags();
+        } break;
+
+        case Opcode::FLE_S: {
+            fp_prepare_instr();
+            regs[instr.rd()] = f32_le(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_update_exception_flags();
+        } break;
+
+		case Opcode::FCLASS_S: {
+            fp_prepare_instr();
+            regs[instr.rd()] = f32_classify(fp_regs[instr.rs1()]);
+		} break;
+
+		// privileged instructions
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
@@ -737,6 +937,15 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
             if (csrs.mstatus.tvm)
                 RAISE_ILLEGAL_INSTRUCTION();
             break;
+
+        case FCSR_ADDR:
+            return read(csrs.fcsr, FCSR_MASK);
+
+        case FFLAGS_ADDR:
+            return csrs.fcsr.fflags;
+
+        case FRM_ADDR:
+            return csrs.fcsr.frm;
 	}
 
 	if (!csrs.is_valid_csr32_addr(addr))
@@ -812,6 +1021,18 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			write(csrs.mcountinhibit, MCOUNTINHIBIT_MASK);
 			break;
 
+        case FCSR_ADDR:
+            write(csrs.fcsr, FCSR_MASK);
+            break;
+
+        case FFLAGS_ADDR:
+            csrs.fcsr.fflags = value;
+            break;
+
+        case FRM_ADDR:
+            csrs.fcsr.frm = value;
+            break;
+
 	    default:
 			if (!csrs.is_valid_csr32_addr(addr))
 				RAISE_ILLEGAL_INSTRUCTION();
@@ -845,6 +1066,45 @@ void ISS::write_register(unsigned idx, uint32_t value) {
 
 uint32_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
+}
+
+
+
+void ISS::fp_finish_instr() {
+	fp_set_dirty();
+	fp_update_exception_flags();
+}
+
+void ISS::fp_prepare_instr() {
+	assert (softfloat_exceptionFlags == 0);
+	fp_require_not_off();
+}
+
+void ISS::fp_set_dirty() {
+	csrs.mstatus.sd = 1;
+	csrs.mstatus.fs = FS_DIRTY;
+}
+
+void ISS::fp_update_exception_flags() {
+	if (softfloat_exceptionFlags) {
+        fp_set_dirty();
+		csrs.fcsr.fflags |= softfloat_exceptionFlags;
+		softfloat_exceptionFlags = 0;
+	}
+}
+
+void ISS::fp_setup_rm() {
+	auto rm = instr.frm();
+	if (rm == FRM_DYN)
+		rm = csrs.fcsr.frm;
+	if (rm >= FRM_RMM)
+		RAISE_ILLEGAL_INSTRUCTION();
+	softfloat_roundingMode = rm;
+}
+
+void ISS::fp_require_not_off() {
+	if (csrs.mstatus.fs == FS_OFF)
+		RAISE_ILLEGAL_INSTRUCTION();
 }
 
 

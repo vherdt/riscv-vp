@@ -8,17 +8,6 @@
 #include "core_defs.h"
 
 
-// floating-point rounding modes
-constexpr unsigned FRM_RNE = 0b000;	// Round to Nearest, ties to Even
-constexpr unsigned FRM_RTZ = 0b001; // Round towards Zero
-constexpr unsigned FRM_RDN = 0b010; // Round Down (towards -inf)
-constexpr unsigned FRM_RUP = 0b011; // Round Down (towards +inf)
-constexpr unsigned FRM_RMM = 0b100; // Round to Nearest, ties to Max Magnitude
-constexpr unsigned FRM_DYN = 0b111; // In instruction’s rm field, selects dynamic rounding mode; In Rounding Mode register, Invalid
-
-constexpr uint32_t F_NAN = 0x7fc00000;
-
-
 namespace Opcode {
 // opcode masks used to decode an instruction
 enum Parts {
@@ -565,6 +554,10 @@ struct Instruction {
 		// cast to unsigned to avoid sign extension when shifting
 		return (BIT_RANGE((uint32_t)instr, 31, 27) >> 27);
 	}
+
+    inline uint32_t frm() {
+        return BIT_SLICE(instr, 14, 12);
+    }
 
 	inline uint32_t fence_succ() {
 		return BIT_SLICE(instr, 23, 20);

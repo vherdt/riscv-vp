@@ -811,7 +811,34 @@ void ISS::exec_step() {
 			});
 		} break;
 
+		// RV64 F/D extension
 
+	    case Opcode::FLW: {
+            uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+            trap_check_addr_alignment<4, true>(addr);
+            fp_regs[instr.rd()] = mem->load_uword(addr);
+        } break;
+
+        case Opcode::FLD: {
+            uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+            trap_check_addr_alignment<8, true>(addr);
+            fp_regs[instr.rd()] = mem->load_double(addr);
+        } break;
+
+        case Opcode::FSW: {
+            uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+            trap_check_addr_alignment<4, false>(addr);
+            mem->store_word(addr, fp_regs[instr.rs2()]);
+        } break;
+
+        case Opcode::FSD: {
+            uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+            trap_check_addr_alignment<8, false>(addr);
+            mem->store_double(addr, fp_regs[instr.rs2()]);
+        } break;
+
+
+		// privileged instructions
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
@@ -906,6 +933,7 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:	// not implemented
 			return 0;
 
+			//TODO: SD should be updated as SD=XS|FS and SD should be read-only -> update mask
 		case MSTATUS_ADDR: return read(csrs.mstatus, MSTATUS_READ_MASK);
 		case SSTATUS_ADDR: return read(csrs.mstatus, SSTATUS_READ_MASK);
 		case USTATUS_ADDR: return read(csrs.mstatus, USTATUS_MASK);
