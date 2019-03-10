@@ -11,6 +11,11 @@ using namespace rv32;
 #define RAISE_ILLEGAL_INSTRUCTION()  \
     raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
+#define RD instr.rd()
+#define RS1 instr.rs1()
+#define RS2 instr.rs2()
+#define RS3 instr.rs3()
+
 
 const char *regnames[] = {
     "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
@@ -618,63 +623,63 @@ void ISS::exec_step() {
         case Opcode::FLW: {
             uint32_t addr = regs[instr.rs1()] + instr.I_imm();
             trap_check_addr_alignment<4, true>(addr);
-            fp_regs[instr.rd()] = float32_t{ (uint32_t)mem->load_word(addr) };
+            fp_regs.write(RD, float32_t{ (uint32_t)mem->load_word(addr) });
         } break;
 
         case Opcode::FSW: {
             uint32_t addr = regs[instr.rs1()] + instr.S_imm();
             trap_check_addr_alignment<4, false>(addr);
-            mem->store_word(addr, fp_regs[instr.rs2()].v);
+            mem->store_word(addr, fp_regs.f32(RS2).v);
         } break;
 
         case Opcode::FADD_S: {
 			fp_prepare_instr();
         	fp_setup_rm();
-			fp_regs[instr.rd()] = f32_add(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+			fp_regs.write(RD, f32_add(fp_regs.f32(RS1), fp_regs.f32(RS2)));
 			fp_finish_instr();
         } break;
 
 		case Opcode::FSUB_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_sub(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_regs.write(RD, f32_sub(fp_regs.f32(RS1), fp_regs.f32(RS2)));
 			fp_finish_instr();
 		} break;
 
 		case Opcode::FMUL_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_mul(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_regs.write(RD, f32_mul(fp_regs.f32(RS1), fp_regs.f32(RS2)));
 			fp_finish_instr();
 		} break;
 
 		case Opcode::FDIV_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_div(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            fp_regs.write(RD, f32_div(fp_regs.f32(RS1), fp_regs.f32(RS2)));
 			fp_finish_instr();
 		} break;
 
         case Opcode::FSQRT_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_sqrt(fp_regs[instr.rs1()]);
+			fp_regs.write(RD, f32_sqrt(fp_regs.f32(RS1)));
 			fp_finish_instr();
         } break;
 
         case Opcode::FMIN_S: {
 			fp_prepare_instr();
 
-			bool rs1_smaller = f32_lt_quiet(fp_regs[instr.rs1()], fp_regs[instr.rs2()]) ||
-							   (f32_eq(fp_regs[instr.rs1()], fp_regs[instr.rs2()]) && f32_isNegative(fp_regs[instr.rs1()]));
+			bool rs1_smaller = f32_lt_quiet(fp_regs.f32(RS1), fp_regs.f32(RS2)) ||
+							   (f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2)) && f32_isNegative(fp_regs.f32(RS1)));
 
-			if (f32_isNaN(fp_regs[instr.rs1()]) && f32_isNaN(fp_regs[instr.rs2()])) {
-				fp_regs[instr.rd()] = f32_defaultNaN;
+			if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
+				fp_regs.write(RD, f32_defaultNaN);
 			} else {
 				if (rs1_smaller)
-					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
+					fp_regs.write(RD, fp_regs.f32(RS1));
 				else
-					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
+                    fp_regs.write(RD, fp_regs.f32(RS2));
 			}
 
 			fp_finish_instr();
@@ -683,17 +688,17 @@ void ISS::exec_step() {
 		case Opcode::FMAX_S: {
 			fp_prepare_instr();
 
-			bool rs1_greater = f32_lt_quiet(fp_regs[instr.rs2()], fp_regs[instr.rs1()]) ||
-								(f32_eq(fp_regs[instr.rs2()], fp_regs[instr.rs1()]) && f32_isNegative(fp_regs[instr.rs2()]));
+            bool rs1_greater = f32_lt_quiet(fp_regs.f32(RS2), fp_regs.f32(RS1)) ||
+                               (f32_eq(fp_regs.f32(RS2), fp_regs.f32(RS1)) && f32_isNegative(fp_regs.f32(RS2)));
 
-			if (f32_isNaN(fp_regs[instr.rs1()]) && f32_isNaN(fp_regs[instr.rs2()])) {
-                fp_regs[instr.rd()] = f32_defaultNaN;
+            if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
+                fp_regs.write(RD, f32_defaultNaN);
             } else {
-				if (rs1_greater)
-					fp_regs[instr.rd()] = fp_regs[instr.rs1()];
-				else
-					fp_regs[instr.rd()] = fp_regs[instr.rs2()];
-			}
+                if (rs1_greater)
+                    fp_regs.write(RD, fp_regs.f32(RS1));
+                else
+                    fp_regs.write(RD, fp_regs.f32(RS2));
+            }
 
 			fp_finish_instr();
 		} break;
@@ -701,115 +706,115 @@ void ISS::exec_step() {
         case Opcode::FMADD_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_mulAdd(fp_regs[instr.rs1()], fp_regs[instr.rs2()], fp_regs[instr.rs3()]);
+			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), fp_regs.f32(RS3)));
 			fp_finish_instr();
         } break;
 
 		case Opcode::FMSUB_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_mulAdd(fp_regs[instr.rs1()], fp_regs[instr.rs2()], f32_neg(fp_regs[instr.rs3()]));
+			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
 			fp_finish_instr();
 		} break;
 
         case Opcode::FNMADD_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_mulAdd(f32_neg(fp_regs[instr.rs1()]), fp_regs[instr.rs2()], f32_neg(fp_regs[instr.rs3()]));
+			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
 			fp_finish_instr();
         } break;
 
 		case Opcode::FNMSUB_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = f32_mulAdd(f32_neg(fp_regs[instr.rs1()]), fp_regs[instr.rs2()], fp_regs[instr.rs3()]);
+			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), fp_regs.f32(RS3)));
 			fp_finish_instr();
 		} break;
 
         case Opcode::FCVT_W_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			regs[instr.rd()] = f32_to_i32(fp_regs[instr.rs1()], softfloat_roundingMode, true);
+			regs[RD] = f32_to_i32(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
         } break;
 
 		case Opcode::FCVT_WU_S: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			regs[instr.rd()] = f32_to_ui32(fp_regs[instr.rs1()], softfloat_roundingMode, true);
+			regs[RD] = f32_to_ui32(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
 		} break;
 
 		case Opcode::FCVT_S_W: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = i32_to_f32(regs[instr.rs1()]);
+			fp_regs.write(RD, i32_to_f32(regs[RS1]));
 			fp_finish_instr();
 		} break;
 
 		case Opcode::FCVT_S_WU: {
 			fp_prepare_instr();
 			fp_setup_rm();
-			fp_regs[instr.rd()] = ui32_to_f32(regs[instr.rs1()]);
+			fp_regs.write(RD, ui32_to_f32(regs[RS1]));
 			fp_finish_instr();
 		} break;
 
 		case Opcode::FSGNJ_S: {
 			fp_prepare_instr();
-			auto f1 = fp_regs[instr.rs1()];
-			auto f2 = fp_regs[instr.rs2()];
-			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) | (f2.v & F32_SIGN_BIT)};
+			auto f1 = fp_regs.f32(RS1);
+			auto f2 = fp_regs.f32(RS2);
+			fp_regs.write(RD, float32_t{(f1.v & ~F32_SIGN_BIT) | (f2.v & F32_SIGN_BIT)});
 			fp_set_dirty();
 		} break;
 
 		case Opcode::FSGNJN_S: {
 			fp_prepare_instr();
-			auto f1 = fp_regs[instr.rs1()];
-			auto f2 = fp_regs[instr.rs2()];
-			fp_regs[instr.rd()] = float32_t{(f1.v & ~F32_SIGN_BIT) | (~f2.v & F32_SIGN_BIT)};
+            auto f1 = fp_regs.f32(RS1);
+            auto f2 = fp_regs.f32(RS2);
+			fp_regs.write(RD, float32_t{(f1.v & ~F32_SIGN_BIT) | (~f2.v & F32_SIGN_BIT)});
             fp_set_dirty();
 		} break;
 
 		case Opcode::FSGNJX_S: {
 			fp_prepare_instr();
-			auto f1 = fp_regs[instr.rs1()];
-			auto f2 = fp_regs[instr.rs2()];
-			fp_regs[instr.rd()] = float32_t{f1.v ^ (f2.v & F32_SIGN_BIT)};
+            auto f1 = fp_regs.f32(RS1);
+            auto f2 = fp_regs.f32(RS2);
+			fp_regs.write(RD, float32_t{f1.v ^ (f2.v & F32_SIGN_BIT)});
             fp_set_dirty();
 		} break;
 
 		case Opcode::FMV_W_X: {
 			fp_prepare_instr();
-			fp_regs[instr.rd()] = float32_t{ (uint32_t)regs[instr.rs1()] };
+			fp_regs.write(RD, float32_t{ (uint32_t)regs[RS1] });
             fp_set_dirty();
 		} break;
 
 		case Opcode::FMV_X_W: {
 			fp_prepare_instr();
-			regs[instr.rd()] = fp_regs[instr.rs1()].v;
+			regs[RD] = fp_regs.f32(RS1).v;
 		} break;
 
         case Opcode::FEQ_S: {
             fp_prepare_instr();
-            regs[instr.rd()] = f32_eq(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            regs[RD] = f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2));
             fp_update_exception_flags();
         } break;
 
         case Opcode::FLT_S: {
             fp_prepare_instr();
-            regs[instr.rd()] = f32_lt(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            regs[RD] = f32_lt(fp_regs.f32(RS1), fp_regs.f32(RS2));
             fp_update_exception_flags();
         } break;
 
         case Opcode::FLE_S: {
             fp_prepare_instr();
-            regs[instr.rd()] = f32_le(fp_regs[instr.rs1()], fp_regs[instr.rs2()]);
+            regs[RD] = f32_le(fp_regs.f32(RS1), fp_regs.f32(RS2));
             fp_update_exception_flags();
         } break;
 
 		case Opcode::FCLASS_S: {
             fp_prepare_instr();
-            regs[instr.rd()] = f32_classify(fp_regs[instr.rs1()]);
+            regs[RD] = f32_classify(fp_regs.f32(RS1));
 		} break;
 
 		// privileged instructions

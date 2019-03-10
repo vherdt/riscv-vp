@@ -161,7 +161,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	data_memory_if *mem = nullptr;
 	syscall_emulator_if *sys = nullptr;	// optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
-	std::array<float32_t, 32> fp_regs{};
+	FpRegs fp_regs;
 	uint32_t pc = 0;
 	uint32_t last_pc = 0;
 	bool trace = false;

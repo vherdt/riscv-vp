@@ -44,3 +44,41 @@ inline bool f64_isNaN(float64_t x) {
     // similar to f32 NaN
     return ((~x.v & 0x7FF0000000000000) == 0) && (x.v & 0x000FFFFFFFFFFFFF);
 }
+
+
+struct FpRegs {
+private:
+    std::array<float64_t, 32> regs;
+
+    bool is_boxed_f32(float64_t x) {
+        return (x.v >> 32) == (uint32_t)-1;
+    }
+
+    float32_t unbox_f32(float64_t x) {
+        return float32_t{ (uint32_t)x.v };
+    }
+
+    float64_t box_f32(float32_t x) {
+        return float64_t{ (uint64_t)x.v | 0xFFFFFFFF00000000 };
+    }
+
+public:
+    void write(unsigned idx, float32_t x) {
+        write(idx, box_f32(x));
+    }
+
+    void write(unsigned idx, float64_t x) {
+        regs[idx] = x;
+    }
+
+    float32_t f32(unsigned idx) {
+        if (is_boxed_f32(regs[idx]))
+            return unbox_f32(regs[idx]);
+        else
+            return f32_defaultNaN;
+    }
+
+    float64_t f64(unsigned idx) {
+        return regs[idx];
+    }
+};
