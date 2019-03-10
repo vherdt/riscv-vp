@@ -5,7 +5,7 @@ add_library(rv64
 		syscall.cpp
         ${HEADERS})
 
-target_link_libraries(rv64 core-common)
+target_link_libraries(rv64 core-common ${SoftFloat_LIBRARIES})
 
 
 if(COLOR_THEME STREQUAL "LIGHT")

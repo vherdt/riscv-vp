@@ -4,12 +4,13 @@
 #include "core/common/clint_if.h"
 #include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
-#include "syscall_if.h"
-#include "mem_if.h"
-#include "csr.h"
 #include "core/common/instr.h"
 #include "core/common/trap.h"
 #include "core/common/core_defs.h"
+#include "syscall_if.h"
+#include "mem_if.h"
+#include "csr.h"
+#include "fp.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -164,7 +165,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     data_memory_if *mem = nullptr;
     syscall_emulator_if *sys = nullptr;    // optional, if provided, the iss will intercept and handle syscalls directly
     RegFile regs;
-    std::array<uint64_t, 32> fp_regs;
+    FpRegs fp_regs;
     uint64_t pc = 0;
     uint64_t last_pc = 0;
     bool trace = false;
@@ -225,6 +226,13 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         mem->atomic_unlock();
     }
 
+
+    void fp_prepare_instr();
+    void fp_finish_instr();
+    void fp_set_dirty();
+    void fp_update_exception_flags();
+    void fp_setup_rm();
+    void fp_require_not_off();
 
     uint64_t get_csr_value(uint64_t addr);
 

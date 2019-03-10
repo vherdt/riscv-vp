@@ -791,7 +791,7 @@ void ISS::exec_step() {
 
 		case Opcode::FMV_X_W: {
 			fp_prepare_instr();
-			regs[RD] = fp_regs.f32(RS1).v;
+			regs[RD] = fp_regs.u32(RS1);
 		} break;
 
         case Opcode::FEQ_S: {

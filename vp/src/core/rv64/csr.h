@@ -12,6 +12,12 @@
 
 namespace rv64 {
 
+constexpr unsigned FS_OFF = 0b00;
+constexpr unsigned FS_INITIAL = 0b01;
+constexpr unsigned FS_CLEAN = 0b10;
+constexpr unsigned FS_DIRTY = 0b11;
+
+
 typedef uint32_t PrivilegeLevel;
 
 constexpr uint32_t MachineMode = 0b11;
@@ -275,19 +281,17 @@ struct csr_fcsr {
 	union {
 		uint64_t reg = 0;
 		struct {
-			union {
-				struct {
-					unsigned NX : 1; // invalid operation
-					unsigned UF : 1; // divide by zero
-					unsigned OF : 1; // overflow
-					unsigned DZ : 1; // underlow
-					unsigned NV : 1; // inexact
-				};
-				unsigned fflags : 5;
-			};
+			unsigned fflags : 5;
 			unsigned frm : 3;
 			unsigned reserved : 24;
 			unsigned _ : 32;
+		};
+		struct {
+			unsigned NX : 1; // invalid operation
+			unsigned UF : 1; // divide by zero
+			unsigned OF : 1; // overflow
+			unsigned DZ : 1; // underlow
+			unsigned NV : 1; // inexact
 		};
 	};
 };

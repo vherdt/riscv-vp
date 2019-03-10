@@ -24,12 +24,16 @@ inline bool f32_isNegative(float32_t x) {
     return x.v & F32_SIGN_BIT;
 }
 
-inline bool f32_isPositive(float32_t x) {
-    return !f32_isNegative(x);
+inline bool f64_isNegative(float64_t x) {
+    return x.v & F64_SIGN_BIT;
 }
 
 inline float32_t f32_neg(float32_t x) {
     return float32_t{x.v ^ F32_SIGN_BIT};
+}
+
+inline float64_t f64_neg(float64_t x) {
+    return float64_t{x.v ^ F64_SIGN_BIT};
 }
 
 inline bool f32_isNaN(float32_t x) {
@@ -69,6 +73,11 @@ public:
 
     void write(unsigned idx, float64_t x) {
         regs[idx] = x;
+    }
+
+    uint32_t u32(unsigned idx) {
+        // access raw data, e.g. to store to memory
+        return regs[idx].v;
     }
 
     float32_t f32(unsigned idx) {
