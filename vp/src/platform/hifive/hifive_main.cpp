@@ -35,6 +35,8 @@
 #define INT_PWM1_BASE 44
 #define INT_PWM2_BASE 48
 
+using namespace rv32;
+
 struct Options {
 	typedef unsigned int addr_t;
 
@@ -147,7 +149,7 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<1, 13> bus("SimpleBus");
+	SimpleBus<2, 13> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
@@ -161,6 +163,7 @@ int sc_main(int argc, char **argv) {
 	UART uart0("UART0");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
+    DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 
 	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.size);
@@ -192,8 +195,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
-	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(),
-	          opt.dram_end_addr - 4);  // -4 to not overlap with the next region
+	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.dram_end_addr));
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
@@ -202,6 +204,7 @@ int sc_main(int argc, char **argv) {
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
+	dbg_if.isock.bind(bus.tsocks[1]);
 	bus.isocks[0].bind(flash.tsock);
 	bus.isocks[1].bind(dram.tsock);
 	bus.isocks[2].bind(plic.tsock);
@@ -223,8 +226,7 @@ int sc_main(int argc, char **argv) {
 
 	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
-		debug_memory_mapping dmm({dram.data, opt.dram_start_addr, dram.size});
-		new DebugCoreRunner(core, dmm);
+		new DebugCoreRunner<ISS, RV32>(core, &dbg_if);
 	} else {
 		new DirectCoreRunner(core);
 	}

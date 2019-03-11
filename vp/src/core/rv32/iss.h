@@ -4,11 +4,11 @@
 #include "core/common/clint_if.h"
 #include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
+#include "core/common/trap.h"
+#include "core/common/instr.h"
 #include "syscall_if.h"
 #include "mem_if.h"
 #include "csr.h"
-#include "instr.h"
-#include "trap.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -26,6 +26,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
+namespace rv32 {
 
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;
@@ -153,12 +154,6 @@ struct PendingInterrupts {
 };
 
 
-enum class CoreExecStatus {
-	Runnable,
-	HitBreakpoint,
-	Terminated,
-};
-
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
@@ -201,17 +196,17 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
 	          uint32_t entrypoint, uint32_t sp);
 
-	virtual void trigger_external_interrupt() override;
+	void trigger_external_interrupt() override;
 
-	virtual void clear_external_interrupt() override;
+	void clear_external_interrupt() override;
 
-	virtual void trigger_timer_interrupt(bool status) override;
+	void trigger_timer_interrupt(bool status) override;
 
-    virtual void trigger_software_interrupt(bool status) override;
+    void trigger_software_interrupt(bool status) override;
 
-	virtual void sys_exit() override;
-	virtual uint32_t read_register(unsigned idx) override;
-	virtual void write_register(unsigned idx, uint32_t value) override;
+	void sys_exit() override;
+	uint32_t read_register(unsigned idx) override;
+	void write_register(unsigned idx, uint32_t value) override;
 
 	uint32_t get_hart_id();
 
@@ -249,16 +244,16 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
         }
     }
 
-    template <unsigned Alignment>
+    template <unsigned Alignment, bool isLoad>
     inline void trap_check_addr_alignment(uint32_t addr) {
 		if (unlikely(addr % Alignment)) {
-			raise_trap(EXC_INSTR_ADDR_MISALIGNED, addr);
+			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
 		}
     }
 
     inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
         uint32_t addr = regs[instr.rs1()];
-        trap_check_addr_alignment<4>(addr);
+        trap_check_addr_alignment<4, false>(addr);
         uint32_t data;
         try {
             data = mem->atomic_load_word(addr);
@@ -295,6 +290,10 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     bool has_pending_enabled_interrupts() {
         return compute_pending_interrupts().target_mode != NoneMode;
     }
+
+	bool has_local_pending_enabled_interrupts() {
+		return csrs.mie.reg & csrs.mip.reg;
+	}
 
 	void return_from_trap_handler(PrivilegeLevel return_mode);
 
@@ -337,3 +336,5 @@ struct DirectCoreRunner : public sc_core::sc_module {
         sc_core::sc_stop();
 	}
 };
+
+} // namespace rv32

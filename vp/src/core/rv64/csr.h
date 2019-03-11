@@ -9,7 +9,8 @@
 #include "util/common.h"
 #include "core/common/trap.h"
 
-namespace rv32 {
+
+namespace rv64 {
 
 typedef uint32_t PrivilegeLevel;
 
@@ -23,8 +24,8 @@ inline bool is_valid_privilege_level(PrivilegeLevel mode) {
 }
 
 
-struct csr_32 {
-	uint32_t reg = 0;
+struct csr_64 {
+	uint64_t reg = 0;
 };
 
 
@@ -35,10 +36,10 @@ struct csr_misa {
 	}
 
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned extensions : 26;
-			unsigned wiri : 4;
+			unsigned long wiri : 36;
 			unsigned mxl : 2;
 		};
 	};
@@ -67,26 +68,32 @@ struct csr_misa {
 
 	void init() {
 		extensions = I | M | A | C | N | U | S;  // IMAC + NUS
-		wiri = 0;
-		mxl = 1;  // RV32
+		mxl = 2;  // RV64
 	}
 };
 
 
 struct csr_mvendorid {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned offset : 7;
 			unsigned bank : 25;
+			unsigned _unused: 32;
 		};
 	};
 };
 
 
 struct csr_mstatus {
+	csr_mstatus() {
+		// hardwire to 64 bit mode for now
+		sxl = 2;
+		uxl = 2;
+	}
+
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned uie : 1;
 			unsigned sie : 1;
@@ -107,7 +114,10 @@ struct csr_mstatus {
 			unsigned tvm : 1;
 			unsigned tw : 1;
 			unsigned tsr : 1;
-			unsigned wpri4 : 8;
+			unsigned wpri4 : 9;
+			unsigned uxl : 2;
+			unsigned sxl : 2;
+			unsigned wpri5 : 27;
 			unsigned sd : 1;
 		};
 	};
@@ -115,10 +125,10 @@ struct csr_mstatus {
 
 struct csr_mtvec {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned mode : 2;   // WARL
-			unsigned base : 30;  // WARL
+			unsigned long base : 62;  // WARL
 		};
 	};
 
@@ -140,7 +150,7 @@ struct csr_mtvec {
 
 struct csr_mie {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned usie : 1;
 			unsigned ssie : 1;
@@ -157,14 +167,14 @@ struct csr_mie {
 			unsigned wpri3 : 1;
 			unsigned meie : 1;
 
-			unsigned wpri4 : 20;
+			unsigned long wpri4 : 52;
 		};
 	};
 };
 
 struct csr_mip {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned usip : 1;
 			unsigned ssip : 1;
@@ -181,22 +191,22 @@ struct csr_mip {
 			unsigned wiri3 : 1;
 			unsigned meip : 1;
 
-			unsigned wiri4 : 20;
+			unsigned long wiri4 : 52;
 		};
 	};
 };
 
 struct csr_mepc {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 	};
 };
 
 struct csr_mcause {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
-			unsigned exception_code : 31;  // WLRL
+			unsigned long exception_code : 63;  // WLRL
 			unsigned interrupt : 1;
 		};
 	};
@@ -204,24 +214,24 @@ struct csr_mcause {
 
 struct csr_mcounteren {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned CY : 1;
 			unsigned TM : 1;
 			unsigned IR : 1;
-			unsigned reserved : 29;
+			unsigned long reserved : 61;
 		};
 	};
 };
 
 struct csr_mcountinhibit {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
 		struct {
 			unsigned CY : 1;
 			unsigned zero : 1;
 			unsigned IR : 1;
-			unsigned reserved : 29;
+			unsigned long reserved : 61;
 		};
 	};
 };
@@ -229,48 +239,34 @@ struct csr_mcountinhibit {
 
 struct csr_pmpcfg {
 	union {
-		uint32_t reg = 0;
+		uint64_t reg = 0;
+	};
+};
+
+struct csr_pmpaddr {
+	union {
+		uint64_t reg = 0;
 		struct {
-			unsigned UNIMPLEMENTED : 24;  // WARL
-			unsigned L0 : 1;              // WARL
-			unsigned _wiri0 : 2;          // WIRI
-			unsigned A0 : 2;              // WARL
-			unsigned X0 : 1;              // WARL
-			unsigned W0 : 1;              // WARL
-			unsigned R0 : 1;              // WARL
+			unsigned long address : 54;
+			unsigned zero : 10;
 		};
 	};
+
+	unsigned get_address() {
+		return address << 2;
+	}
 };
 
 
 struct csr_satp {
 	union {
-		uint32_t reg = 0;
-		struct {
-			unsigned mode : 1;  // WARL
-			unsigned asid : 9;  // WARL
-			unsigned ppn : 22;  // WARL
-		};
-	};
-};
-
-
-/*
- * Add new subclasses with specific consistency check (e.g. by adding virtual
- * write_low, write_high functions) if necessary.
- */
-struct csr_64 {
-	union {
 		uint64_t reg = 0;
 		struct {
-			int32_t low;
-			int32_t high;
+			unsigned mode : 4;  // WARL
+			unsigned asid : 16;  // WARL
+			unsigned long ppn : 44;  // WARL
 		};
 	};
-
-	void increment() {
-		++reg;
-	}
 };
 
 
@@ -281,46 +277,44 @@ inline bool is_bitset(T &csr, unsigned bitpos) {
 }
 
 
-constexpr uint32_t MIE_MASK = 0b101110111011;
-constexpr uint32_t SIE_MASK = 0b001100110011;
-constexpr uint32_t UIE_MASK = 0b000100010001;
+constexpr uint64_t MIE_MASK = 0b101110111011;
+constexpr uint64_t SIE_MASK = 0b001100110011;
+constexpr uint64_t UIE_MASK = 0b000100010001;
 
-constexpr uint32_t MIP_WRITE_MASK = 0b001100110011;
-constexpr uint32_t MIP_READ_MASK = MIE_MASK;
-constexpr uint32_t SIP_MASK = 0b11;
-constexpr uint32_t UIP_MASK = 0b1;
+constexpr uint64_t MIP_WRITE_MASK = 0b001100110011;
+constexpr uint64_t MIP_READ_MASK = MIE_MASK;
+constexpr uint64_t SIP_MASK = 0b11;
+constexpr uint64_t UIP_MASK = 0b1;
 
-constexpr uint32_t MEDELEG_MASK = 0b1011101111111111;
-constexpr uint32_t MIDELEG_MASK = MIE_MASK;
+constexpr uint64_t MEDELEG_MASK = 0b1011101111111111;
+constexpr uint64_t MIDELEG_MASK = MIE_MASK;
 
-constexpr uint32_t MTVEC_MASK = ~2;
+constexpr uint64_t MTVEC_MASK = ~2;
 
-constexpr uint32_t MCOUNTEREN_MASK = 0b111;
-constexpr uint32_t MCOUNTINHIBIT_MASK = 0b101;
+constexpr uint64_t MCOUNTEREN_MASK = 0b111;
+constexpr uint64_t MCOUNTINHIBIT_MASK = 0b101;
 
-constexpr uint32_t SEDELEG_MASK = 0b1011000111111111;
-constexpr uint32_t SIDELEG_MASK = MIDELEG_MASK;
+constexpr uint64_t SEDELEG_MASK = 0b1011000111111111;
+constexpr uint64_t SIDELEG_MASK = MIDELEG_MASK;
 
-constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111100110111011;
-constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110000100110011;
-constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
+constexpr uint64_t MSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000011111111111100110111011;
+constexpr uint64_t MSTATUS_READ_MASK = 0b1000000000000000000000000000111100000000011111111111100110111011;
+constexpr uint64_t SSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000000011011110000100110011;
+constexpr uint64_t SSTATUS_READ_MASK = 0b1000000000000000000000000000001100000000000011011110000100110011;
+constexpr uint64_t USTATUS_MASK = 0b0000000000000000000000000000000000000000000000000000000000010001;
+
+constexpr uint64_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
 
 
 // 64 bit timer csrs
 constexpr unsigned CYCLE_ADDR = 0xC00;
-constexpr unsigned CYCLEH_ADDR = 0xC80;
 constexpr unsigned TIME_ADDR = 0xC01;
-constexpr unsigned TIMEH_ADDR = 0xC81;
 constexpr unsigned INSTRET_ADDR = 0xC02;
-constexpr unsigned INSTRETH_ADDR = 0xC82;
 
 // shadows for the above CSRs
 constexpr unsigned MCYCLE_ADDR = 0xB00;
-constexpr unsigned MCYCLEH_ADDR = 0xB80;
 constexpr unsigned MTIME_ADDR = 0xB01;
-constexpr unsigned MTIMEH_ADDR = 0xB81;
 constexpr unsigned MINSTRET_ADDR = 0xB02;
-constexpr unsigned MINSTRETH_ADDR = 0xB82;
 
 // 32 bit machine CSRs
 constexpr unsigned MVENDORID_ADDR = 0xF11;
@@ -549,65 +543,59 @@ struct csr_table {
 	csr_64 instret;
 
 	csr_mvendorid mvendorid;
-	csr_32 marchid;
-	csr_32 mimpid;
-	csr_32 mhartid;
+	csr_64 marchid;
+	csr_64 mimpid;
+	csr_64 mhartid;
 
 	csr_mstatus mstatus;
 	csr_misa misa;
-	csr_32 medeleg;
-	csr_32 mideleg;
+	csr_64 medeleg;
+	csr_64 mideleg;
 	csr_mie mie;
 	csr_mtvec mtvec;
 	csr_mcounteren mcounteren;
 	csr_mcountinhibit mcountinhibit;
 
-	csr_32 mscratch;
+	csr_64 mscratch;
 	csr_mepc mepc;
 	csr_mcause mcause;
-	csr_32 mtval;
+	csr_64 mtval;
 	csr_mip mip;
 
 	// pmp configuration
-	std::array<csr_32, 16> pmpaddr;
-	std::array<csr_pmpcfg, 4> pmpcfg;
+	std::array<csr_pmpaddr, 16> pmpaddr;
+	std::array<csr_pmpcfg, 2> pmpcfg;
 
 	// supervisor csrs (please note: some are already covered by the machine mode csrs, i.e. sstatus, sie and sip, and some are required but have the same fields, hence the machine mode classes are used)
-	csr_32 sedeleg;
-	csr_32 sideleg;
+	csr_64 sedeleg;
+	csr_64 sideleg;
 	csr_mtvec stvec;
 	csr_mcounteren scounteren;
-	csr_32 sscratch;
+	csr_64 sscratch;
 	csr_mepc sepc;
 	csr_mcause scause;
-	csr_32 stval;
+	csr_64 stval;
 	csr_satp satp;
 
 	// user csrs (see above comment)
 	csr_mtvec utvec;
-	csr_32 uscratch;
+	csr_64 uscratch;
 	csr_mepc uepc;
 	csr_mcause ucause;
-	csr_32 utval;
+	csr_64 utval;
 
 
-	std::unordered_map<unsigned, uint32_t *> register_mapping;
+	std::unordered_map<unsigned, uint64_t *> register_mapping;
 
 	csr_table() {
 		using namespace csr;
 
-		register_mapping[CYCLE_ADDR] = (uint32_t *) (&cycle.reg);
-		register_mapping[CYCLEH_ADDR] = (uint32_t *) (&cycle.reg) + 1;
-		register_mapping[TIME_ADDR] = (uint32_t *) (&time.reg);
-		register_mapping[TIMEH_ADDR] = (uint32_t *) (&time.reg) + 1;
-		register_mapping[INSTRET_ADDR] = (uint32_t *) (&instret.reg);
-		register_mapping[INSTRETH_ADDR] = (uint32_t *) (&instret.reg) + 1;
-		register_mapping[MCYCLE_ADDR] = (uint32_t *) (&cycle.reg);
-		register_mapping[MCYCLEH_ADDR] = (uint32_t *) (&cycle.reg) + 1;
-		register_mapping[MTIME_ADDR] = (uint32_t *) (&time.reg);
-		register_mapping[MTIMEH_ADDR] = (uint32_t *) (&time.reg) + 1;
-		register_mapping[MINSTRET_ADDR] = (uint32_t *) (&instret.reg);
-		register_mapping[MINSTRETH_ADDR] = (uint32_t *) (&instret.reg) + 1;
+		register_mapping[CYCLE_ADDR] = &cycle.reg;
+		register_mapping[TIME_ADDR] = &time.reg;
+		register_mapping[INSTRET_ADDR] = &instret.reg;
+		register_mapping[MCYCLE_ADDR] = &cycle.reg;
+		register_mapping[MTIME_ADDR] = &time.reg;
+		register_mapping[MINSTRET_ADDR] = &instret.reg;
 
 		register_mapping[MVENDORID_ADDR] = &mvendorid.reg;
 		register_mapping[MARCHID_ADDR] = &marchid.reg;
@@ -652,17 +640,17 @@ struct csr_table {
 		register_mapping[UTVAL_ADDR] = &utval.reg;
 	}
 
-	bool is_valid_csr32_addr(unsigned addr) {
+	bool is_valid_csr64_addr(unsigned addr) {
 		return register_mapping.find(addr) != register_mapping.end();
 	}
 
-	void default_write32(unsigned addr, uint32_t value) {
+	void default_write64(unsigned addr, uint64_t value) {
 		auto it = register_mapping.find(addr);
 		ensure((it != register_mapping.end()) && "validate address before calling this function");
 		*it->second = value;
 	}
 
-	uint32_t default_read32(unsigned addr) {
+	uint64_t default_read64(unsigned addr) {
 		auto it = register_mapping.find(addr);
 		ensure((it != register_mapping.end()) && "validate address before calling this function");
 		return *it->second;
@@ -670,7 +658,7 @@ struct csr_table {
 };
 
 
-#define SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32    \
+#define SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64    \
     case HPMCOUNTER3_ADDR:    \
     case HPMCOUNTER4_ADDR:    \
     case HPMCOUNTER5_ADDR:    \
@@ -700,35 +688,6 @@ struct csr_table {
     case HPMCOUNTER29_ADDR:   \
     case HPMCOUNTER30_ADDR:   \
     case HPMCOUNTER31_ADDR:   \
-    case HPMCOUNTER3H_ADDR:   \
-    case HPMCOUNTER4H_ADDR:   \
-    case HPMCOUNTER5H_ADDR:   \
-    case HPMCOUNTER6H_ADDR:   \
-    case HPMCOUNTER7H_ADDR:   \
-    case HPMCOUNTER8H_ADDR:   \
-    case HPMCOUNTER9H_ADDR:   \
-    case HPMCOUNTER10H_ADDR:  \
-    case HPMCOUNTER11H_ADDR:  \
-    case HPMCOUNTER12H_ADDR:  \
-    case HPMCOUNTER13H_ADDR:  \
-    case HPMCOUNTER14H_ADDR:  \
-    case HPMCOUNTER15H_ADDR:  \
-    case HPMCOUNTER16H_ADDR:  \
-    case HPMCOUNTER17H_ADDR:  \
-    case HPMCOUNTER18H_ADDR:  \
-    case HPMCOUNTER19H_ADDR:  \
-    case HPMCOUNTER20H_ADDR:  \
-    case HPMCOUNTER21H_ADDR:  \
-    case HPMCOUNTER22H_ADDR:  \
-    case HPMCOUNTER23H_ADDR:  \
-    case HPMCOUNTER24H_ADDR:  \
-    case HPMCOUNTER25H_ADDR:  \
-    case HPMCOUNTER26H_ADDR:  \
-    case HPMCOUNTER27H_ADDR:  \
-    case HPMCOUNTER28H_ADDR:  \
-    case HPMCOUNTER29H_ADDR:  \
-    case HPMCOUNTER30H_ADDR:  \
-    case HPMCOUNTER31H_ADDR:  \
     case MHPMCOUNTER3_ADDR:   \
     case MHPMCOUNTER4_ADDR:   \
     case MHPMCOUNTER5_ADDR:   \
@@ -758,35 +717,6 @@ struct csr_table {
     case MHPMCOUNTER29_ADDR:  \
     case MHPMCOUNTER30_ADDR:  \
     case MHPMCOUNTER31_ADDR:  \
-    case MHPMCOUNTER3H_ADDR:  \
-    case MHPMCOUNTER4H_ADDR:  \
-    case MHPMCOUNTER5H_ADDR:  \
-    case MHPMCOUNTER6H_ADDR:  \
-    case MHPMCOUNTER7H_ADDR:  \
-    case MHPMCOUNTER8H_ADDR:  \
-    case MHPMCOUNTER9H_ADDR:  \
-    case MHPMCOUNTER10H_ADDR: \
-    case MHPMCOUNTER11H_ADDR: \
-    case MHPMCOUNTER12H_ADDR: \
-    case MHPMCOUNTER13H_ADDR: \
-    case MHPMCOUNTER14H_ADDR: \
-    case MHPMCOUNTER15H_ADDR: \
-    case MHPMCOUNTER16H_ADDR: \
-    case MHPMCOUNTER17H_ADDR: \
-    case MHPMCOUNTER18H_ADDR: \
-    case MHPMCOUNTER19H_ADDR: \
-    case MHPMCOUNTER20H_ADDR: \
-    case MHPMCOUNTER21H_ADDR: \
-    case MHPMCOUNTER22H_ADDR: \
-    case MHPMCOUNTER23H_ADDR: \
-    case MHPMCOUNTER24H_ADDR: \
-    case MHPMCOUNTER25H_ADDR: \
-    case MHPMCOUNTER26H_ADDR: \
-    case MHPMCOUNTER27H_ADDR: \
-    case MHPMCOUNTER28H_ADDR: \
-    case MHPMCOUNTER29H_ADDR: \
-    case MHPMCOUNTER30H_ADDR: \
-    case MHPMCOUNTER31H_ADDR: \
     case MHPMEVENT3_ADDR:     \
     case MHPMEVENT4_ADDR:     \
     case MHPMEVENT5_ADDR:     \
@@ -817,4 +747,4 @@ struct csr_table {
     case MHPMEVENT30_ADDR:    \
     case MHPMEVENT31_ADDR
 
-} // namespace rv32
+} // namespace rv64

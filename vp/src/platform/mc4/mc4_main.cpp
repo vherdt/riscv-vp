@@ -14,6 +14,8 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace rv32;
+
 struct Options {
     typedef unsigned int addr_t;
 
@@ -170,10 +172,10 @@ int sc_main(int argc, char **argv) {
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
 
-    core0.init(instr_mem_if[0], data_mem_if[0], &clint, loader.get_entrypoint(), opt.mem_end_addr - 4);
-    core1.init(instr_mem_if[1], data_mem_if[1], &clint, loader.get_entrypoint(), opt.mem_end_addr - 4);
-    core2.init(instr_mem_if[2], data_mem_if[2], &clint, loader.get_entrypoint(), opt.mem_end_addr - 4);
-    core3.init(instr_mem_if[3], data_mem_if[3], &clint, loader.get_entrypoint(), opt.mem_end_addr - 4);
+    core0.init(instr_mem_if[0], data_mem_if[0], &clint, loader.get_entrypoint(), opt.mem_end_addr - 3);
+    core1.init(instr_mem_if[1], data_mem_if[1], &clint, loader.get_entrypoint(), opt.mem_end_addr - 3);
+    core2.init(instr_mem_if[2], data_mem_if[2], &clint, loader.get_entrypoint(), opt.mem_end_addr - 3);
+    core3.init(instr_mem_if[3], data_mem_if[3], &clint, loader.get_entrypoint(), opt.mem_end_addr - 3);
 
     sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
     sys.register_core(&core0);

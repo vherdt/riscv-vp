@@ -19,6 +19,7 @@ struct SimpleMemory : public sc_core::sc_module {
 	SimpleMemory(sc_core::sc_module_name, uint32_t size) : data(new uint8_t[size]()), size(size) {
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
+		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);
 	}
 
 	void load_binary_file(const std::string &filename, unsigned addr) {
@@ -40,6 +41,11 @@ struct SimpleMemory : public sc_core::sc_module {
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		transport_dbg(trans);
+		delay += sc_core::sc_time(10, sc_core::SC_NS);
+	}
+
+	unsigned transport_dbg(tlm::tlm_generic_payload &trans) {
 		tlm::tlm_command cmd = trans.get_command();
 		unsigned addr = trans.get_address();
 		auto *ptr = trans.get_data_ptr();
@@ -55,7 +61,7 @@ struct SimpleMemory : public sc_core::sc_module {
 			sc_assert(false && "unsupported tlm command");
 		}
 
-		delay += sc_core::sc_time(10, sc_core::SC_NS);
+		return len;
 	}
 
 	bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi) {

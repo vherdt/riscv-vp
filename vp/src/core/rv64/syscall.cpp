@@ -11,26 +11,26 @@
 
 #include <boost/lexical_cast.hpp>
 
-using namespace rv32;
+using namespace rv64;
 
 // see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
 
-typedef int32_t rv32_long;
+typedef int64_t rv64_long;
 
-typedef int32_t rv32_time_t;
+typedef int64_t rv64_time_t;
 
-struct rv32_timeval {
-	rv32_time_t tv_sec;
-	rv32_time_t tv_usec;
+struct rv64_timeval {
+	rv64_time_t tv_sec;
+	rv64_time_t tv_usec;
 };
 
-struct rv32_timespec {
-	rv32_time_t tv_sec;
-	rv32_time_t tv_nsec;
+struct rv64_timespec {
+	rv64_time_t tv_sec;
+	rv64_time_t tv_nsec;
 };
 
-struct rv32_stat {
+struct rv64_stat {
 	uint64_t st_dev;
 	uint64_t st_ino;
 	uint32_t st_mode;
@@ -43,22 +43,22 @@ struct rv32_stat {
 	int32_t st_blksize;
 	int32_t __pad2;
 	int64_t st_blocks;
-	rv32_timespec st_atim;
-	rv32_timespec st_mtim;
-	rv32_timespec st_ctim;
+	rv64_timespec st_atim;
+	rv64_timespec st_mtim;
+	rv64_timespec st_ctim;
 	int32_t __glibc_reserved[2];
 };
 
-void _copy_timespec(rv32_timespec *dst, timespec *src) {
+void _copy_timespec(rv64_timespec *dst, timespec *src) {
 	dst->tv_sec = src->tv_sec;
 	dst->tv_nsec = src->tv_nsec;
 }
 
-int sys_fstat(SyscallHandler *sys, int fd, rv32_stat *s_addr) {
+int sys_fstat(SyscallHandler *sys, int fd, rv64_stat *s_addr) {
 	struct stat x;
 	int ans = fstat(fd, &x);
 	if (ans == 0) {
-		rv32_stat *p = (rv32_stat *)sys->guest_to_host_pointer(s_addr);
+		rv64_stat *p = (rv64_stat *)sys->guest_to_host_pointer(s_addr);
 		p->st_dev = x.st_dev;
 		p->st_ino = x.st_ino;
 		p->st_mode = x.st_mode;
@@ -76,7 +76,7 @@ int sys_fstat(SyscallHandler *sys, int fd, rv32_stat *s_addr) {
 	return ans;
 }
 
-int sys_gettimeofday(SyscallHandler *sys, rv32_timeval *tp, void *tzp) {
+int sys_gettimeofday(SyscallHandler *sys, rv64_timeval *tp, void *tzp) {
 	/*
 	 * timeval is using a struct with two long arguments.
 	 * The second argument tzp currently is not used by riscv code.
@@ -86,19 +86,19 @@ int sys_gettimeofday(SyscallHandler *sys, rv32_timeval *tp, void *tzp) {
 	struct timeval x;
 	int ans = gettimeofday(&x, 0);
 
-	rv32_timeval *p = (rv32_timeval *)sys->guest_to_host_pointer(tp);
-	p->tv_sec = x.tv_sec;
-	p->tv_usec = x.tv_usec;
+	rv64_long *p = (rv64_long *)sys->guest_to_host_pointer(tp);
+	p[0] = x.tv_sec;
+	p[1] = x.tv_usec;
 	return ans;
 }
 
-int sys_time(SyscallHandler *sys, rv32_time_t *tloc) {
+int sys_time(SyscallHandler *sys, rv64_time_t *tloc) {
 	time_t host_ans = time(0);
 
-	rv32_time_t guest_ans = boost::lexical_cast<rv32_time_t>(host_ans);
+	rv64_time_t guest_ans = boost::lexical_cast<rv64_time_t>(host_ans);
 
 	if (tloc != 0) {
-		rv32_time_t *p = (rv32_time_t *)sys->guest_to_host_pointer(tloc);
+		rv64_time_t *p = (rv64_time_t *)sys->guest_to_host_pointer(tloc);
 		*p = guest_ans;
 	}
 
@@ -165,7 +165,6 @@ int sys_write(SyscallHandler *sys, int fd, const void *buf, size_t count) {
 	return ans;
 }
 
-
 int sys_read(SyscallHandler *sys, int fd, void *buf, size_t count) {
 	char *p = (char *)sys->guest_to_host_pointer(buf);
 
@@ -202,22 +201,22 @@ int sys_close(int fd) {
 	}
 }
 
-//TODO: add support for additional syscalls if necessary
+// TODO: add support for additional syscalls if necessary
 int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
-	//NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
+	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 
 	switch (n) {
 		case SYS_fstat:
-			return sys_fstat(this, _a0, (rv32_stat *)_a1);
+			return sys_fstat(this, _a0, (rv64_stat *)_a1);
 
 		case SYS_gettimeofday:
-			return sys_gettimeofday(this, (struct rv32_timeval *)_a0, (void *)_a1);
+			return sys_gettimeofday(this, (rv64_timeval *)_a0, (void *)_a1);
 
 		case SYS_brk:
 			return sys_brk(this, (void *)_a0);
 
 		case SYS_time:
-			return sys_time(this, (rv32_time_t *)_a0);
+			return sys_time(this, (rv64_time_t *)_a0);
 
 		case SYS_write:
 			return sys_write(this, _a0, (void *)_a1, _a2);

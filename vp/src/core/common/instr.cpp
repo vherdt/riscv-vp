@@ -54,12 +54,21 @@ constexpr uint32_t ORI_MASK            = 0b00000000000000000111000001111111;
 constexpr uint32_t ORI_ENCODING        = 0b00000000000000000110000000010011;
 constexpr uint32_t ANDI_MASK           = 0b00000000000000000111000001111111;
 constexpr uint32_t ANDI_ENCODING       = 0b00000000000000000111000000010011;
-constexpr uint32_t SLLI_MASK           = 0b11111110000000000111000001111111;
+//-- RV64 special case (one less mask bit compared to RV32)
+constexpr uint32_t SLLI_MASK           = 0b11111100000000000111000001111111;
 constexpr uint32_t SLLI_ENCODING       = 0b00000000000000000001000000010011;
-constexpr uint32_t SRLI_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLI_MASK           = 0b11111100000000000111000001111111;
 constexpr uint32_t SRLI_ENCODING       = 0b00000000000000000101000000010011;
-constexpr uint32_t SRAI_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAI_MASK           = 0b11111100000000000111000001111111;
 constexpr uint32_t SRAI_ENCODING       = 0b01000000000000000101000000010011;
+//-- RV32 case
+constexpr uint32_t SLLI_32_MASK        = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLI_32_ENCODING    = 0b00000000000000000001000000010011;
+constexpr uint32_t SRLI_32_MASK        = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLI_32_ENCODING    = 0b00000000000000000101000000010011;
+constexpr uint32_t SRAI_32_MASK        = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAI_32_ENCODING    = 0b01000000000000000101000000010011;
+//--
 constexpr uint32_t ADD_MASK            = 0b11111110000000000111000001111111;
 constexpr uint32_t ADD_ENCODING        = 0b00000000000000000000000000110011;
 constexpr uint32_t SUB_MASK            = 0b11111110000000000111000001111111;
@@ -149,11 +158,72 @@ constexpr uint32_t WFI_ENCODING        = 0b00010000010100000000000001110011;
 constexpr uint32_t SFENCE_VMA_MASK     = 0b11111110000000000111111111111111;
 constexpr uint32_t SFENCE_VMA_ENCODING = 0b00010010000000000000000001110011;
 
+//-- RV64IMA Extension
+constexpr uint32_t LWU_MASK            = 0b00000000000000000111000001111111;
+constexpr uint32_t LWU_ENCODING        = 0b00000000000000000110000000000011;
+constexpr uint32_t LD_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t LD_ENCODING         = 0b00000000000000000011000000000011;
+constexpr uint32_t SD_MASK             = 0b00000000000000000111000001111111;
+constexpr uint32_t SD_ENCODING         = 0b00000000000000000011000000100011;
+constexpr uint32_t ADDIW_MASK          = 0b00000000000000000111000001111111;
+constexpr uint32_t ADDIW_ENCODING      = 0b00000000000000000000000000011011;
+constexpr uint32_t SLLIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLIW_ENCODING      = 0b00000000000000000001000000011011;
+constexpr uint32_t SRLIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLIW_ENCODING      = 0b00000000000000000101000000011011;
+constexpr uint32_t SRAIW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAIW_ENCODING      = 0b01000000000000000101000000011011;
+constexpr uint32_t ADDW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t ADDW_ENCODING       = 0b00000000000000000000000000111011;
+constexpr uint32_t SUBW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SUBW_ENCODING       = 0b01000000000000000000000000111011;
+constexpr uint32_t SLLW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SLLW_ENCODING       = 0b00000000000000000001000000111011;
+constexpr uint32_t SRLW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRLW_ENCODING       = 0b00000000000000000101000000111011;
+constexpr uint32_t SRAW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t SRAW_ENCODING       = 0b01000000000000000101000000111011;
+constexpr uint32_t MULW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t MULW_ENCODING       = 0b00000010000000000000000000111011;
+constexpr uint32_t DIVW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t DIVW_ENCODING       = 0b00000010000000000100000000111011;
+constexpr uint32_t DIVUW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t DIVUW_ENCODING      = 0b00000010000000000101000000111011;
+constexpr uint32_t REMW_MASK           = 0b11111110000000000111000001111111;
+constexpr uint32_t REMW_ENCODING       = 0b00000010000000000110000000111011;
+constexpr uint32_t REMUW_MASK          = 0b11111110000000000111000001111111;
+constexpr uint32_t REMUW_ENCODING      = 0b00000010000000000111000000111011;
+constexpr uint32_t LR_D_MASK           = 0b11111001111100000111000001111111;
+constexpr uint32_t LR_D_ENCODING       = 0b00010000000000000011000000101111;
+constexpr uint32_t SC_D_MASK           = 0b11111000000000000111000001111111;
+constexpr uint32_t SC_D_ENCODING       = 0b00011000000000000011000000101111;
+constexpr uint32_t AMOSWAP_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOSWAP_D_ENCODING  = 0b00001000000000000011000000101111;
+constexpr uint32_t AMOADD_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOADD_D_ENCODING   = 0b00000000000000000011000000101111;
+constexpr uint32_t AMOXOR_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOXOR_D_ENCODING   = 0b00100000000000000011000000101111;
+constexpr uint32_t AMOAND_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOAND_D_ENCODING   = 0b01100000000000000011000000101111;
+constexpr uint32_t AMOOR_D_MASK        = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOOR_D_ENCODING    = 0b01000000000000000011000000101111;
+constexpr uint32_t AMOMIN_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMIN_D_ENCODING   = 0b10000000000000000011000000101111;
+constexpr uint32_t AMOMAX_D_MASK       = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAX_D_ENCODING   = 0b10100000000000000011000000101111;
+constexpr uint32_t AMOMINU_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMINU_D_ENCODING  = 0b11000000000000000011000000101111;
+constexpr uint32_t AMOMAXU_D_MASK      = 0b11111000000000000111000001111111;
+constexpr uint32_t AMOMAXU_D_ENCODING  = 0b11100000000000000011000000101111;
 
-#define MATCH_AND_RETURN_INSTR(instr)									\
-	if (unlikely((data() & (instr ## _MASK)) != (instr ## _ENCODING)))	\
-		return UNDEF;                        							\
-	return instr;
+
+#define MATCH_AND_RETURN_INSTR2(instr, result)							    \
+		if (unlikely((data() & (instr ## _MASK)) != (instr ## _ENCODING)))	\
+			return UNDEF;                        							\
+		return result;
+
+#define MATCH_AND_RETURN_INSTR(instr)		\
+	MATCH_AND_RETURN_INSTR2(instr, instr)
 
 
 namespace Compressed {
@@ -163,12 +233,15 @@ enum Opcode {
 	C_Reserved,
 	C_ADDI4SPN,
 	C_LW,
+	C_LD,
 	C_SW,
+	C_SD,
 
 	// quadrant one
 	C_NOP,
 	C_ADDI,
 	C_JAL,
+	C_ADDIW,
 	C_LI,
 	C_ADDI16SP,
 	C_LUI,
@@ -179,6 +252,8 @@ enum Opcode {
 	C_XOR,
 	C_OR,
 	C_AND,
+	C_SUBW,
+	C_ADDW,
 	C_J,
 	C_BEQZ,
 	C_BNEZ,
@@ -186,15 +261,26 @@ enum Opcode {
 	// quadrant two
 	C_SLLI,
 	C_LWSP,
+	C_LDSP,
 	C_JR,
 	C_MV,
 	C_EBREAK,
 	C_JALR,
 	C_ADD,
 	C_SWSP,
+	C_SDSP,
 };
 }
 
+/*
+Python snippet to generate the "mappingStr":
+
+for e in [e.strip().replace(",", "") for e in s.strip().split("\n")]:
+	if "//" in e or len(e) == 0:
+    	print(e)
+    else:
+    	print('"{}",'.format(e))
+ */
 std::array<const char*, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "ZERO-INVALID",
 
@@ -274,6 +360,41 @@ std::array<const char*, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "AMOMINU_W",
     "AMOMAXU_W",
 
+	// RV64I base integer set (addition to RV32I)
+	"LWU",
+	"LD",
+	"SD",
+	"ADDIW",
+	"SLLIW",
+	"SRLIW",
+	"SRAIW",
+	"ADDW",
+	"SUBW",
+	"SLLW",
+	"SRLW",
+	"SRAW",
+
+	// RV64M standard extension (addition to RV32M)
+	"MULW",
+	"DIVW",
+	"DIVUW",
+	"REMW",
+	"REMUW",
+
+	// RV64A standard extension (addition to RV32A)
+	"LR_D",
+	"SC_D",
+	"AMOSWAP_D",
+	"AMOADD_D",
+	"AMOXOR_D",
+	"AMOAND_D",
+	"AMOOR_D",
+	"AMOMIN_D",
+	"AMOMAX_D",
+	"AMOMINU_D",
+	"AMOMAXU_D",
+
+
     // privileged instructions
     "URET",
     "SRET",
@@ -305,23 +426,62 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case DIVU:
 		case REM:
 		case REMU:
+		case ADDW:
+		case SUBW:
+		case SLLW:
+		case SRLW:
+		case SRAW:
+		case MULW:
+		case DIVW:
+		case DIVUW:
+		case REMW:
+		case REMUW:
+		case LR_W:
+		case SC_W:
+		case AMOSWAP_W:
+		case AMOADD_W:
+		case AMOXOR_W:
+		case AMOAND_W:
+		case AMOOR_W:
+		case AMOMIN_W:
+		case AMOMAX_W:
+		case AMOMINU_W:
+		case AMOMAXU_W:
+		case LR_D:
+		case SC_D:
+		case AMOSWAP_D:
+		case AMOADD_D:
+		case AMOXOR_D:
+		case AMOAND_D:
+		case AMOOR_D:
+		case AMOMIN_D:
+		case AMOMAX_D:
+		case AMOMINU_D:
+		case AMOMAXU_D:
 			return Type::R;
 		case JALR:
 		case LB:
 		case LH:
 		case LW:
+		case LD:
 		case LBU:
 		case LHU:
+		case LWU:
 		case ADDI:
 		case SLTI:
 		case SLTIU:
 		case XORI:
 		case ORI:
 		case ANDI:
+		case ADDIW:
+		case SLLIW:
+		case SRLIW:
+		case SRAIW:
 			return Type::I;
 		case SB:
 		case SH:
 		case SW:
+		case SD:
 			return Type::S;
 		case BEQ:
 		case BNE:
@@ -350,8 +510,16 @@ unsigned C_LW_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SINGLE_P1(n, 6) << 2) | (BIT_SINGLE_P1(n, 5) << 6);
 }
 
+unsigned C_LD_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SLICE(n, 6, 5) << 6);
+}
+
 unsigned C_SW_UIMM(uint32_t n) {
 	return C_LW_UIMM(n);
+}
+
+unsigned C_SD_UIMM(uint32_t n) {
+	return C_LD_UIMM(n);
 }
 
 int32_t C_JAL_IMM(int32_t n) {
@@ -386,6 +554,15 @@ uint32_t C_SWSP_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 9) << 2) | (BIT_SLICE(n, 8, 7) << 6);
 }
 
+uint32_t C_LDSP_UIMM(uint32_t n) {
+	return BIT_SINGLE_PN(n, 12, 5) | (BIT_SLICE(n, 6, 5) << 3) | (BIT_SLICE(n, 4, 2) << 6);
+}
+
+uint32_t C_SDSP_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SLICE(n, 9, 7) << 6);
+}
+
+
 struct InstructionFactory {
 	typedef Instruction T;
 
@@ -413,9 +590,18 @@ struct InstructionFactory {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 3 | (2 << 12));
 	}
 
+	static T LD(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 3 | (3 << 12));
+	}
+
 	static T SW(unsigned rs1, unsigned rs2, int S_imm) {
 		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
 		         ((rs2 & 0x1f) << 20) | 35 | (2 << 12));
+	}
+
+	static T SD(unsigned rs1, unsigned rs2, int S_imm) {
+		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
+				 ((rs2 & 0x1f) << 20) | 35 | (3 << 12));
 	}
 
 	static T LUI(unsigned rd, int U_imm) {
@@ -431,15 +617,15 @@ struct InstructionFactory {
 	}
 
 	static T SRLI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (5 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 63) << 20) | 19 | (5 << 12) | (0 << 25));
 	}
 
 	static T SRAI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (5 << 12) | (32 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 63) << 20) | 19 | (5 << 12) | (32 << 25));
 	}
 
 	static T SLLI(unsigned rd, unsigned rs1, unsigned shamt) {
-		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 31) << 20) | 19 | (1 << 12) | (0 << 25));
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((shamt & 63) << 20) | 19 | (1 << 12) | (0 << 25));
 	}
 
 	static T JAL(unsigned rd, int J_imm) {
@@ -467,9 +653,21 @@ struct InstructionFactory {
 	static T EBREAK() {
 		return T(1048691);
 	}
+
+	static T ADDIW(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 0x1b);
+	}
+
+	static T ADDW(unsigned rd, unsigned rs1, unsigned rs2) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 0x3b);
+	}
+
+	static T SUBW(unsigned rd, unsigned rs1, unsigned rs2) {
+		return T(((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | ((rs2 & 0x1f) << 20) | 0x3b | 0x40000000);
+	}
 };
 
-Compressed::Opcode decode_compressed(Instruction &instr) {
+Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 	using namespace Compressed;
 
 	switch (instr.quadrant()) {
@@ -484,11 +682,17 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 				case 0b010:
 					return C_LW;
 
+				case 0b011:
+					return C_LD;
+
 				case 0b100:
 					return C_Reserved;
 
 				case 0b110:
 					return C_SW;
+
+				case 0b111:
+					return C_SD;
 			}
 			break;
 
@@ -501,7 +705,10 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 						return C_ADDI;
 
 				case 0b001:
-					return C_JAL;
+					if (arch == RV32)
+						return C_JAL;
+					else
+						return C_ADDIW;
 
 				case 0b010:
 					return C_LI;
@@ -514,31 +721,33 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 
 				case 0b100:
 					switch (instr.c_f2_high()) {
-						case 0:
+						case 0b00:
 							return C_SRLI;
 
-						case 1:
+						case 0b01:
 							return C_SRAI;
 
-						case 2:
+						case 0b10:
 							return C_ANDI;
 
-						case 3:
+						case 0b11:
 							if (instr.c_b12()) {
 								switch (instr.c_f2_low()) {
-									case 2:
-									case 3:
-										return C_Reserved;
+									case 0b00:
+										return C_SUBW;
+									case 0b01:
+										return C_ADDW;
 								}
+								return C_Reserved;
 							} else {
 								switch (instr.c_f2_low()) {
-									case 0:
+									case 0b00:
 										return C_SUB;
-									case 1:
+									case 0b01:
 										return C_XOR;
-									case 2:
+									case 0b10:
 										return C_OR;
-									case 3:
+									case 0b11:
 										return C_AND;
 								}
 							}
@@ -583,8 +792,14 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 						}
 					}
 
+				case 0b011:
+					return C_LDSP;
+
 				case 0b110:
 					return C_SWSP;
+
+				case 0b111:
+					return C_SDSP;
 			}
 			break;
 
@@ -592,10 +807,11 @@ Compressed::Opcode decode_compressed(Instruction &instr) {
 			throw std::runtime_error("compressed instruction expected, but uncompressed found");
 	}
 
-	throw std::runtime_error("unknown compressed instruction");
+	// undefined/unsupported instruction
+	return C_Illegal;
 }
 
-Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
+Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch) {
 	using namespace Opcode;
 	using namespace Compressed;
 
@@ -634,6 +850,14 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			instr = InstructionFactory::SUB(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return SUB;
 
+		case C_ADDW:
+			instr = InstructionFactory::ADDW(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			return ADDW;
+
+		case C_SUBW:
+			instr = InstructionFactory::SUBW(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
+			return SUBW;
+
 		case C_LW:
 			instr = InstructionFactory::LW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
 			return LW;
@@ -641,6 +865,14 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 		case C_SW:
 			instr = InstructionFactory::SW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
 			return SW;
+
+		case C_LD:
+			instr = InstructionFactory::LD(instr.c_rs2_small(), instr.c_rd_small(), C_LD_UIMM(instr.data()));
+			return LD;
+
+		case C_SD:
+			instr = InstructionFactory::SD(instr.c_rd_small(), instr.c_rs2_small(), C_SD_UIMM(instr.data()));
+			return SD;
 
 		case C_ADDI4SPN: {
 			unsigned n = C_ADDI4SPN_NZUIMM(instr.data());
@@ -657,6 +889,10 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 		case C_JAL:
 			instr = InstructionFactory::JAL(1, C_JAL_IMM(instr.data()));
 			return JAL;
+
+		case C_ADDIW:
+			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
+			return ADDIW;
 
 		case C_LI:
 			instr = InstructionFactory::ADDI(instr.c_rd(), 0, instr.c_imm());
@@ -678,9 +914,17 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			return LUI;
 		}
 
+		case C_SLLI: {
+			auto n = instr.c_uimm();
+			if (arch == RV32 && n > 31)
+				return UNDEF;
+			instr = InstructionFactory::SLLI(instr.c_rd_small(), instr.c_rd_small(), n);
+			return SLLI;
+		}
+
 		case C_SRLI: {
 			auto n = instr.c_uimm();
-			if (n > 31)
+			if (arch == RV32 && n > 31)
 				return UNDEF;
 			instr = InstructionFactory::SRLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRLI;
@@ -688,7 +932,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 
 		case C_SRAI: {
 			auto n = instr.c_uimm();
-			if (n > 31)
+			if (arch == RV32 && n > 31)
 				return UNDEF;
 			instr = InstructionFactory::SRAI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return SRAI;
@@ -710,14 +954,6 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 			instr = InstructionFactory::BNE(instr.c_rd_small(), 0, C_BRANCH_IMM(instr.data()));
 			return BNE;
 
-		case C_SLLI: {
-			auto n = instr.c_uimm();
-			if (n > 31)
-				return UNDEF;
-			instr = InstructionFactory::SLLI(instr.c_rd_small(), instr.c_rd_small(), n);
-			return SLLI;
-		}
-
 		case C_LWSP:
 			instr = InstructionFactory::LW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return LW;
@@ -725,6 +961,14 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 		case C_SWSP:
 			instr = InstructionFactory::SW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
 			return SW;
+
+		case C_LDSP:
+			instr = InstructionFactory::LD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
+			return LD;
+
+		case C_SDSP:
+			instr = InstructionFactory::SD(2, instr.c_rs2(), C_SDSP_UIMM(instr.data()));
+			return SD;
 
 		case C_EBREAK:
 			instr = InstructionFactory::EBREAK();
@@ -742,12 +986,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op) {
 	throw std::runtime_error("some compressed instruction not handled");
 }
 
-Opcode::Mapping Instruction::decode_and_expand_compressed() {
-	auto c_op = decode_compressed(*this);
-	return expand_compressed(*this, c_op);
+Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch) {
+	auto c_op = decode_compressed(*this, arch);
+	return expand_compressed(*this, c_op, arch);
 }
 
-Opcode::Mapping Instruction::decode_normal() {
+Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 	using namespace Opcode;
 
 	Instruction &instr = *this;
@@ -796,6 +1040,10 @@ Opcode::Mapping Instruction::decode_normal() {
                     MATCH_AND_RETURN_INSTR(LBU);
 				case F3_LHU:
                     MATCH_AND_RETURN_INSTR(LHU);
+			    case F3_LWU:
+			        MATCH_AND_RETURN_INSTR(LWU);
+			    case F3_LD:
+			        MATCH_AND_RETURN_INSTR(LD);
 			}
 			break;
 		}
@@ -808,6 +1056,8 @@ Opcode::Mapping Instruction::decode_normal() {
                     MATCH_AND_RETURN_INSTR(SH);
 				case F3_SW:
                     MATCH_AND_RETURN_INSTR(SW);
+			    case F3_SD:
+                    MATCH_AND_RETURN_INSTR(SD);
 			}
 			break;
 		}
@@ -827,18 +1077,48 @@ Opcode::Mapping Instruction::decode_normal() {
 				case F3_ANDI:
                     MATCH_AND_RETURN_INSTR(ANDI);
 				case F3_SLLI:
-                    MATCH_AND_RETURN_INSTR(SLLI);
+					if (arch == RV32) {
+						MATCH_AND_RETURN_INSTR2(SLLI_32, SLLI);
+					} else {
+						MATCH_AND_RETURN_INSTR(SLLI);
+					}
 				case F3_SRLI: {
-					switch (instr.funct7()) {
-						case F7_SRLI:
-							MATCH_AND_RETURN_INSTR(SRLI);
-						case F7_SRAI:
-                            MATCH_AND_RETURN_INSTR(SRAI);
+					switch (instr.funct6()) {
+						case F6_SRLI:
+							if (arch == RV32) {
+								MATCH_AND_RETURN_INSTR2(SRLI_32, SRLI);
+							} else {
+								MATCH_AND_RETURN_INSTR(SRLI);
+							}
+						case F6_SRAI:
+							if (arch == RV32) {
+								MATCH_AND_RETURN_INSTR2(SRAI_32, SRAI);
+							} else {
+								MATCH_AND_RETURN_INSTR(SRAI);
+							}
 					}
 				}
 			}
 			break;
 		}
+
+        case OP_ADDIW: {
+            switch (instr.funct3()) {
+                case F3_ADDIW:
+                    MATCH_AND_RETURN_INSTR(ADDIW);
+                case F3_SLLIW:
+                    MATCH_AND_RETURN_INSTR(SLLIW);
+                case F3_SRLIW: {
+                    switch (instr.funct7()) {
+                        case F7_SRLIW:
+                            MATCH_AND_RETURN_INSTR(SRLIW);
+                        case F7_SRAIW:
+                            MATCH_AND_RETURN_INSTR(SRAIW);
+                    }
+                }
+            }
+            break;
+        }
 
 		case OP_ADD: {
 			switch (instr.funct7()) {
@@ -896,6 +1176,46 @@ Opcode::Mapping Instruction::decode_normal() {
 			break;
 		}
 
+        case OP_ADDW: {
+            switch (instr.funct7()) {
+                case F7_ADDW:
+                    switch (instr.funct3()) {
+                        case F3_ADDW:
+                            MATCH_AND_RETURN_INSTR(ADDW);
+                        case F3_SLLW:
+                            MATCH_AND_RETURN_INSTR(SLLW);
+                        case F3_SRLW:
+                            MATCH_AND_RETURN_INSTR(SRLW);
+                    }
+                    break;
+
+                case F7_SUBW:
+                    switch (instr.funct3()) {
+                        case F3_SUBW:
+                            MATCH_AND_RETURN_INSTR(SUBW);
+                        case F3_SRAW:
+                            MATCH_AND_RETURN_INSTR(SRAW);
+                    }
+                    break;
+
+            	case F7_MULW:
+					switch (instr.funct3()) {
+						case F3_MULW:
+                            MATCH_AND_RETURN_INSTR(MULW);
+						case F3_DIVW:
+                            MATCH_AND_RETURN_INSTR(DIVW);
+						case F3_DIVUW:
+                            MATCH_AND_RETURN_INSTR(DIVUW);
+						case F3_REMW:
+                            MATCH_AND_RETURN_INSTR(REMW);
+						case F3_REMUW:
+                            MATCH_AND_RETURN_INSTR(REMUW);
+					}
+					break;
+            }
+            break;
+        }
+
 		case OP_FENCE: {
 			switch (instr.funct3()) {
 				case F3_FENCE:
@@ -950,23 +1270,59 @@ Opcode::Mapping Instruction::decode_normal() {
 				case F5_SC_W:
                     MATCH_AND_RETURN_INSTR(SC_W);
 				case F5_AMOSWAP_W:
-                    MATCH_AND_RETURN_INSTR(AMOSWAP_W);
+				    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOSWAP_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOSWAP_W);
+                    }
 				case F5_AMOADD_W:
-                    MATCH_AND_RETURN_INSTR(AMOADD_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOADD_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOADD_W);
+                    }
 				case F5_AMOXOR_W:
-                    MATCH_AND_RETURN_INSTR(AMOXOR_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOXOR_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOXOR_W);
+                    }
 				case F5_AMOAND_W:
-                    MATCH_AND_RETURN_INSTR(AMOAND_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOAND_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOAND_W);
+                    }
 				case F5_AMOOR_W:
-                    MATCH_AND_RETURN_INSTR(AMOOR_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOOR_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOOR_W);
+                    }
 				case F5_AMOMIN_W:
-                    MATCH_AND_RETURN_INSTR(AMOMIN_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOMIN_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOMIN_W);
+                    }
 				case F5_AMOMAX_W:
-                    MATCH_AND_RETURN_INSTR(AMOMAX_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOMAX_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOMAX_W);
+                    }
 				case F5_AMOMINU_W:
-                    MATCH_AND_RETURN_INSTR(AMOMINU_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOMINU_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOMINU_W);
+                    }
 				case F5_AMOMAXU_W:
-                    MATCH_AND_RETURN_INSTR(AMOMAXU_W);
+                    if (instr.funct3() == F3_AMO_D) {
+                        MATCH_AND_RETURN_INSTR(AMOMAXU_D);
+                    } else {
+                        MATCH_AND_RETURN_INSTR(AMOMAXU_W);
+                    }
 			}
 		}
 	}

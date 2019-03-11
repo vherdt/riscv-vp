@@ -62,7 +62,7 @@
 #include "iss.h"
 
 
-namespace rv32 {
+namespace rv64 {
 
 struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	tlm_utils::simple_target_socket<SyscallHandler> tsock;
@@ -149,4 +149,4 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	int execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
 };
 
-} // namespace rv32
+} // namespace rv64

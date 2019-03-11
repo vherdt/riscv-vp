@@ -5,6 +5,7 @@
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
+#include "gdb_stub.h"
 #include "memory.h"
 #include "plic.h"
 #include "syscall.h"
@@ -14,7 +15,7 @@
 #include <iomanip>
 #include <iostream>
 
-using namespace rv32;
+using namespace rv64;
 
 struct Options {
     typedef unsigned int addr_t;
@@ -34,6 +35,7 @@ struct Options {
     addr_t sys_start_addr = 0x02010000;
     addr_t sys_end_addr = 0x020103ff;
 
+    bool use_debug_runner = false;
     bool use_instr_dmi = false;
     bool use_data_dmi = false;
     bool trace_mode = false;
@@ -57,6 +59,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
             ("memory-start", po::value<unsigned int>(&opt.mem_start_addr), "set memory start address")
             ("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
             ("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
+            ("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
             ("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
             ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
             ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
@@ -101,9 +104,10 @@ int sc_main(int argc, char **argv) {
     CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<1, 3> bus("SimpleBus");
+    SimpleBus<2, 3> bus("SimpleBus");
     SyscallHandler sys("SyscallHandler");
     CLINT<1> clint("CLINT");
+    DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
     MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
     InstrMemoryProxy instr_mem(dmi, core);
@@ -120,7 +124,7 @@ int sc_main(int argc, char **argv) {
     }
 
     loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-    core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
+    core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv64_align_address(opt.mem_end_addr));
     sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
     sys.register_core(&core);
 
@@ -134,6 +138,7 @@ int sc_main(int argc, char **argv) {
 
     // connect TLM sockets
     core_mem_if.isock.bind(bus.tsocks[0]);
+    dbg_if.isock.bind(bus.tsocks[1]);
     bus.isocks[0].bind(mem.tsock);
     bus.isocks[1].bind(clint.tsock);
     bus.isocks[2].bind(sys.tsock);
@@ -144,7 +149,11 @@ int sc_main(int argc, char **argv) {
     // switch for printing instructions
     core.trace = opt.trace_mode;
 
-    new DirectCoreRunner(core);
+    if (opt.use_debug_runner) {
+        new DebugCoreRunner<ISS, RV64>(core, &dbg_if);
+    } else {
+        new DirectCoreRunner(core);
+    }
 
     sc_core::sc_start();
 

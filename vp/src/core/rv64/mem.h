@@ -3,7 +3,7 @@
 #include "iss.h"
 #include "core/common/dmi.h"
 
-namespace rv32 {
+namespace rv64 {
 
 /* For optimization, use DMI to fetch instructions */
 struct InstrMemoryProxy : public instr_memory_if {
@@ -113,67 +113,109 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         atomic_unlock();
     }
 
-    uint32_t load_instr32(uint64_t addr) {
-        return _load_data<uint32_t>(addr);
-    }
-    uint16_t load_instr16(uint64_t addr) {
-        return _load_data<uint16_t>(addr);
-    }
-
-    int32_t load_word(uint64_t addr) {
-        return _load_data<int32_t>(addr);
-    }
-    int32_t load_half(uint64_t addr) {
-        return _load_data<int16_t>(addr);
-    }
-    int32_t load_byte(uint64_t addr) {
-        return _load_data<int8_t>(addr);
-    }
-    uint32_t load_uhalf(uint64_t addr) {
-        return _load_data<uint16_t>(addr);
-    }
-    uint32_t load_ubyte(uint64_t addr) {
-        return _load_data<uint8_t>(addr);
-    }
-
-    void store_word(uint64_t addr, uint32_t value) {
-        _store_data(addr, value);
-    }
-    void store_half(uint64_t addr, uint16_t value) {
-        _store_data(addr, value);
-    }
-    void store_byte(uint64_t addr, uint8_t value) {
-        _store_data(addr, value);
-    }
-
-    virtual int32_t atomic_load_word(uint64_t addr) {
+    template <typename T>
+    T _atomic_load_data(uint64_t addr) {
         bus_lock->lock(iss.get_hart_id());
-        return load_word(addr);
+        return _load_data<T>(addr);
     }
-    virtual void atomic_store_word(uint64_t addr, uint32_t value) {
+    template <typename T>
+    void _atomic_store_data(uint64_t addr, T value) {
         assert (bus_lock->is_locked(iss.get_hart_id()));
-        store_word(addr, value);
+        _store_data(addr, value);
     }
-    virtual int32_t atomic_load_reserved_word(uint64_t addr) {
+    template <typename T>
+    T _atomic_load_reserved_data(uint64_t addr) {
         bus_lock->lock(iss.get_hart_id());
         lr_addr = addr;
-        return load_word(addr);
+        return _load_data<T>(addr);
     }
-    virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) {
+    template <typename T>
+    bool _atomic_store_conditional_data(uint64_t addr, T value) {
         /* According to the RISC-V ISA, an implementation can fail each LR/SC sequence that does not satisfy the forward progress semantic.
          * The lock is established by the LR instruction and the lock is kept while forward progress is maintained. */
         if (bus_lock->is_locked(iss.get_hart_id())) {
             if (addr == lr_addr) {
-                store_word(addr, value);
+                _store_data(addr, value);
                 return true;
             }
             atomic_unlock();
         }
         return false;
     }
-    virtual void atomic_unlock() {
+
+
+
+    uint32_t load_instr32(uint64_t addr) override {
+        return _load_data<uint32_t>(addr);
+    }
+    uint16_t load_instr16(uint64_t addr) override {
+        return _load_data<uint16_t>(addr);
+    }
+
+    int64_t load_double(uint64_t addr) override {
+        return _load_data<int64_t>(addr);
+    }
+    int64_t load_word(uint64_t addr) override {
+        return _load_data<int32_t>(addr);
+    }
+    int64_t load_half(uint64_t addr) override {
+        return _load_data<int16_t>(addr);
+    }
+    int64_t load_byte(uint64_t addr) override {
+        return _load_data<int8_t>(addr);
+    }
+    uint64_t load_uword(uint64_t addr) override {
+        return _load_data<uint32_t>(addr);
+    }
+    uint64_t load_uhalf(uint64_t addr) override {
+        return _load_data<uint16_t>(addr);
+    }
+    uint64_t load_ubyte(uint64_t addr) override {
+        return _load_data<uint8_t>(addr);
+    }
+
+    void store_double(uint64_t addr, uint64_t value) override {
+        _store_data(addr, value);
+    }
+    void store_word(uint64_t addr, uint32_t value) override {
+        _store_data(addr, value);
+    }
+    void store_half(uint64_t addr, uint16_t value) override {
+        _store_data(addr, value);
+    }
+    void store_byte(uint64_t addr, uint8_t value) override {
+        _store_data(addr, value);
+    }
+
+    int64_t atomic_load_word(uint64_t addr) override {
+        return _atomic_load_data<int32_t>(addr);
+    }
+    void atomic_store_word(uint64_t addr, uint32_t value) override {
+        _atomic_store_data(addr, value);
+    }
+    int64_t atomic_load_reserved_word(uint64_t addr) override {
+        return _atomic_load_reserved_data<int32_t>(addr);
+    }
+    bool atomic_store_conditional_word(uint64_t addr, uint32_t value) override {
+        return _atomic_store_conditional_data(addr, value);
+    }
+
+    int64_t atomic_load_double(uint64_t addr) override {
+        return _atomic_load_data<int64_t>(addr);
+    }
+    void atomic_store_double(uint64_t addr, uint64_t value) override {
+        _atomic_store_data(addr, value);
+    }
+    int64_t atomic_load_reserved_double(uint64_t addr) override {
+        return _atomic_load_reserved_data<int64_t>(addr);
+    }
+    bool atomic_store_conditional_double(uint64_t addr, uint64_t value) override {
+        return _atomic_store_conditional_data(addr, value);
+    }
+
+    void atomic_unlock() override {
         bus_lock->unlock(iss.get_hart_id());
     }
 };
 
-} // namespace rv32
+} // namespace rv64
