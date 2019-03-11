@@ -13,6 +13,7 @@ mkdir -p softfloat-dist/include/softfloat
 
 cp $source/softfloat.a softfloat-dist/lib/libsoftfloat.a
 cp $source/*.h softfloat-dist/include/softfloat/
+rm -rf $source
 
 header_file=softfloat-dist/include/softfloat/softfloat.hpp
 echo "#pragma once" > $header_file

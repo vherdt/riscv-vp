@@ -1,8 +1,11 @@
-vps: vp/build/Makefile vp/dependencies/systemc-dist
+vps: vp/build/Makefile vp/dependencies/systemc-dist vp/dependencies/softfloat-dist
 	make install -C vp/build -j6
 
 vp/dependencies/systemc-dist:
 	cd vp/dependencies/ && ./build_systemc_233.sh
+
+vp/dependencies/softfloat-dist:
+	cd vp/dependencies/ && ./build_softfloat.sh
 
 all: vps vp-display vp-breadboard
 
@@ -30,11 +33,14 @@ vp-clean:
 qt-clean:
 	rm -rf env/basic/vp-display/build
 	rm -rf env/hifive/vp-breadboard/build
-	
+
 sysc-clean:
 	rm -rf vp/dependencies/systemc*
-	
-clean-all: vp-clean qt-clean sysc-clean
+
+softfloat-clean:
+	rm -rf vp/dependencies/softfloat-dist
+
+clean-all: vp-clean qt-clean sysc-clean softfloat-clean
 
 clean: vp-clean
 
