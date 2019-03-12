@@ -68,12 +68,3 @@ void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const s
 	unsigned nbytes_write = _do_dbg_transaction(tlm::TLM_WRITE_COMMAND, start, buf.data(), buf.size());
 	assert (nbytes_write == nbytes && "not all data written");
 }
-
-
-/*
-#include "core/rv32/iss.h"
-#include "core/rv64/iss.h"
-
-template struct DebugCoreRunner<rv32::ISS, 1>;
-template struct DebugCoreRunner<rv64::ISS, 2>;
- */

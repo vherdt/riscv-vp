@@ -40,6 +40,7 @@ struct Options {
     bool use_data_dmi = false;
     bool trace_mode = false;
     bool intercept_syscalls = false;
+    unsigned int debug_port = 5005;
 
     unsigned int tlm_global_quantum = 10;
 };
@@ -60,6 +61,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
             ("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
             ("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
             ("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
+            ("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
             ("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
             ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
             ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
@@ -150,7 +152,7 @@ int sc_main(int argc, char **argv) {
     core.trace = opt.trace_mode;
 
     if (opt.use_debug_runner) {
-        new DebugCoreRunner<ISS, RV64>(core, &dbg_if);
+        new DebugCoreRunner<ISS, RV64>(core, &dbg_if, opt.debug_port);
     } else {
         new DirectCoreRunner(core);
     }

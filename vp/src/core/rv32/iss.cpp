@@ -78,9 +78,11 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint32_t hart_id)
+ISS::ISS(uint32_t hart_id, bool use_E_base_isa)
     : systemc_name("Core-" + std::to_string(hart_id)) {
     csrs.mhartid.reg = hart_id;
+    if (use_E_base_isa)
+    	csrs.misa.select_E_base_isa();
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -1059,6 +1061,13 @@ void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *c
 
 void ISS::sys_exit() {
     shall_exit = true;
+}
+
+unsigned ISS::get_syscall_register_index() {
+	if (csrs.misa.has_E_base_isa())
+		return RegFile::a5;
+	else
+		return RegFile::a7;
 }
 
 uint32_t ISS::read_register(unsigned idx) {

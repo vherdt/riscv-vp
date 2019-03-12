@@ -8,6 +8,7 @@
 #include "memory.h"
 #include "plic.h"
 #include "syscall.h"
+#include "gdb_stub.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -34,10 +35,13 @@ struct Options {
     addr_t sys_start_addr = 0x02010000;
     addr_t sys_end_addr = 0x020103ff;
 
+    bool use_debug_runner = false;
     bool use_instr_dmi = false;
     bool use_data_dmi = false;
     bool trace_mode = false;
     bool intercept_syscalls = false;
+    bool use_E_base_isa = false;
+    unsigned int debug_port = 5005;
 
     unsigned int tlm_global_quantum = 10;
 };
@@ -56,7 +60,10 @@ Options parse_command_line_arguments(int argc, char **argv) {
             ("help", "produce help message")
             ("memory-start", po::value<unsigned int>(&opt.mem_start_addr), "set memory start address")
             ("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
+            ("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
             ("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
+            ("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using gdb rsp interface)")
+            ("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
             ("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
             ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
             ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
@@ -97,13 +104,14 @@ int sc_main(int argc, char **argv) {
 
     tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-    ISS core(0);
+    ISS core(0, opt.use_E_base_isa);
     CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<1, 3> bus("SimpleBus");
+    SimpleBus<2, 3> bus("SimpleBus");
     SyscallHandler sys("SyscallHandler");
     CLINT<1> clint("CLINT");
+    DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
     MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
     InstrMemoryProxy instr_mem(dmi, core);
@@ -134,6 +142,7 @@ int sc_main(int argc, char **argv) {
 
     // connect TLM sockets
     core_mem_if.isock.bind(bus.tsocks[0]);
+    dbg_if.isock.bind(bus.tsocks[1]);
     bus.isocks[0].bind(mem.tsock);
     bus.isocks[1].bind(clint.tsock);
     bus.isocks[2].bind(sys.tsock);
@@ -144,7 +153,11 @@ int sc_main(int argc, char **argv) {
     // switch for printing instructions
     core.trace = opt.trace_mode;
 
-    new DirectCoreRunner(core);
+    if (opt.use_debug_runner) {
+        new DebugCoreRunner<ISS, RV32>(core, &dbg_if, opt.debug_port);
+    } else {
+        new DirectCoreRunner(core);
+    }
 
     sc_core::sc_start();
 

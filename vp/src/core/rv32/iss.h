@@ -189,7 +189,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	static constexpr int32_t REG_MIN = INT32_MIN;
 
 
-	ISS(uint32_t hart_id);
+	ISS(uint32_t hart_id, bool use_E_base_isa=false);
 
 	void exec_step();
 
@@ -207,6 +207,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     void trigger_software_interrupt(bool status) override;
 
 	void sys_exit() override;
+	unsigned get_syscall_register_index() override;
 	uint32_t read_register(unsigned idx) override;
 	void write_register(unsigned idx, uint32_t value) override;
 

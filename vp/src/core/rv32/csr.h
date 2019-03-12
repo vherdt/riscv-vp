@@ -53,6 +53,15 @@ struct csr_misa {
 		return extensions & C;
 	}
 
+	bool has_E_base_isa() {
+		return extensions & E;
+	}
+
+	void select_E_base_isa() {
+		extensions &= ~I;
+		extensions |= E;
+	}
+
 	bool has_user_mode_extension() {
 		return extensions & U;
 	}
@@ -64,6 +73,9 @@ struct csr_misa {
 	enum {
 		A = 1,
 		C = 1 << 2,
+		D = 1 << 3,
+		E = 1 << 4,
+		F = 1 << 5,
 		I = 1 << 8,
 		M = 1 << 12,
 		N = 1 << 13,
@@ -72,7 +84,7 @@ struct csr_misa {
 	};
 
 	void init() {
-		extensions = I | M | A | C | N | U | S;  // IMAC + NUS
+		extensions = I | M | A | F | C | N | U | S;  // IMACF + NUS
 		wiri = 0;
 		mxl = 1;  // RV32
 	}

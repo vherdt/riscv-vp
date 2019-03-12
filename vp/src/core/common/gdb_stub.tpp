@@ -32,25 +32,6 @@ void DebugCoreRunner<Core, Arch>::write_memory(unsigned start, int nbytes, const
 }
 
 
-// reasons for halt as defined in: include/gdb/signals.h
-// NOTE: this is only an excerpt, more signals are defined, please note the numbers might be not up to date ...
-/*
-enum target_signal {
-    TARGET_SIGNAL_FIRST = 0,
-    TARGET_SIGNAL_HUP = 1,
-    TARGET_SIGNAL_INT = 2,
-    TARGET_SIGNAL_QUIT = 3,
-    TARGET_SIGNAL_ILL = 4,
-    TARGET_SIGNAL_TRAP = 5,
-    TARGET_SIGNAL_ABRT = 6,
-    TARGET_SIGNAL_EMT = 7,
-    TARGET_SIGNAL_FPE = 8,
-    TARGET_SIGNAL_KILL = 9,
-    TARGET_SIGNAL_BUS = 10,
-    TARGET_SIGNAL_SEGV = 11,
-};
- */
-
 constexpr char nibble_to_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 inline std::string compute_checksum_string(const std::string &msg) {
@@ -173,6 +154,8 @@ inline bool is_any_watchpoint_or_hw_breakpoint(const std::string &msg) {
     return is_hw_breakpoint || is_read_watchpoint || is_write_watchpoint || is_access_watchpoint;
 }
 
+
+// NOTE: check the *target_signal* enum in *include/gdb/signals.h* for halt reasons
 
 template <typename Core, unsigned Arch>
 void DebugCoreRunner<Core, Arch>::handle_gdb_loop(int conn) {
@@ -326,7 +309,7 @@ void DebugCoreRunner<Core, Arch>::run() {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(5005);
+    addr.sin_port = htons(port_number);
 
     ans = ::bind(sock, (struct sockaddr *)&addr, sizeof(addr));
     assert(ans == 0);

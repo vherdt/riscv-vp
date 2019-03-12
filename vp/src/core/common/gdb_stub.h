@@ -37,11 +37,12 @@ struct DebugCoreRunner : public sc_core::sc_module {
 
 	// access memory through a TLM socket
     DebugMemoryInterface *dbg_mem_if;
+    unsigned port_number;
 
 	SC_HAS_PROCESS(DebugCoreRunner);
 
-	DebugCoreRunner(Core &core, DebugMemoryInterface *mm)
-	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")), core(core), dbg_mem_if(mm) {
+	DebugCoreRunner(Core &core, DebugMemoryInterface *mm, unsigned port_number)
+	    : sc_module(sc_core::sc_module_name("DebugCoreRunner")), core(core), dbg_mem_if(mm), port_number(port_number) {
 		SC_THREAD(run);
 		core.debug_mode = true;
 	}
