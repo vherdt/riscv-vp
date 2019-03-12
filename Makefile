@@ -41,4 +41,4 @@ clean-all: vp-clean qt-clean sysc-clean
 clean: vp-clean
 
 codestyle:
-	find . -name "*.h*" -o -name "*.cpp" | xargs clang-format -i -style=file      #file is .clang-format
+	find . -not -path '*/\.*' -name "*.h*" -o -name "*.cpp" | xargs clang-format -i -style=file      #file is .clang-format 
