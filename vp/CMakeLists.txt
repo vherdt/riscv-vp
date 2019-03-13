@@ -7,7 +7,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address -fno-omit-frame-pointer")
+#set(CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
