@@ -215,6 +215,7 @@ int sc_main(int argc, char **argv) {
 	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");     // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
 	dma.isock.bind(dma_connector.tsock);
+	dma_connector.bus_lock = bus_lock;
 
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
