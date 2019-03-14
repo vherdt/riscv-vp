@@ -16,14 +16,9 @@ struct InstrMemoryProxy : public instr_memory_if {
     InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner)
             : dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
 
-    virtual uint32_t load_instr32(uint64_t pc) override {
+    virtual uint32_t load_instr(uint64_t pc) override {
         quantum_keeper.inc(access_delay);
         return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
-    }
-
-    virtual uint16_t load_instr16(uint64_t pc) override {
-        quantum_keeper.inc(access_delay);
-        return *(dmi.get_mem_ptr_to_global_addr<uint16_t>(pc));
     }
 };
 
@@ -145,11 +140,8 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 
 
 
-    uint32_t load_instr32(uint64_t addr) override {
+    uint32_t load_instr(uint64_t addr) override {
         return _load_data<uint32_t>(addr);
-    }
-    uint16_t load_instr16(uint64_t addr) override {
-        return _load_data<uint16_t>(addr);
     }
 
     int64_t load_double(uint64_t addr) override {

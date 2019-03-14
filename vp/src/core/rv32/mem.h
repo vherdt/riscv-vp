@@ -16,14 +16,9 @@ struct InstrMemoryProxy : public instr_memory_if {
     InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner)
             : dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
 
-    virtual uint32_t load_instr32(uint64_t pc) override {
+    virtual uint32_t load_instr(uint64_t pc) override {
         quantum_keeper.inc(access_delay);
-        return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
-    }
-
-    virtual uint16_t load_instr16(uint64_t pc) override {
-        quantum_keeper.inc(access_delay);
-        return *(dmi.get_mem_ptr_to_global_addr<uint16_t>(pc));
+        return dmi.load<uint32_t>(pc);
     }
 };
 
@@ -83,9 +78,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         for (auto &e : dmi_ranges) {
             if (e.contains(addr)) {
                 quantum_keeper.inc(dmi_access_delay);
-
-                T ans = *(e.get_mem_ptr_to_global_addr<T>(addr));
-                return ans;
+                return e.load<T>(addr);
             }
         }
 
@@ -102,8 +95,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         for (auto &e : dmi_ranges) {
             if (e.contains(addr)) {
                 quantum_keeper.inc(dmi_access_delay);
-
-                *(e.get_mem_ptr_to_global_addr<T>(addr)) = value;
+                e.store(addr, value);
                 done = true;
             }
         }
@@ -113,11 +105,8 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         atomic_unlock();
     }
 
-    uint32_t load_instr32(uint64_t addr) {
+    uint32_t load_instr(uint64_t addr) {
         return _load_data<uint32_t>(addr);
-    }
-    uint16_t load_instr16(uint64_t addr) {
-        return _load_data<uint16_t>(addr);
     }
 
     int32_t load_word(uint64_t addr) {

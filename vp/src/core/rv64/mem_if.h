@@ -7,8 +7,7 @@ namespace rv64 {
 struct instr_memory_if {
     virtual ~instr_memory_if() {}
 
-    virtual uint16_t load_instr16(uint64_t pc) = 0;
-    virtual uint32_t load_instr32(uint64_t pc) = 0;
+    virtual uint32_t load_instr(uint64_t pc) = 0;
 };
 
 struct data_memory_if {

@@ -143,7 +143,7 @@ struct InstructionBuffer {
 			return (buffer >> 16);
 
 		last_fetch_addr = addr;
-		buffer = instr_mem->load_instr32(addr);
+		buffer = instr_mem->load_instr(addr);
 		return buffer;
 	}
 };

@@ -23,7 +23,7 @@ public:
         return MemoryDMI(mem, start, size);
     }
 
-    uint8_t *get_mem_ptr() {
+    uint8_t *get_raw_mem_ptr() {
         return mem;
     }
 
@@ -33,6 +33,24 @@ public:
         assert ((addr + sizeof(T)) <= end);
         assert ((addr % sizeof(T)) == 0 && "unaligned access");
         return reinterpret_cast<T*>(mem + (addr - start));
+    }
+
+    template <typename T>
+    T load(uint64_t addr) {
+        static_assert(std::is_integral<T>::value, "integer type required");
+        T ans;
+        T *src = get_mem_ptr_to_global_addr<T>(addr);
+        // use memcpy to avoid problems with unaligned loads into standard C++ data types
+        // see: https://blog.quarkslab.com/unaligned-accesses-in-cc-what-why-and-solutions-to-do-it-properly.html
+        memcpy(&ans, src, sizeof(T));
+        return ans;
+    }
+
+    template <typename T>
+    void store(uint64_t addr, T value) {
+        static_assert(std::is_integral<T>::value, "integer type required");
+        T *dst = get_mem_ptr_to_global_addr<T>(addr);
+        memcpy(dst, &value, sizeof(value));
     }
 
     uint64_t get_start() {

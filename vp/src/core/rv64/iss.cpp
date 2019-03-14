@@ -128,13 +128,7 @@ void ISS::exec_step() {
 	assert (((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
 	try {
-		uint32_t mem_word;
-		/* distinguish here to avoid misaligned (native C++) DMI access. NOTE: Perhaps use an instruction buffer instead. */
-		if (pc & 0x1) {
-			 mem_word = instr_mem->load_instr16(pc);
-		} else {
-			mem_word = instr_mem->load_instr32(pc);
-		}
+		uint32_t mem_word = instr_mem->load_instr(pc);
         instr = Instruction(mem_word);
     } catch (SimulationTrap &e) {
 	    op = Opcode::UNDEF;
