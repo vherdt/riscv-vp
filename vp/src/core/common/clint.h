@@ -7,7 +7,7 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
 
-#include <unordered_map>
+#include "util/memory_map.h"
 
 
 template <unsigned NumberOfCores>
@@ -44,31 +44,36 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_event irq_event;
 
-	uint64_t mtime = 0;
-	std::array<uint64_t, NumberOfCores> mtimecmp{};
-    std::array<uint32_t, NumberOfCores> msip{};
+	RegisterRange regs_mtime{0xBFF8, 8};
+	IntegerView<uint64_t> mtime{regs_mtime};
+
+	RegisterRange regs_mtimecmp{0x4000, 8*NumberOfCores};
+	ArrayView<uint64_t> mtimecmp{regs_mtimecmp};
+
+	RegisterRange regs_msip{0x0, 4*NumberOfCores};
+	ArrayView<uint32_t> msip{regs_msip};
+
+	std::vector<RegisterRange *> register_ranges{
+			&regs_mtime,
+			&regs_mtimecmp,
+			&regs_msip
+	};
 
 	std::array<clint_interrupt_target*, NumberOfCores> target_harts{};
-
-	std::unordered_map<uint64_t, uint32_t *> addr_to_reg;
 
 	SC_HAS_PROCESS(CLINT);
 
 	CLINT(sc_core::sc_module_name) {
 		tsock.register_b_transport(this, &CLINT::transport);
 
-		addr_to_reg = {
-		    {0xBFF8, (uint32_t *)&mtime},
-		    {0xBFFC, (uint32_t *)&mtime + 1},
-		};
+		regs_mtimecmp.alignment = 4;
+		regs_msip.alignment = 4;
+		regs_mtime.readonly = true;
+		regs_mtime.alignment = 4;
 
-		for (unsigned i=0; i<NumberOfCores; ++i) {
-            addr_to_reg[i*4] = (uint32_t *)&msip[i];
-
-			auto off = i*8;
-			addr_to_reg[0x4000+off] = (uint32_t *)&mtimecmp[i];
-			addr_to_reg[0x4004+off] = ((uint32_t *)&mtimecmp[i]) + 1;
-		}
+		regs_mtime.pre_read_callback = std::bind(&CLINT::pre_read_mtime, this, std::placeholders::_1);
+		regs_mtimecmp.post_write_callback = std::bind(&CLINT::post_write_mtimecmp, this, std::placeholders::_1);
+		regs_msip.post_write_callback = std::bind(&CLINT::post_write_msip, this, std::placeholders::_1);
 
 		SC_THREAD(run);
 	}
@@ -76,8 +81,7 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	uint64_t update_and_get_mtime() override {
 		auto now = sc_core::sc_time_stamp().value() / scaler;
 		if (now > mtime)
-			mtime = now;  // do not update backward in time (e.g. due to local
-			              // quantums in tlm transaction processing)
+			mtime = now;  // do not update backward in time (e.g. due to local quantums in tlm transaction processing)
 		return mtime;
 	}
 
@@ -88,17 +92,20 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 			update_and_get_mtime();
 
 			for (unsigned i=0; i<NumberOfCores; ++i) {
-				//std::cout << "[vp::clint] process mtimecmp[" << i << "]=" << mtimecmp[i] << ", mtime=" << mtime << std::endl;
-				auto cmp = mtimecmp[i];
+                auto cmp = mtimecmp[i];
+                //std::cout << "[vp::clint] process mtimecmp[" << i << "]=" << cmp << ", mtime=" << mtime << std::endl;
 				if (cmp > 0 && mtime >= cmp) {
-					//std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
+                    //std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
 					target_harts[i]->trigger_timer_interrupt(true);
 				} else {
-					//std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
+                    //std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
 					target_harts[i]->trigger_timer_interrupt(false);
-					if (cmp > 0) {
+					if (cmp > 0 && cmp < UINT64_MAX) {
 						auto time = sc_core::sc_time::from_value(mtime * scaler);
 						auto goal = sc_core::sc_time::from_value(cmp * scaler);
+						//std::cout << "[vp::clint] time=" << time << std::endl;
+                        //std::cout << "[vp::clint] goal=" << goal << std::endl;
+                        //std::cout << "[vp::clint] goal-time=delay=" << goal-time << std::endl;
 						irq_event.notify(goal - time);
 					}
 				}
@@ -106,41 +113,30 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 		}
 	}
 
+	bool pre_read_mtime(RegisterRange::ReadInfo t) {
+		sc_core::sc_time now = sc_core::sc_time_stamp() + t.delay;
+
+		mtime.write(now.value() / scaler);
+
+		return true;
+	}
+
+	void post_write_mtimecmp(RegisterRange::WriteInfo t) {
+        //std::cout << "[vp::clint] write mtimecmp[addr=" << t.addr << "]=" << mtimecmp[t.addr / 8] << ", mtime=" << mtime << std::endl;
+		irq_event.notify(t.delay);
+	}
+
+	void post_write_msip(RegisterRange::WriteInfo t) {
+		assert (t.addr % 4 == 0);
+		unsigned idx = t.addr / 4;
+		msip[idx] &= 0x1;
+		target_harts[idx]->trigger_software_interrupt(msip[idx] != 0);
+	}
+
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		assert (trans.get_data_length() == 4);
-		assert (trans.get_address() % 4 == 0);
+		delay += 2*clock_cycle;
 
-		auto it = addr_to_reg.find(trans.get_address());
-		assert (it != addr_to_reg.end());
-
-		delay += clock_cycle;
-		sc_core::sc_time now = sc_core::sc_time_stamp() + delay;
-
-		if (trans.get_command() == tlm::TLM_READ_COMMAND) {
-			mtime = now.value() / scaler;
-
-			*((uint32_t *)trans.get_data_ptr()) = *it->second;
-		} else if (trans.get_command() == tlm::TLM_WRITE_COMMAND) {
-		    auto addr = trans.get_address();
-
-			assert (addr != 0xBFF8 && addr != 0xBFFC);  // mtime is readonly
-
-			*it->second = *((uint32_t *)trans.get_data_ptr());
-
-			if (addr < 0x4000) {
-			    // write to msip register
-			    unsigned idx = addr / 4;
-			    msip[idx] &= 0x1;
-			    target_harts[idx]->trigger_software_interrupt(msip[idx] != 0);
-			} else if (addr >= 0x4000 && addr < 0xBFF8) {
-				//std::cout << "[vp::clint] write mtimecmp[addr=" << addr << "]=" << *it->second << ", mtime=" << mtime << std::endl;
-                irq_event.notify(delay); // write to mtimecmp, update timer interrupts
-			} else {
-			    assert (false && "unmapped access");
-			}
-		} else {
-			assert(false && "unsupported tlm command for CLINT access");
-		}
+		vp::mm::route("CLINT", register_ranges, trans, delay);
 	}
 };
 

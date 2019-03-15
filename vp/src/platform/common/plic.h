@@ -5,6 +5,8 @@
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
+#include "util/memory_map.h"
+
 
 template <unsigned NumberCores, unsigned NumberInterrupts, uint32_t MaxPriority>
 struct PLIC : public sc_core::sc_module, public interrupt_gateway {
@@ -15,22 +17,36 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	std::array<external_interrupt_target*, NumberCores> target_harts{};
 
-	// shared for all harts
-	// priority 1 is the lowest. Zero means do not interrupt
+	// shared for all harts priority 1 is the lowest. Zero means do not interrupt
 	// NOTE: addressing starts at 1 because interrupt 0 is reserved
-	std::array<uint32_t, NumberInterrupts> interrupt_priorities{};
+	RegisterRange regs_interrupt_priorities{0x4, 4*NumberInterrupts};
+	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
 
 	// how many 32bit entries are required to hold all interrupts
 	static constexpr unsigned NumberInterruptEntries = NumberInterrupts + (32-NumberInterrupts%32);  // clamp to next number divisible by 32
 
-	std::array<uint32_t, NumberInterruptEntries> pending_interrupts{};
+	RegisterRange regs_pending_interrupts{0x1000, 4*NumberInterruptEntries};
+	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
 
-	std::array<std::array<uint32_t, NumberInterruptEntries>, NumberCores> hart_enabled_interrupts{};
-	std::array<uint32_t, NumberCores> hart_priority_threshold{};
-	std::array<uint32_t, NumberCores> hart_claim_response{};
+	struct HartConfig {
+		uint32_t priority_threshold;
+		uint32_t claim_response;
+	};
+
+	RegisterRange regs_hart_enabled_interrupts{0x2000, 4*NumberInterruptEntries*NumberCores};
+	ArrayView<uint32_t> hart_enabled_interrupts{regs_hart_enabled_interrupts};
+
+	RegisterRange regs_hart_config{0x200000, sizeof(HartConfig)*NumberCores};
+	ArrayView<HartConfig> hart_config{regs_hart_config};
+
+	std::vector<RegisterRange *> register_ranges{
+			&regs_interrupt_priorities,
+			&regs_pending_interrupts,
+			&regs_hart_enabled_interrupts,
+			&regs_hart_config
+	};
+
 	std::array<bool, NumberCores> hart_eip{};
-
-	vp::map::LocalRouter router = {"PLIC"};
 
 	sc_core::sc_event e_run;
 	sc_core::sc_time clock_cycle;
@@ -41,27 +57,21 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 		clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 		tsock.register_b_transport(this, &PLIC::transport);
 
-		auto &regs = router
-				.add_register_bank({})
-				.register_handler(this, &PLIC::register_access_callback);
+		regs_pending_interrupts.readonly = true;
+		regs_hart_config.alignment = 4;
+
+		regs_interrupt_priorities.post_write_callback = std::bind(&PLIC::post_write_interrupt_priorities, this, std::placeholders::_1);
+		regs_hart_config.post_write_callback = std::bind(&PLIC::post_write_hart_config, this, std::placeholders::_1);
+		regs_hart_config.pre_read_callback = std::bind(&PLIC::pre_read_hart_config, this, std::placeholders::_1);
 
 		for (unsigned i=0; i<NumberInterrupts; ++i) {
 			interrupt_priorities[i] = 1;
-			regs.add_register({0x0 + i*4, &interrupt_priorities[i]});
-		}
-
-		for (unsigned i=0; i<NumberInterruptEntries; ++i) {
-			regs.add_register({0x1000 + i*4, &pending_interrupts[i], vp::map::read_only});
 		}
 
 		for (unsigned n=0; n<NumberCores; ++n) {
 			for (unsigned i=0; i<NumberInterruptEntries; ++i) {
-				hart_enabled_interrupts[n][i] = 0xffffffff;	// all interrupts enabled by default
-				regs.add_register({0x2000 + i*4 + n*NumberInterruptEntries*4, &hart_enabled_interrupts[n][i]});
+				hart_enabled_interrupts(n,i) = 0xffffffff;	// all interrupts enabled by default
 			}
-
-			regs.add_register({0x200000 + n*8, &hart_priority_threshold[n]});
-			regs.add_register({0x200004 + n*8, &hart_claim_response[n]});
 		}
 
 		SC_THREAD(run);
@@ -102,10 +112,10 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			unsigned idx = i / 32;
 			unsigned off = i % 32;
 
-			if (hart_enabled_interrupts[hart_id][idx] & (1 << off)) {
+			if (hart_enabled_interrupts(hart_id,idx) & (1 << off)) {
 				if (pending_interrupts[idx] & (1 << off)) {
 					auto prio = interrupt_priorities[i];
-					if (prio > 0 && (!consider_threshold || (prio > hart_priority_threshold[hart_id]))) {
+					if (prio > 0 && (!consider_threshold || (prio > hart_config[hart_id].priority_threshold))) {
 						if (prio > max_priority) {
 							max_priority = prio;
 							min_id = i;
@@ -119,62 +129,55 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 
-	void register_access_callback(const vp::map::register_access_t &r) {
-		if (r.write && (r.addr >= 0x1000 && r.addr < 0x1000+NumberInterruptEntries*4)) {
-			assert(false && "pending interrupts registers are read only");
-			return;
-		}
+	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+		delay += 4*clock_cycle;
 
-        //std::cout << "[vp::plic] register access callback, read=" << r.read << ", write=" << r.write << std::endl;
-
-		if (r.read) {
-			for (unsigned i=0; i<NumberCores; ++i) {
-				if (r.vptr == &hart_claim_response[i]) {
-					// NOTE: on claim request retrieve return and clear the interrupt with
-					// highest priority, priority threshold is ignored at this point
-					unsigned min_id = hart_get_next_pending_interrupt(0, false);
-					hart_claim_response[i] = min_id;  // zero means no more interrupt to claim
-					clear_pending_interrupt(min_id);
-					//std::cout << "[vp::plic] claim interrupt " << min_id << std::endl;
-					break;
-				}
-			}
-		}
-
-		r.fn();
-
-		if (r.write) {
-			for (unsigned i=0; i<NumberCores; ++i) {
-				if (r.vptr == &hart_claim_response[i]) {
-					// NOTE: on completed response, check if there are any other pending
-					// interrupts
-					if (hart_has_pending_enabled_interrupts(i)) {
-						assert(hart_eip[i]);
-						// trigger again to make this work even if the SW clears the harts interrupt pending bit
-						target_harts[i]->trigger_external_interrupt();
-					} else {
-						hart_eip[i] = false;
-						target_harts[i]->clear_external_interrupt();
-                        //std::cout << "[vp::plic] clear eip" << std::endl;
-					}
-					break;
-				}
-			}
-
-			// ensure the priority value is valid
-			if (r.addr <= 0x0FFF) {
-				for (auto &x : interrupt_priorities)
-					x = std::min(x, MaxPriority);
-			}
-
-			// interrupt priority, hart priority threshold or enabled interrupts may have changed, thus trigger re-checking of pending interrupts
-			e_run.notify(10*clock_cycle);
-		}
+        vp::mm::route("PLIC", register_ranges, trans, delay);
 	}
 
+	void post_write_interrupt_priorities(RegisterRange::WriteInfo t) {
+        (void) t;
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		router.transport(trans, delay);
+		for (auto &x : interrupt_priorities)
+			x = std::min(x, MaxPriority);
+	}
+
+	bool pre_read_hart_config(RegisterRange::ReadInfo t) {
+		assert (t.addr % 4 == 0);
+		unsigned idx = t.addr / 4;
+
+		if ((idx % 2) == 1) {
+			// access is directed to claim response register
+			assert (t.size == 4);
+			--idx;
+
+			unsigned min_id = hart_get_next_pending_interrupt(0, false);
+			hart_config[idx].claim_response = min_id;
+			clear_pending_interrupt(min_id);
+		}
+
+		return true;
+	}
+
+	void post_write_hart_config(RegisterRange::WriteInfo t) {
+		assert (t.addr % 4 == 0);
+		unsigned idx = t.addr / 4;
+
+		if ((idx % 2) == 1) {
+			// access is directed to claim response register
+			assert (t.size == 4);
+			--idx;
+
+			if (hart_has_pending_enabled_interrupts(idx)) {
+				assert(hart_eip[idx]);
+				// trigger again to make this work even if the SW clears the harts interrupt pending bit
+				target_harts[idx]->trigger_external_interrupt();
+			} else {
+				hart_eip[idx] = false;
+				target_harts[idx]->clear_external_interrupt();
+				//std::cout << "[vp::plic] clear eip" << std::endl;
+			}
+		}
 	}
 
 

@@ -15,8 +15,10 @@ struct SimpleMemory : public sc_core::sc_module {
 
 	uint8_t *data;
 	uint32_t size;
+	bool read_only;
 
-	SimpleMemory(sc_core::sc_module_name, uint32_t size) : data(new uint8_t[size]()), size(size) {
+	SimpleMemory(sc_core::sc_module_name, uint32_t size, bool read_only=false)
+		: data(new uint8_t[size]()), size(size), read_only(read_only) {
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
 		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);
@@ -66,10 +68,13 @@ struct SimpleMemory : public sc_core::sc_module {
 
 	bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi) {
 		(void)trans;
-		dmi.allow_read_write();
 		dmi.set_start_address(0);
 		dmi.set_end_address(size);
 		dmi.set_dmi_ptr(data);
+		if (read_only)
+			dmi.allow_read();
+		else
+			dmi.allow_read_write();
 		return true;
 	}
 };

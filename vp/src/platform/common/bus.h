@@ -13,11 +13,11 @@ struct PortMapping {
 	uint64_t end;
 
 	PortMapping(uint64_t start, uint64_t end) : start(start), end(end) {
-		assert(end > start);
+		assert(end >= start);
 	}
 
 	bool contains(uint64_t addr) {
-		return addr >= start && addr < end;
+		return addr >= start && addr <= end;
 	}
 
 	uint64_t global_to_local(uint64_t addr) {

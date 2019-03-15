@@ -2,6 +2,7 @@
 
 // to save *cout* format setting, see *ISS::show*
 #include <boost/io/ios_state.hpp>
+#include <boost/format.hpp>
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
@@ -86,7 +87,7 @@ int64_t &RegFile::operator[](const uint64_t idx) {
 
 void RegFile::show() {
 	for (unsigned i = 0; i < NUM_REGS; ++i) {
-		printf(COLORFRMT " = %8lx\n", COLORPRINT(regcolors[i], regnames[i]), regs[i]);
+		printf(COLORFRMT " = %16lx\n", COLORPRINT(regcolors[i], regnames[i]), regs[i]);
 	}
 }
 
@@ -145,7 +146,7 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2lu: prv %1x: pc %8lx: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr.at(op));
+		printf("core %2lu: prv %1x: pc %16lx: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr.at(op));
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -1830,7 +1831,7 @@ void ISS::run_step() {
 		}
 	} catch (SimulationTrap &e) {
         if (trace)
-            std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+            std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval << ", pc=" << boost::format("%x") % last_pc << std::endl;
         auto target_mode = prepare_trap(e);
         switch_to_trap_handler(target_mode);
 	}

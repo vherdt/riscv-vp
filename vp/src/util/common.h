@@ -8,12 +8,12 @@
 #define UNUSED(x) (void)(x)
 
 inline void ensure(bool cond) {
-    if (!cond)
+    if (unlikely(!cond))
         throw std::runtime_error("runtime assertion failed");
 }
 
 inline void ensure(bool cond, const std::string &reason) {
-    if (!cond)
+    if (unlikely(!cond))
         throw std::runtime_error(reason);
 }
 
