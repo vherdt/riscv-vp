@@ -128,8 +128,9 @@ ISS::ISS(uint64_t hart_id)
 void ISS::exec_step() {
 	assert (((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
+	uint32_t mem_word;
 	try {
-		uint32_t mem_word = instr_mem->load_instr(pc);
+		mem_word = instr_mem->load_instr(pc);
         instr = Instruction(mem_word);
     } catch (SimulationTrap &e) {
 	    op = Opcode::UNDEF;
@@ -146,7 +147,7 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2lu: prv %1x: pc %16lx: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr.at(op));
+		printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg, prv, last_pc, mem_word, Opcode::mappingStr.at(op));
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -332,6 +333,12 @@ void ISS::exec_step() {
             uint64_t addr = regs[instr.rs1()] + instr.I_imm();
             trap_check_addr_alignment<8, true>(addr);
             regs[instr.rd()] = mem->load_double(addr);
+
+            /*
+            if (last_pc == 0x2000097c38lu) {
+                printf("# LD.vaddr=%16lx, value=%16lx\n", addr, regs[instr.rd()]);
+            }
+             */
         } break;
 
 		case Opcode::LBU: {
@@ -356,6 +363,12 @@ void ISS::exec_step() {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
             }
+
+			/*
+			if (last_pc == 0x2000097c3clu) {
+			    printf("> BEQ.rs1=%u, rs2=%u, rs1_val=%16lx, rs2_val=%16lx\n", instr.rs1(), instr.rs2(), regs[instr.rs1()], regs[instr.rs2()]);
+			}
+			 */
 			break;
 
 		case Opcode::BNE:
@@ -433,7 +446,7 @@ void ISS::exec_step() {
 
 		case Opcode::FENCE:
 		case Opcode::FENCE_I: {
-			// not using out of order execution so can be ignored
+			// not using out of order execution/caches so can be ignored
 		} break;
 
 		case Opcode::ECALL: {
@@ -471,6 +484,13 @@ void ISS::exec_step() {
 				if (rd != RegFile::zero) {
 					regs[instr.rd()] = get_csr_value(addr);
 				}
+
+				/*
+                if (last_pc == 0xffffffe000929daelu) {
+                    printf("# CSRRW.rs1=%u, rs1_val=%16lx\n", instr.rs1(), rs1_val);
+                }
+                */
+
 				set_csr_value(addr, rs1_val);
 			}
 		} break;
@@ -1298,6 +1318,7 @@ void ISS::exec_step() {
 		case Opcode::SFENCE_VMA:
 			if (s_mode() && csrs.mstatus.tvm)
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			mem->flush_tlb();
 			break;
 
 		case Opcode::URET:
@@ -1421,18 +1442,23 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:	// not implemented
 			break;
 
-        case SATP_ADDR:
+        case SATP_ADDR: {
             if (csrs.mstatus.tvm)
                 RAISE_ILLEGAL_INSTRUCTION();
-            break;
+            auto mode = csrs.satp.mode;
+            write(csrs.satp, SATP_MASK);
+            if (csrs.satp.mode != SATP_MODE_BARE && csrs.satp.mode != SATP_MODE_SV39 && csrs.satp.mode != SATP_MODE_SV48)
+                csrs.satp.mode = mode;
+            //std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
+        } break;
 
 	    case MTVEC_ADDR: write(csrs.mtvec, MTVEC_MASK); break;
 		case STVEC_ADDR: write(csrs.stvec, MTVEC_MASK); break;
 		case UTVEC_ADDR: write(csrs.utvec, MTVEC_MASK); break;
 
-		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break;
-		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
-		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break;
+		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break; //printf("# MEPC=%16lx\n", csrs.mepc.reg); break;
+		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break; //printf("# SEPC=%16lx, value=%16lx, mask=%16lx\n", csrs.sepc.reg, value, pc_alignment_mask()); break;
+		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break; //printf("# UEPC=%16lx\n", csrs.uepc.reg); break;
 
 		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_WRITE_MASK); break;
 		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_WRITE_MASK); break;
@@ -1596,7 +1622,7 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	}
 
 	if (trace)
-	    printf("[vp::iss] return from trap handler, time %s, pc %8lx, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
+	    printf("[vp::iss] return from trap handler, time %s, pc %16lx, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
 }
 
 
@@ -1737,7 +1763,7 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
     if (trace){
-    	printf("[vp::iss] switch to trap handler, time %s, last_pc %8lx, pc %8lx, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
+    	printf("[vp::iss] switch to trap handler, time %s, last_pc %16lx, pc %16lx, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
     }
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
@@ -1764,6 +1790,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			assert (prv == SupervisorMode || prv == UserMode);
 
 			csrs.sepc.reg = pc;
+			//printf("# TRAP SEPC=%16lx\n", csrs.sepc.reg);
 
 			csrs.mstatus.spie = csrs.mstatus.sie;
 			csrs.mstatus.sie = 0;
@@ -1792,6 +1819,9 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		default:
 			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
 	}
+
+	if (trace)
+        printf("TRAP-HANDLER PC: pc %16lx\n", pc);
 }
 
 
@@ -1822,6 +1852,16 @@ void ISS::run_step() {
 
 	last_pc = pc;
 	try {
+	    /*
+	    static unsigned N = 0;
+	    if (pc > (0xffffffe00092b4a2ul + 1024)) {
+            if (++N >= 4096) {
+                printf("PC: %16lx\n", pc);
+                N = 0;
+            }
+        }
+        */
+
 		exec_step();
 
 		auto x = compute_pending_interrupts();

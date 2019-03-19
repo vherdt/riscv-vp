@@ -3,9 +3,11 @@
 
 #include "core/common/clint.h"
 #include "platform/common/uart.h"
+#include "platform/common/uart16550.h"
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
+#include "mmu.h"
 #include "gdb_stub.h"
 #include "memory.h"
 #include "plic.h"
@@ -56,18 +58,20 @@ struct Options {
 
     std::string input_program;
 
-    addr_t mem_size           = 1024*1024*256;  // 256 MB ram
-    addr_t mem_start_addr     = 0x80000000;
-    addr_t mem_end_addr       = mem_start_addr + mem_size - 1;
-    addr_t clint_start_addr   = 0x02000000;
-    addr_t clint_end_addr     = 0x0200ffff;
-    addr_t sys_start_addr     = 0x02010000;
-    addr_t sys_end_addr       = 0x020103ff;
-    addr_t dtb_rom_start_addr = 0x00001000;
-    addr_t dtb_rom_size       = 0x2000;
-    addr_t dtb_rom_end_addr   = dtb_rom_start_addr + dtb_rom_size - 1;
-    addr_t uart0_start_addr   = 0x10013000;
-    addr_t uart0_end_addr     = 0x10013FFF;
+    addr_t mem_size             = 1024u*1024u*2048u;  // 2048 MB ram
+    addr_t mem_start_addr       = 0x80000000;
+    addr_t mem_end_addr         = mem_start_addr + mem_size - 1;
+    addr_t clint_start_addr     = 0x02000000;
+    addr_t clint_end_addr       = 0x0200ffff;
+    addr_t sys_start_addr       = 0x02010000;
+    addr_t sys_end_addr         = 0x020103ff;
+    addr_t dtb_rom_start_addr   = 0x00001000;
+    addr_t dtb_rom_size         = 0x2000;
+    addr_t dtb_rom_end_addr     = dtb_rom_start_addr + dtb_rom_size - 1;
+    addr_t uart0_start_addr     = 0x10013000;
+    addr_t uart0_end_addr       = 0x10013fff;
+    addr_t uart16550_start_addr = 0x10000000;
+    addr_t uart16550_end_addr   = 0x100000ff;
 
     bool use_debug_runner = false;
     bool use_instr_dmi = false;
@@ -142,14 +146,16 @@ int sc_main(int argc, char **argv) {
     tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
     ISS core(0);
-    CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
+    MMU mmu(core);
+    CombinedMemoryInterface core_mem_if("MemoryInterface0", core, mmu);
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2, 5> bus("SimpleBus");
+    SimpleBus<2, 6> bus("SimpleBus");
     SyscallHandler sys("SyscallHandler");
     CLINT<1> clint("CLINT");
     UART uart0("UART0");
+    UART16550 uart16550("UART16550");
     DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
     MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -157,6 +163,7 @@ int sc_main(int argc, char **argv) {
 
     std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
     core_mem_if.bus_lock = bus_lock;
+    mmu.mem = &core_mem_if;
 
     instr_memory_if *instr_mem_if = &core_mem_if;
     data_memory_if *data_mem_if = &core_mem_if;
@@ -184,6 +191,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
     bus.ports[3] = new PortMapping(opt.dtb_rom_start_addr, opt.dtb_rom_end_addr);
     bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
+    bus.ports[5] = new PortMapping(opt.uart16550_start_addr, opt.uart16550_end_addr);
 
     // connect TLM sockets
     core_mem_if.isock.bind(bus.tsocks[0]);
@@ -193,6 +201,7 @@ int sc_main(int argc, char **argv) {
     bus.isocks[2].bind(sys.tsock);
     bus.isocks[3].bind(dtb_rom.tsock);
     bus.isocks[4].bind(uart0.tsock);
+    bus.isocks[5].bind(uart16550.tsock);
 
     // connect interrupt signals/communication
     clint.target_harts[0] = &core;

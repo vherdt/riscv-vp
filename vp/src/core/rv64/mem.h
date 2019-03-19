@@ -1,6 +1,7 @@
 #pragma once
 
 #include "iss.h"
+#include "mmu.h"
 #include "core/common/dmi.h"
 
 namespace rv64 {
@@ -9,14 +10,16 @@ namespace rv64 {
 struct InstrMemoryProxy : public instr_memory_if {
     MemoryDMI dmi;
 
+    ISS &core;
     tlm_utils::tlm_quantumkeeper &quantum_keeper;
     sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
     sc_core::sc_time access_delay = clock_cycle * 2;
 
     InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner)
-            : dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
+            : dmi(dmi), core(owner), quantum_keeper(owner.quantum_keeper) {}
 
     virtual uint32_t load_instr(uint64_t pc) override {
+        assert ((core.csrs.satp.mode == SATP_MODE_BARE) && "InstrMemoryProxy does not support virtual memory");
         quantum_keeper.inc(access_delay);
         return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
     }
@@ -26,7 +29,8 @@ struct InstrMemoryProxy : public instr_memory_if {
 
 struct CombinedMemoryInterface : public sc_core::sc_module,
                                  public instr_memory_if,
-                                 public data_memory_if {
+                                 public data_memory_if,
+                                 public mmu_memory_if {
     ISS &iss;
     std::shared_ptr<bus_lock_if> bus_lock;
     uint64_t lr_addr = 0;
@@ -39,8 +43,25 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
     sc_core::sc_time dmi_access_delay = clock_cycle * 4;
     std::vector<MemoryDMI> dmi_ranges;
 
-    CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner)
-            : iss(owner), quantum_keeper(iss.quantum_keeper) {
+    MMU &mmu;
+
+    CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU &mmu)
+            : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
+    }
+
+    inline uint64_t _v2p(uint64_t vaddr, MemoryAccessType type) {
+        auto paddr = mmu.translate_virtual_to_physical_addr(vaddr, type);
+        /*
+        if (vaddr == 0x2000138a08lu)
+            printf("> paddr=%16lx\n", paddr);
+         */
+
+        /*
+        if (vaddr == 0x4d7dclu)
+            printf("> paddr=%16lx\n", paddr);
+            */
+
+        return paddr;
     }
 
     inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
@@ -71,7 +92,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
     }
 
     template <typename T>
-    inline T _load_data(uint64_t addr) {
+    inline T _raw_load_data(uint64_t addr) {
         // NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to postpone the lock after the dmi access
         bus_lock->wait_for_access_rights(iss.get_hart_id());
 
@@ -90,8 +111,16 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
     }
 
     template <typename T>
-    inline void _store_data(uint64_t addr, T value) {
+    inline void _raw_store_data(uint64_t addr, T value) {
         bus_lock->wait_for_access_rights(iss.get_hart_id());
+
+        /*
+        if (addr == 0x80afba08lu) {
+            printf(">>> STORE.addr=%16lx, value=", addr);
+            std::cout << value << std::endl;
+            printf(">>> v_pc=%16lx\n", iss.last_pc);
+        }
+         */
 
         bool done = false;
         for (auto &e : dmi_ranges) {
@@ -107,6 +136,37 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
             _do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
         atomic_unlock();
     }
+
+
+    template <typename T>
+    inline T _load_data(uint64_t addr) {
+        return _raw_load_data<T>(_v2p(addr, LOAD));
+    }
+
+    template <typename T>
+    inline void _store_data(uint64_t addr, T value) {
+        _raw_store_data(_v2p(addr, STORE), value);
+    }
+
+
+    uint64_t mmu_load_pte64(uint64_t addr) override {
+        return _raw_load_data<uint64_t>(addr);
+    }
+    uint64_t mmu_load_pte32(uint64_t addr) override {
+        return _raw_load_data<uint32_t>(addr);
+    }
+    void mmu_store_pte32(uint64_t addr, uint32_t value) override {
+        _raw_store_data(addr, value);
+    }
+
+    void flush_tlb() override {
+        mmu.flush_tlb();
+    }
+
+    uint32_t load_instr(uint64_t addr) override {
+        return _raw_load_data<uint32_t>(_v2p(addr, FETCH));
+    }
+
 
     template <typename T>
     T _atomic_load_data(uint64_t addr) {
@@ -138,11 +198,6 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
         return false;
     }
 
-
-
-    uint32_t load_instr(uint64_t addr) override {
-        return _load_data<uint32_t>(addr);
-    }
 
     int64_t load_double(uint64_t addr) override {
         return _load_data<int64_t>(addr);

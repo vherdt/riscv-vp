@@ -1254,7 +1254,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			auto n = instr.c_uimm();
 			if (arch == RV32 && n > 31)
 				return UNDEF;
-			instr = InstructionFactory::SLLI(instr.c_rd_small(), instr.c_rd_small(), n);
+			instr = InstructionFactory::SLLI(instr.c_rd(), instr.c_rd(), n);
 			return SLLI;
 		}
 
@@ -1618,9 +1618,17 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_AMO: {
 			switch (instr.funct5()) {
 				case F5_LR_W:
-                    MATCH_AND_RETURN_INSTR(LR_W);
+					if (instr.funct3() == F3_AMO_D) {
+						MATCH_AND_RETURN_INSTR(LR_D);
+					} else {
+						MATCH_AND_RETURN_INSTR(LR_W);
+					}
 				case F5_SC_W:
-                    MATCH_AND_RETURN_INSTR(SC_W);
+					if (instr.funct3() == F3_AMO_D) {
+						MATCH_AND_RETURN_INSTR(SC_D);
+					} else {
+						MATCH_AND_RETURN_INSTR(SC_W);
+					}
 				case F5_AMOSWAP_W:
 				    if (instr.funct3() == F3_AMO_D) {
                         MATCH_AND_RETURN_INSTR(AMOSWAP_D);

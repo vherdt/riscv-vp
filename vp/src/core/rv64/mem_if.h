@@ -10,6 +10,14 @@ struct instr_memory_if {
     virtual uint32_t load_instr(uint64_t pc) = 0;
 };
 
+struct mmu_memory_if {
+    virtual ~mmu_memory_if() {}
+
+    virtual uint64_t mmu_load_pte64(uint64_t addr) = 0;
+    virtual uint64_t mmu_load_pte32(uint64_t addr) = 0;
+    virtual void mmu_store_pte32(uint64_t addr, uint32_t value) = 0;
+};
+
 struct data_memory_if {
     virtual ~data_memory_if() {}
 
@@ -36,6 +44,8 @@ struct data_memory_if {
     virtual void atomic_store_double(uint64_t addr, uint64_t value) = 0;
     virtual int64_t atomic_load_reserved_double(uint64_t addr) = 0;
     virtual bool atomic_store_conditional_double(uint64_t addr, uint64_t value) = 0;
+
+    virtual void flush_tlb() = 0;
 };
 
 } // namespace rv64

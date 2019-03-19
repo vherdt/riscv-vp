@@ -173,6 +173,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
     static constexpr int64_t REG_MIN = INT64_MIN;
     static constexpr int64_t REG32_MIN = INT32_MIN;
+    static constexpr unsigned xlen = 64;
 
 
     ISS(uint64_t hart_id);
@@ -227,11 +228,11 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
     void validate_csr_counter_read_access_rights(uint64_t addr);
 
-    unsigned pc_alignment_mask() {
+    uint64_t pc_alignment_mask() {
         if (csrs.misa.has_C_extension())
-            return ~0x1;
+            return ~uint64_t(0x1);
         else
-            return ~0x3;
+            return ~uint64_t(0x3);
     }
 
     inline void trap_check_pc_alignment() {

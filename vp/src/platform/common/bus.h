@@ -113,7 +113,7 @@ public:
 			wait_until_unlocked();
 		}
 
-		assert (!locked);
+		assert (!locked || (hart_id == owner));
 		locked = true;
 		owner = hart_id;
 	}

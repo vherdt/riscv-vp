@@ -5,6 +5,7 @@
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
+#include "mmu.h"
 #include "gdb_stub.h"
 #include "memory.h"
 #include "plic.h"
@@ -103,7 +104,8 @@ int sc_main(int argc, char **argv) {
     tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
     ISS core(0);
-    CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
+    MMU mmu(core);
+    CombinedMemoryInterface core_mem_if("MemoryInterface0", core, mmu);
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     ELFLoader loader(opt.input_program.c_str());
     SimpleBus<2, 3> bus("SimpleBus");
@@ -116,6 +118,7 @@ int sc_main(int argc, char **argv) {
 
     std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
     core_mem_if.bus_lock = bus_lock;
+    mmu.mem = &core_mem_if;
 
     instr_memory_if *instr_mem_if = &core_mem_if;
     data_memory_if *data_mem_if = &core_mem_if;

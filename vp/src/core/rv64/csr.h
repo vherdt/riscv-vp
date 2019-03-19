@@ -12,6 +12,14 @@
 
 namespace rv64 {
 
+constexpr unsigned SATP_MODE_BARE = 0;
+constexpr unsigned SATP_MODE_SV32 = 1;
+constexpr unsigned SATP_MODE_SV39 = 8;
+constexpr unsigned SATP_MODE_SV48 = 9;
+constexpr unsigned SATP_MODE_SV57 = 10;
+constexpr unsigned SATP_MODE_SV64 = 11;
+
+
 constexpr unsigned FS_OFF = 0b00;
 constexpr unsigned FS_INITIAL = 0b01;
 constexpr unsigned FS_CLEAN = 0b10;
@@ -141,7 +149,7 @@ struct csr_mtvec {
 		};
 	};
 
-	uint32_t get_base_address() {
+	uint64_t get_base_address() {
 		return base << 2;
 	}
 
@@ -149,7 +157,7 @@ struct csr_mtvec {
 		Direct = 0, Vectored = 1
 	};
 
-	void checked_write(uint32_t val) {
+	void checked_write(uint64_t val) {
 		reg = val;
 		if (mode >= 1)
 			mode = 0;
@@ -271,9 +279,9 @@ struct csr_satp {
 	union {
 		uint64_t reg = 0;
 		struct {
-			unsigned mode : 4;  // WARL
-			unsigned asid : 16;  // WARL
 			unsigned long ppn : 44;  // WARL
+			unsigned asid : 16;  // WARL
+			unsigned mode : 4;  // WARL
 		};
 	};
 };
@@ -334,6 +342,9 @@ constexpr uint64_t SSTATUS_READ_MASK  = 0b10000000000000000000000000000011000000
 constexpr uint64_t USTATUS_MASK       = 0b0000000000000000000000000000000000000000000000000000000000010001;
 
 constexpr uint64_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
+
+constexpr uint64_t SATP_MASK = 0b1111000000000000000011111111111111111111111111111111111111111111;
+constexpr uint64_t SATP_MODE = 0b1111000000000000000000000000000000000000000000000000000000000000;
 
 constexpr uint64_t FCSR_MASK = 0b11111111;
 
