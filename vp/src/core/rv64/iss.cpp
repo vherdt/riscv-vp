@@ -333,12 +333,6 @@ void ISS::exec_step() {
             uint64_t addr = regs[instr.rs1()] + instr.I_imm();
             trap_check_addr_alignment<8, true>(addr);
             regs[instr.rd()] = mem->load_double(addr);
-
-            /*
-            if (last_pc == 0x2000097c38lu) {
-                printf("# LD.vaddr=%16lx, value=%16lx\n", addr, regs[instr.rd()]);
-            }
-             */
         } break;
 
 		case Opcode::LBU: {
@@ -363,12 +357,6 @@ void ISS::exec_step() {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
             }
-
-			/*
-			if (last_pc == 0x2000097c3clu) {
-			    printf("> BEQ.rs1=%u, rs2=%u, rs1_val=%16lx, rs2_val=%16lx\n", instr.rs1(), instr.rs2(), regs[instr.rs1()], regs[instr.rs2()]);
-			}
-			 */
 			break;
 
 		case Opcode::BNE:
@@ -484,13 +472,6 @@ void ISS::exec_step() {
 				if (rd != RegFile::zero) {
 					regs[instr.rd()] = get_csr_value(addr);
 				}
-
-				/*
-                if (last_pc == 0xffffffe000929daelu) {
-                    printf("# CSRRW.rs1=%u, rs1_val=%16lx\n", instr.rs1(), rs1_val);
-                }
-                */
-
 				set_csr_value(addr, rs1_val);
 			}
 		} break;
@@ -1456,9 +1437,9 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 		case STVEC_ADDR: write(csrs.stvec, MTVEC_MASK); break;
 		case UTVEC_ADDR: write(csrs.utvec, MTVEC_MASK); break;
 
-		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break; //printf("# MEPC=%16lx\n", csrs.mepc.reg); break;
-		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break; //printf("# SEPC=%16lx, value=%16lx, mask=%16lx\n", csrs.sepc.reg, value, pc_alignment_mask()); break;
-		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break; //printf("# UEPC=%16lx\n", csrs.uepc.reg); break;
+		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break;
+		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
+		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break;
 
 		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_WRITE_MASK); break;
 		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_WRITE_MASK); break;
@@ -1790,7 +1771,6 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			assert (prv == SupervisorMode || prv == UserMode);
 
 			csrs.sepc.reg = pc;
-			//printf("# TRAP SEPC=%16lx\n", csrs.sepc.reg);
 
 			csrs.mstatus.spie = csrs.mstatus.sie;
 			csrs.mstatus.sie = 0;
@@ -1819,9 +1799,6 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		default:
 			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
 	}
-
-	if (trace)
-        printf("TRAP-HANDLER PC: pc %16lx\n", pc);
 }
 
 
@@ -1852,16 +1829,6 @@ void ISS::run_step() {
 
 	last_pc = pc;
 	try {
-	    /*
-	    static unsigned N = 0;
-	    if (pc > (0xffffffe00092b4a2ul + 1024)) {
-            if (++N >= 4096) {
-                printf("PC: %16lx\n", pc);
-                N = 0;
-            }
-        }
-        */
-
 		exec_step();
 
 		auto x = compute_pending_interrupts();
@@ -1896,8 +1863,7 @@ void ISS::run_step() {
 }
 
 void ISS::run() {
-	// run a single step until either a breakpoint is hit or the execution
-	// terminates
+	// run a single step until either a breakpoint is hit or the execution terminates
 	do {
 		run_step();
 	} while (status == CoreExecStatus::Runnable);

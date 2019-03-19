@@ -50,18 +50,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
     }
 
     inline uint64_t _v2p(uint64_t vaddr, MemoryAccessType type) {
-        auto paddr = mmu.translate_virtual_to_physical_addr(vaddr, type);
-        /*
-        if (vaddr == 0x2000138a08lu)
-            printf("> paddr=%16lx\n", paddr);
-         */
-
-        /*
-        if (vaddr == 0x4d7dclu)
-            printf("> paddr=%16lx\n", paddr);
-            */
-
-        return paddr;
+        return mmu.translate_virtual_to_physical_addr(vaddr, type);
     }
 
     inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
@@ -113,14 +102,6 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
     template <typename T>
     inline void _raw_store_data(uint64_t addr, T value) {
         bus_lock->wait_for_access_rights(iss.get_hart_id());
-
-        /*
-        if (addr == 0x80afba08lu) {
-            printf(">>> STORE.addr=%16lx, value=", addr);
-            std::cout << value << std::endl;
-            printf(">>> v_pc=%16lx\n", iss.last_pc);
-        }
-         */
 
         bool done = false;
         for (auto &e : dmi_ranges) {
