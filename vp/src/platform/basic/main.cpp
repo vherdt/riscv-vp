@@ -18,6 +18,7 @@
 #include "sensor2.h"
 #include "terminal.h"
 #include "syscall.h"
+#include "util/options.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -30,6 +31,7 @@ struct Options {
 	typedef unsigned int addr_t;
 
 	Options &check_and_post_process() {
+		entry_point.finalize(parse_ulong_option);
 		mem_end_addr = mem_start_addr + mem_size - 1;
 		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
 		       "RAM too big, would overlap memory");
@@ -81,6 +83,8 @@ struct Options {
 
 	unsigned int tlm_global_quantum = 10;
 
+	OptionValue<unsigned long> entry_point;
+
 	void show() {
 		std::cout << "options {" << std::endl;
 		std::cout << "  use instr dmi = " << use_instr_dmi << std::endl;
@@ -114,6 +118,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
 		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
+		("entry-point", po::value<std::string>(&opt.entry_point.option), "set entry point address (ISS program counter)")
 		("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""),"MRAM image file for persistency")
 		("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
 		("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
@@ -185,8 +190,12 @@ int sc_main(int argc, char **argv) {
         iss_mem_if.dmi_ranges.emplace_back(dmi);
 	}
 
+	uint64_t entry_point = loader.get_entrypoint();
+	if (opt.entry_point.available)
+		entry_point = opt.entry_point.value;
+
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
+	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 

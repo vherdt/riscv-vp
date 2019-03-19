@@ -12,6 +12,7 @@
 #include "memory.h"
 #include "plic.h"
 #include "syscall.h"
+#include "util/options.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -20,37 +21,12 @@
 
 using namespace rv64;
 
-template <typename T>
-struct OptionValue {
-    bool available = false;
-    T value{};
-    std::string option;
-};
-
-unsigned int parse_uint_option(const std::string &s) {
-    bool is_hex = false;
-    if (s.size() >= 2) {
-        if ((s[0] == '0') && ((s[1] == 'x') || (s[1] == 'X')))
-            is_hex = true;
-    }
-
-    try {
-        if (is_hex)
-            return stoul(s, 0, 16);
-        return stoul(s);
-    } catch (std::exception &e) {
-        throw std::runtime_error(std::string("unable to parse option '") + s + "' into a number");
-    }
-}
 
 struct Options {
     typedef unsigned int addr_t;
 
     Options &check_and_post_process() {
-        if (!entry_point.option.empty()) {
-            entry_point.value = parse_uint_option(entry_point.option);
-            entry_point.available = true;
-        }
+        entry_point.finalize(parse_ulong_option);
 
         mem_end_addr = mem_start_addr + mem_size - 1;
         return *this;
@@ -82,7 +58,7 @@ struct Options {
 
     unsigned int tlm_global_quantum = 10;
 
-    OptionValue<unsigned int> entry_point;
+    OptionValue<unsigned long> entry_point;
     std::string dtb_file;
 };
 
@@ -173,7 +149,7 @@ int sc_main(int argc, char **argv) {
         core_mem_if.dmi_ranges.emplace_back(dmi);
     }
 
-    uint64_t entry_point = loader.get_entrypoint();;
+    uint64_t entry_point = loader.get_entrypoint();
     if (opt.entry_point.available)
         entry_point = opt.entry_point.value;
 

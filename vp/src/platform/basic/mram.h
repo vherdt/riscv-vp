@@ -33,7 +33,8 @@ struct SimpleMRAM : public sc_core::sc_module {
 			// << endl;
 			file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary | ios_base::trunc);
 		}
-		truncate(mFilepath.c_str(), mSize);
+		int stat = truncate(mFilepath.c_str(), mSize);
+		assert (stat == 0 && "truncate failed");
 		assert(file.is_open() && file.good() && "File could not be opened");
 	}
 
