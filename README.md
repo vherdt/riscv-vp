@@ -9,7 +9,6 @@
  - Generic and configurable bus
  - CLINT and PLIC-based interrupt controller + additional peripherals
  - Instruction-based timing model + annotated TLM 2.0 transaction delays
- - **New:** Compressed instructions (C)
  - **New:** Peripherals, e.g. display, flash controller, preliminary ethernet
  - **New:** Example configuration for the SiFive HiFive1 board available
  - **New:** Zephyr operating system support
