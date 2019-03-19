@@ -54,6 +54,10 @@ struct vm_info {
 
 struct MMU {
     ISS &core;
+    tlm_utils::tlm_quantumkeeper &quantum_keeper;
+    sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+    sc_core::sc_time mmu_access_delay = clock_cycle * 3;
+
     mmu_memory_if *mem = nullptr;
     bool page_fault_on_AD = false;
 
@@ -62,15 +66,19 @@ struct MMU {
         uint64_t vpn = -1;
     };
 
-    static constexpr unsigned TLB_ENTRIES = 512;
-    std::array<tlb_entry_t, TLB_ENTRIES> tlb;
+    static constexpr unsigned TLB_ENTRIES = 256;
+    static constexpr unsigned NUM_MODES = 2;        // User and Supervisor
+    static constexpr unsigned NUM_ACCESS_TYPES = 3; // FETCH, LOAD, STORE
+
+    tlb_entry_t tlb[NUM_MODES][NUM_ACCESS_TYPES][TLB_ENTRIES];
 
     MMU(ISS &core)
-        : core(core) {
+        : core(core), quantum_keeper(core.quantum_keeper) {
+        flush_tlb();
     }
 
     void flush_tlb() {
-        memset(tlb.data(), -1, TLB_ENTRIES*sizeof(tlb_entry_t));
+        memset(&tlb[0], -1, NUM_MODES*NUM_ACCESS_TYPES*TLB_ENTRIES*sizeof(tlb_entry_t));
     }
 
     uint64_t translate_virtual_to_physical_addr(uint64_t vaddr, MemoryAccessType type) {
@@ -87,20 +95,23 @@ struct MMU {
         if (mode == MachineMode)
             return vaddr;
 
-        /*
+        // optional timing
+        quantum_keeper.inc(mmu_access_delay);
+
+        // optimization only, to void page walk
+        assert (mode == 0 || mode == 1);
+        assert (type == 0 || type == 1 || type == 2);
         auto vpn = (vaddr >> PGSHIFT);
         auto idx = vpn % TLB_ENTRIES;
-        auto &x = tlb[idx];
+        auto &x = tlb[mode][type][idx];
         if (x.vpn == vpn)
             return x.ppn | (vaddr & PGMASK);
-            */
 
         uint64_t paddr = walk(vaddr, type, mode);
 
-        /*
+        // optimization only, to void page walk
         x.ppn = (paddr & ~PGMASK);
         x.vpn = vpn;
-         */
 
         return paddr;
     }
@@ -166,16 +177,7 @@ struct MMU {
             uint64_t ppn = pte >> PTE_PPN_SHIFT;
 
             if (!pte.V() || (!pte.R() && pte.W())) {
-                /*
-                std::cout << "[mmu] !pte.V() || (!pte.R() && pte.W())" << std::endl;
-                std::cout << "[mmu] pte_addr=" << boost::format("%x") % pte_paddr << std::endl;
-                std::cout << "[mmu] pte.value=" << boost::format("%x") % pte.value << std::endl;
-                std::cout << "[mmu] vaddr=" << boost::format("%x") % vaddr << std::endl;
-                std::cout << "[mmu] base=" << boost::format("%x") % base << std::endl;
-                std::cout << "[mmu] vpn_field=" << boost::format("%x") % vpn_field << std::endl;
-                std::cout << "[mmu] vm.ptesize=" << boost::format("%x") % vm.ptesize << std::endl;
-                std::cout << "" << std::endl;
-                 */
+                //std::cout << "[mmu] !pte.V() || (!pte.R() && pte.W())" << std::endl;
                 break;
             }
 
@@ -233,49 +235,15 @@ struct MMU {
         }
 
 
-        //std::cout << "[mmu] trap on vaddr=" << boost::format("%x") % vaddr << std::endl;
-
-        /*
-        static bool terminate = false;
-        if (terminate)
-            exit(0);
-            */
-
         switch (type) {
-            case FETCH: {
-                /*
-                std::cout << "[mmu] fetch-trap on vaddr=" << boost::format("%x") % vaddr << std::endl;
-                if (vaddr == 0x4d7dc) {
-                    std::cout << "### STARTED" << std::endl;
-                    core.trace = true;
-                }
-                 */
-            }
+            case FETCH:
                 raise_trap(EXC_INSTR_PAGE_FAULT, vaddr);
             case LOAD:
-                /*
-                std::cout << "[mmu] load-trap on vaddr=" << boost::format("%x") % vaddr << std::endl;
-                if (vaddr == 0x200013af10lu) {
-                    std::cout << "### STOP" << std::endl;
-                    core.trace = false;
-                }
-                if (vaddr == 0x8) {
-                    std::cout << "### TERMINATE" << std::endl;
-                    terminate = true;
-                }
-                 */
                 raise_trap(EXC_LOAD_PAGE_FAULT, vaddr);
             case STORE:
-                /*
-                std::cout << "[mmu] store-trap on vaddr=" << boost::format("%x") % vaddr << std::endl;
-                if (vaddr == 0x2000138208lu) {
-                    std::cout << "### STARTED-2" << std::endl;
-                    core.trace = true;
-                }
-                 */
                 raise_trap(EXC_STORE_AMO_PAGE_FAULT, vaddr);
             default:
-                throw std::runtime_error("unknown access type " + std::to_string(type));
+                throw std::runtime_error("[mmu] unknown access type " + std::to_string(type));
         }
     }
 };
