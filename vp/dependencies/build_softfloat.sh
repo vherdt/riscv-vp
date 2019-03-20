@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
+NPROCS=$(grep -c ^processor /proc/cpuinfo)
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PREFIX=$DIR/softfloat-dist
 
 source=spike-softfloat-20190310
 
 tar -xzf $source.tar.gz
-make -C $source
+make -C $source -j$NPROCS
 
 mkdir -p softfloat-dist/lib
 mkdir -p softfloat-dist/include/softfloat
