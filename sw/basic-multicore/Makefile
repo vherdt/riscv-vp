@@ -1,5 +1,5 @@
 all : main.c bootstrap.S
-	riscv32-unknown-elf-gcc main.c bootstrap.S -o main -nostartfiles
+	riscv32-unknown-elf-gcc main.c bootstrap.S -o main -nostartfiles -march=rv32ima -mabi=ilp32
 	
 sim: all
 	riscv-mvp main
