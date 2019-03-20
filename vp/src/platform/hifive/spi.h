@@ -9,18 +9,60 @@
 #include "util/tlm_map.h"
 
 #include <queue>
+#include <mutex>
+#include <map>
+
+template<typename T>
+
+//Only safe if one producer and one consumer
+class LockQueue
+{
+	std::queue<T> queue;
+	mutable std::mutex mutex;
+public:
+	void push(T elem)
+	{
+		mutex.lock();
+		queue.push(elem);
+		mutex.unlock();
+	}
+	bool empty()
+	{
+		return queue.empty();
+	}
+	size_t size()
+	{
+		return queue.size();
+	}
+	T pop()
+	{
+		mutex.lock();
+		T elem = queue.front();
+		queue.pop();
+		mutex.unlock();
+		return elem;
+	}
+};
+
+struct SpiInterface
+{
+	LockQueue<uint8_t> rx;
+	LockQueue<uint8_t> tx;
+	bool enable = false;
+};
+
+typedef uint32_t Pin;
 
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
-	std::queue<uint8_t> rxQueue;
-	std::queue<uint8_t> txQueue;
+	std::map<Pin, SpiInterface*> targets;
 
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
 	uint32_t sckmode = 0;
 	uint32_t csid = 0;
-	uint32_t csdef = 0;
+	uint32_t csdef = 1;
 	uint32_t csmode = 0;
 	uint32_t delay0 = 0;
 	uint32_t delay1 = 0;
@@ -84,15 +126,15 @@ struct SPI : public sc_core::sc_module {
 		if(r.read)
 		{
 			if(r.vptr == &rxdata){
-				std::cout << "read on rxdata" << std::endl;
-				if(rxQueue.empty())
+				//std::cout << "read on rxdata" << std::endl;
+				if(true /*rxQueue.empty()*/)
 				{
 					rxdata = 1 << 31;
 				}
 				else
 				{
-					rxdata = rxQueue.front();
-					rxQueue.pop();
+					//rxdata = rxQueue.front();
+					//rxQueue.pop();
 				}
 			}
 		}
@@ -102,8 +144,12 @@ struct SPI : public sc_core::sc_module {
 		if(r.write)
 		{
 			if(r.vptr == &txdata){
+				std::cout << "Chip select " << csid << std::endl;
+			}else if(r.vptr == &txdata){
 				std::cout << std::hex << txdata << " ";
-				txQueue.push(txdata);
+				//mutex.lock();
+				//txQueue.push(txdata);
+				//mutex.unlock();
 				txdata = 0;
 			}
 		}
@@ -111,6 +157,11 @@ struct SPI : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		router.transport(trans, delay);
+	}
+
+	void connect(Pin cs, SpiInterface& interface)
+	{
+		targets.insert(std::pair<const Pin,SpiInterface*>(cs, &interface));
 	}
 };
 
