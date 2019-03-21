@@ -111,7 +111,6 @@ struct SPI : public sc_core::sc_module {
 						rxqueue.pop();
 					}
 				}
-				std::cout << "read on rxdata " << std::hex << rxdata << std::endl;
 			}
 		}
 
@@ -122,7 +121,7 @@ struct SPI : public sc_core::sc_module {
 			if(r.vptr == &csid){
 				std::cout << "Chip select " << csid << std::endl;
 			}else if(r.vptr == &txdata){
-				std::cout << std::hex << txdata << " ";
+				//std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
 				if(target != targets.end()){
 					rxqueue.push(target->second->write(txdata));
