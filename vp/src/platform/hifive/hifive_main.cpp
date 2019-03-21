@@ -163,7 +163,7 @@ int sc_main(int argc, char **argv) {
 	SPI spi0("SPI0");
     SPI spi1("SPI1");
     CAN can;
-    spi1.connect(0, can.getInterface());
+    spi1.connect(0, can);
     SPI spi2("SPI2");
 	UART uart0("UART0");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
