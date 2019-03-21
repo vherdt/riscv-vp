@@ -8,6 +8,8 @@
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
 
+#include <functional>
+#include <thread>
 #include <queue>
 #include <mutex>
 #include <map>
@@ -20,23 +22,23 @@ class LockQueue
 	std::queue<T> queue;
 	mutable std::mutex mutex;
 public:
-	void push(T elem)
-	{
+	void push(T elem){
 		mutex.lock();
 		queue.push(elem);
 		mutex.unlock();
 	}
-	bool empty()
-	{
+
+	bool empty(){
 		return queue.empty();
 	}
-	size_t size()
-	{
+
+	size_t size(){
 		return queue.size();
 	}
-	T pop()
-	{
+
+	T pop(bool& valid){
 		mutex.lock();
+		valid = !empty();
 		T elem = queue.front();
 		queue.pop();
 		mutex.unlock();
@@ -48,7 +50,20 @@ struct SpiInterface
 {
 	LockQueue<uint8_t> rx;
 	LockQueue<uint8_t> tx;
-	bool enable = false;
+
+	bool enabled = false;
+	std::function<void()> enableCallback = nullptr;
+	std::thread callback;
+
+	~SpiInterface()
+	{
+		disable();
+		if (callback.joinable()){
+			callback.join();
+		}
+	}
+	void enable(){ enabled = true; if(enableCallback) { callback = std::thread(enableCallback); } }
+	void disable(){ enabled = false;}
 };
 
 typedef uint32_t Pin;
@@ -126,15 +141,27 @@ struct SPI : public sc_core::sc_module {
 		if(r.read)
 		{
 			if(r.vptr == &rxdata){
-				//std::cout << "read on rxdata" << std::endl;
-				if(true /*rxQueue.empty()*/)
+				bool isDataValid = false;
+				auto target = targets.find(csid);
+				if(target != targets.end()){
+					rxdata = target->second->rx.pop(isDataValid);
+				} else {
+					std::cerr << "Read on unregistered Chip-Select " << csid << std::endl;
+				}
+				if(!isDataValid)
 				{
 					rxdata = 1 << 31;
 				}
-				else
-				{
-					//rxdata = rxQueue.front();
-					//rxQueue.pop();
+				std::cout << "read on rxdata " << std::hex << rxdata << std::endl;
+			}
+		}
+
+		if(r.write)
+		{
+			if(r.vptr == &csid){
+				auto target = targets.find(csid);
+				if(target != targets.end()){
+					target->second->disable();
 				}
 			}
 		}
@@ -143,13 +170,20 @@ struct SPI : public sc_core::sc_module {
 
 		if(r.write)
 		{
-			if(r.vptr == &txdata){
+			if(r.vptr == &csid){
 				std::cout << "Chip select " << csid << std::endl;
+				auto target = targets.find(csid);
+				if(target != targets.end()){
+					target->second->enable();
+				}
 			}else if(r.vptr == &txdata){
 				std::cout << std::hex << txdata << " ";
-				//mutex.lock();
-				//txQueue.push(txdata);
-				//mutex.unlock();
+				auto target = targets.find(csid);
+				if(target != targets.end()){
+					target->second->tx.push(txdata);
+				} else {
+					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
+				}
 				txdata = 0;
 			}
 		}
@@ -162,6 +196,8 @@ struct SPI : public sc_core::sc_module {
 	void connect(Pin cs, SpiInterface& interface)
 	{
 		targets.insert(std::pair<const Pin,SpiInterface*>(cs, &interface));
+		if(cs == csid)
+			interface.enable();
 	}
 };
 

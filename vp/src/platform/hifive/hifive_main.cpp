@@ -13,6 +13,7 @@
 #include "plic.h"
 #include "prci.h"
 #include "spi.h"
+#include "can.h"
 #include "uart.h"
 #include "core/rv32/syscall.h"
 
@@ -161,6 +162,8 @@ int sc_main(int argc, char **argv) {
 	PRCI prci("PRCI");
 	SPI spi0("SPI0");
     SPI spi1("SPI1");
+    CAN can;
+    spi1.connect(0, can.getInterface());
     SPI spi2("SPI2");
 	UART uart0("UART0");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);

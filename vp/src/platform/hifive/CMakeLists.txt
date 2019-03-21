@@ -1,5 +1,6 @@
 add_executable(hifive-vp
         hifive_main.cpp
+        can.cpp
         gpio.cpp
         gpio/gpiocommon.cpp
         gpio/gpio-server.cpp
