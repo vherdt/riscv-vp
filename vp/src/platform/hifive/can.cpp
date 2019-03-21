@@ -134,7 +134,7 @@ uint8_t CAN::write(uint8_t byte)
 		ret = sendTxBuf(0, byte);
 		break;
 	case State::getStatus:
-		ret = 0;
+		ret = status;
 		state = State::init;
 		break;
 	default:
@@ -368,4 +368,9 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 void CAN::listen()
 {
 	sleep(1);
+	if(false)
+	{
+		//something received
+		status |= MCP_STAT_RX0IF;
+	}
 }

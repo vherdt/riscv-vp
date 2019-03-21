@@ -49,6 +49,8 @@ class CAN : public SpiInterface
 		};
 	} txBuf[3];
 
+	uint8_t status;
+
 public:
 	CAN();
 	~CAN();
