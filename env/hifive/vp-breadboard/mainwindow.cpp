@@ -120,7 +120,16 @@ uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg) {
 }
 
 uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
-	return (pinmap >> 2);
+	uint8_t ret = 0;
+	static uint8_t pinMapping[8] =
+	{
+	  15, 16, 17, 18, 19, 7, 6, 5
+	};
+	for(unsigned i = 0; i < 8; i++)
+	{
+		ret |= pinmap & (1 << pinMapping[i]) ? (1 << i) : 0;
+	}
+	return ret;
 }
 
 uint8_t VPBreadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
