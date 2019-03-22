@@ -24,6 +24,9 @@ class CAN : public SpiInterface
 		sendTX2,
 		sendALL,
 
+		readRX0,
+		readRX1,
+
 		getStatus,
 
 		shit,
@@ -38,16 +41,31 @@ class CAN : public SpiInterface
 
 	uint8_t registers[MCP_RXB1SIDH+1];
 
-	struct TXBuf {
+	struct MCPFrame {
 		union {
-			uint8_t raw[32];
+			uint8_t raw[26];
 			struct {
-				uint8_t id;
+				union {
+					uint8_t id[4];
+					struct {
+						/*
+						 *	MCP_SIDH        0
+							MCP_SIDL        1
+							MCP_EID8        2
+							MCP_EID0		3
+						 */
+						uint16_t sid;
+						uint16_t eid;
+					};
+				};
 				uint8_t length;
-				uint8_t payload[30];
-			} as;
+				uint8_t payload[11];
+			};
 		};
-	} txBuf[3];
+	};
+
+	MCPFrame txBuf[3];
+	MCPFrame rxBuf[2];
 
 	uint8_t status;
 
@@ -68,6 +86,8 @@ public:
 
 	uint8_t loadTxBuf(uint8_t no, uint8_t byte);
 	uint8_t sendTxBuf(uint8_t no, uint8_t byte);
+
+	uint8_t readRxBuf(uint8_t no, uint8_t byte);
 
 	void listen();
 };

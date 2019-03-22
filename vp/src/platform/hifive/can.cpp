@@ -1,9 +1,11 @@
 #include "can.h"
 #include <unistd.h>
+#include <arpa/inet.h>
 
 CAN::CAN()
 {
 	state = State::init;
+	status = 0;
 	listener = std::thread(&CAN::listen, this);
 }
 
@@ -107,6 +109,7 @@ const char* CAN::spiInstName(uint8_t id)
 uint8_t CAN::write(uint8_t byte)
 {
 	uint8_t ret = 0;
+	uint8_t whichBuf = 0;
 	switch(state)
 	{
 	case State::init:
@@ -122,19 +125,35 @@ uint8_t CAN::write(uint8_t byte)
 	case State::bitmod:
 		ret = modifyRegister(byte);
 		break;
-	case State::loadTX0:
-	case State::loadTX1:
 	case State::loadTX2:
-		ret = loadTxBuf(0, byte);
+		whichBuf++;
+		//fall-through
+	case State::loadTX1:
+		whichBuf++;
+		//fall-through
+	case State::loadTX0:
+		ret = loadTxBuf(whichBuf, byte);
 		break;
-	case State::sendTX0:
-	case State::sendTX1:
-	case State::sendTX2:
 	case State::sendALL:
-		ret = sendTxBuf(0, byte);
+		whichBuf++;
+		//fall-through
+	case State::sendTX2:
+		whichBuf++;
+		//fall-through
+	case State::sendTX1:
+		whichBuf++;
+		//fall-through
+	case State::sendTX0:
+		ret = sendTxBuf(whichBuf, byte);
+		break;
+	case State::readRX1:
+		whichBuf++;
+		//fall-through
+	case State::readRX0:
+		ret = readRxBuf(whichBuf, byte);
 		break;
 	case State::getStatus:
-		ret = status;
+		ret = status;			//short enough to be handled here
 		state = State::init;
 		break;
 	default:
@@ -180,8 +199,10 @@ void CAN::command(uint8_t byte)
 		state = State::sendALL;
 		break;
 	case MCP_READ_RX0:
+		state = State::readRX0;
 		break;
 	case MCP_READ_RX1:
+		state = State::readRX1;
 		break;
 	case MCP_READ_STATUS:
 		state = State::getStatus;
@@ -309,41 +330,34 @@ uint8_t CAN::loadTxBuf(uint8_t no, uint8_t byte)
 	{
 		enum
 		{
-			unknown,
 			id,
 			length,
 			payload,
-		} state = unknown;
+		} state = id;
 		uint8_t payload_ptr = 0;
 	} command;
 
 	switch(command.state)
 	{
-	case LoadTX::unknown:
-		command.payload_ptr++;
-		if(command.payload_ptr == 3)
+	case LoadTX::id:
+		//std::cout << "\t[CAN] ID: " << std::hex << unsigned(byte) << std::endl;
+		txBuf[no].id[command.payload_ptr++] = byte;
+		if(command.payload_ptr == 4)
 		{
 			command.payload_ptr = 0;
-			command.state = LoadTX::id;
+			command.state = LoadTX::length;
 		}
 		break;
-	case LoadTX::id:
-		command.state = LoadTX::length;
-		txBuf[no].as.id = byte;
-		//std::cout << "\t[CAN] ID: " << std::hex << unsigned(byte) << std::endl;
-		break;
 	case LoadTX::length:
-		command.state = LoadTX::payload;
-		txBuf[no].as.length = byte;
 		//std::cout << "\t[CAN] Length : " << std::hex << unsigned(byte) << std::endl;
+		command.state = LoadTX::payload;
+		txBuf[no].length = byte;
 		break;
 	case LoadTX::payload:
-		txBuf[no].as.payload[command.payload_ptr] = byte;
 		//std::cout << "\t[CAN] PL : " << std::hex << unsigned(byte) << std::endl;
-
-		command.payload_ptr++;
-		if(command.payload_ptr == txBuf[no].as.length){
-			new(&command) LoadTX;
+		txBuf[no].payload[command.payload_ptr++] = byte;
+		if(command.payload_ptr == txBuf[no].length){
+			command = LoadTX();
 			state = State::init;
 		}
 		break;
@@ -354,8 +368,13 @@ uint8_t CAN::loadTxBuf(uint8_t no, uint8_t byte)
 
 uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 {
+	if(no == 4)
+	{
+		//todo: Special case to send all buffers
+		no = 0;
+	}
 	std::cout << "\t[CAN] send Data: ";
-	for(int i = 0; i < txBuf[no].as.length + 2; i++)
+	for(int i = 0; i < txBuf[no].length + 2; i++)
 	{
 		std::cout << std::hex << unsigned(txBuf[no].raw[i]) << " ";
 	}
@@ -365,12 +384,31 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 	return 0;
 }
 
+uint8_t CAN::readRxBuf(uint8_t no, uint8_t)
+{
+	static uint8_t payload_ptr = 0;
+	uint8_t ret = rxBuf[no].raw[payload_ptr++];
+	if(payload_ptr > rxBuf[no].length + 4)
+	{
+		payload_ptr = 0;
+		state = State::init;
+		status &= ~(1 << no); 	//MCP_STAT_RX0IF = 1 << 0
+	}
+	std::cout << "[CAN] readRxBuf" << unsigned(no) << " " << unsigned(ret) << std::endl;
+	return ret;
+}
+
 void CAN::listen()
 {
-	sleep(1);
-	if(false)
+	while(true)
 	{
+		sleep(1);
 		//something received
+		std::cout << "Received dummy" << std::endl;
+		memset(&rxBuf[0], 0, 26);
+		rxBuf[0].sid = ntohs(1 << 5);
+		rxBuf[0].length = 5;
+		memcpy(rxBuf[0].payload,"Hallo", 5);
 		status |= MCP_STAT_RX0IF;
 	}
 }
