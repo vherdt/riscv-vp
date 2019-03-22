@@ -1,0 +1,5 @@
+ # Lawicel CANUSB module
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{product}=="CANUSB", SYMLINK+="ttyUSB_CAN"
+ACTION=="add",    ATTRS{product}=="CANUSB", RUN+="/usr/local/bin/slcan_add.sh"
+ACTION=="remove", ATTRS{product}=="CANUSB", RUN+="/usr/local/bin/slcan_remove.sh"

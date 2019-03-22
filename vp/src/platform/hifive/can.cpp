@@ -373,7 +373,11 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 		//todo: Special case to send all buffers
 		no = 0;
 	}
-	std::cout << "\t[CAN] send Data: ";
+	unsigned id;
+	bool extended;
+	mcp2515_buf_to_id(id, extended, txBuf[no].id);
+
+	std::cout << "\t[CAN] send Data to ID " << id << " (extended: " << extended << ") ";
 	for(int i = 0; i < txBuf[no].length + 2; i++)
 	{
 		std::cout << std::hex << unsigned(txBuf[no].raw[i]) << " ";
@@ -423,17 +427,36 @@ void CAN::mcp2515_id_to_buf(const unsigned long id, uint8_t *idField, const bool
 	}
 }
 
+void CAN::mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t *idField)
+{
+    extended = false;
+    id = 0;
+
+    id = (idField[MCP_SIDH] << 3) + (idField[MCP_SIDL] >> 5);
+    if ( (idField[MCP_SIDL] & MCP_TXB_EXIDE_M) ==  MCP_TXB_EXIDE_M )
+    {
+      // extended id
+      id = (id << 2) + (idField[MCP_SIDL] & 0x03);
+      id = (id << 8) + idField[MCP_EID8];
+      id = (id << 8) + idField[MCP_EID0];
+      extended = true;
+    }
+}
+
 void CAN::listen()
 {
 	while(true)
 	{
 		sleep(1);
 		//something received
-		std::cout << "Received dummy" << std::endl;
-		memset(&rxBuf[0], 0, 26);
-		mcp2515_id_to_buf(1, rxBuf[0].id);
-		rxBuf[0].length = 5;
-		memcpy(rxBuf[0].payload,"Hallo", 5);
-		status |= MCP_STAT_RX0IF;
+		if(!(status & MCP_STAT_RX1IF))
+		{
+			std::cout << "Received dummy" << std::endl;
+			memset(&rxBuf[1], 0, 26);
+			mcp2515_id_to_buf(1, rxBuf[1].id);
+			rxBuf[1].length = 5;
+			memcpy(rxBuf[1].payload,"Hallo", 5);
+			status |= MCP_STAT_RX1IF;
+		}
 	}
 }
