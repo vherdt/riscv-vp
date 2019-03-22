@@ -21,12 +21,14 @@ CAN::CAN()
     if(s < 0)
     {
     	perror("Could not open socket!");
+    	stop = true;
     }
 
     memset(&ifr, 0, sizeof(struct ifreq));
 	strcpy(ifr.ifr_name, "slcan0" );
     if(ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
     	perror("Could not ctl to device");
+    	stop = true;
     }
 
     addr.can_family = AF_CAN;
@@ -35,6 +37,7 @@ CAN::CAN()
     if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
     	perror("Could not bind to can family");
+    	stop = true;
     }
 }
 
@@ -403,18 +406,14 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 		//todo: Special case to send all buffers
 		no = 0;
 	}
-	unsigned id;
-	bool extended;
-	mcp2515_buf_to_id(id, extended, txBuf[no].id);
+	struct can_frame frame;
+	bool extended;	//this is ignored
+	memset(&frame, 0, sizeof(struct can_frame));
+	mcp2515_buf_to_id(frame.can_id, extended, txBuf[no].id);
+	frame.can_dlc = txBuf[no].length;
+	memcpy(frame.data, txBuf[no].payload, txBuf[no].length);
 
-	std::cout << "\t[CAN] send Data to ID " << id << " (extended: " << extended << ") ";
-	for(int i = 0; i < txBuf[no].length + 2; i++)
-	{
-		std::cout << std::hex << unsigned(txBuf[no].raw[i]) << " ";
-	}
-	std::cout << std::endl;
-
-	//nbytes = write(s, &frame, sizeof(struct can_frame));;
+	::write(s, &frame, sizeof(struct can_frame));;
 
 	//Set 'sent' status ok
 	registers[MCP_TXB0CTRL] = 0;
