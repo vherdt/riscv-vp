@@ -1,5 +1,5 @@
 all : main.cpp
-	riscv32-unknown-elf-g++ -ggdb -std=c++14 main.cpp -o main -march=rv32ima
+	riscv32-unknown-elf-g++ -ggdb -std=c++14 main.cpp -o main -march=rv32ima -mabi=ilp32
 	
 sim: all
 	riscv-vp --intercept-syscalls main

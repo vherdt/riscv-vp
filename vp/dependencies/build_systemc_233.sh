@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+NPROCS=$(grep -c ^processor /proc/cpuinfo)
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PREFIX=$DIR/systemc-dist
 
@@ -14,7 +16,7 @@ tar xzf $source
 cd systemc-$version
 mkdir build && cd build
 ../configure CXXFLAGS='-std=c++14' --prefix=$PREFIX --with-arch-suffix=
-make -j8
+make -j$NPROCS
 make install
 
 cd $DIR

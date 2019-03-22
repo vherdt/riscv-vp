@@ -2,11 +2,11 @@
 .equ SYSCALL_ADDR, 0x02010000
 
 .macro SYS_EXIT, exit_code
-li   a7, 93
+li   a5, 93
 li   a0, \exit_code
 li   t0, SYSCALL_ADDR
-csrr a6, mhartid
-sw   a6, 0(t0)
+csrr t1, mhartid
+sw   t1, 0(t0)
 .endm
 
 
