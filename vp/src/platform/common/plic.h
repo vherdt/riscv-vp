@@ -18,8 +18,8 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	std::array<external_interrupt_target*, NumberCores> target_harts{};
 
 	// shared for all harts priority 1 is the lowest. Zero means do not interrupt
-	// NOTE: addressing starts at 1 because interrupt 0 is reserved
-	RegisterRange regs_interrupt_priorities{0x4, 4*NumberInterrupts};
+	// NOTE: addressing starts at 0x4 because interrupt 0 is reserved, however some example SW still writes to address 0x0, hence we added it to the address map
+	RegisterRange regs_interrupt_priorities{0x0, 4*(NumberInterrupts+1)};
 	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
 
 	// how many 32bit entries are required to hold all interrupts
