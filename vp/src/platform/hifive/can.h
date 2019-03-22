@@ -89,5 +89,6 @@ public:
 
 	uint8_t readRxBuf(uint8_t no, uint8_t byte);
 
+	void mcp2515_id_to_buf(const unsigned long id, uint8_t *idField, const bool extended = false);
 	void listen();
 };

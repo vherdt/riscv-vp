@@ -398,6 +398,31 @@ uint8_t CAN::readRxBuf(uint8_t no, uint8_t)
 	return ret;
 }
 
+void CAN::mcp2515_id_to_buf(const unsigned long id, uint8_t *idField, const bool extended)
+{
+	uint16_t canid;
+
+	canid = (uint16_t)(id & 0x0FFFF);
+
+	if (extended)
+	{
+		idField[MCP_EID0]  = (uint8_t) (canid & 0xFF);
+		idField[MCP_EID8]  = (uint8_t) (canid >> 8);
+		canid = (uint16_t)(id >> 16);
+		idField[MCP_SIDL]  = (uint8_t) (canid & 0x03);
+		idField[MCP_SIDL] += (uint8_t) ((canid & 0x1C) << 3);
+		idField[MCP_SIDL] |= MCP_TXB_EXIDE_M;
+		idField[MCP_SIDH]  = (uint8_t) (canid >> 5 );
+	}
+	else
+	{
+		idField[MCP_SIDH] = (uint8_t) (canid >> 3 );
+		idField[MCP_SIDL] = (uint8_t) ((canid & 0x07 ) << 5);
+		idField[MCP_EID0] = 0;
+		idField[MCP_EID8] = 0;
+	}
+}
+
 void CAN::listen()
 {
 	while(true)
@@ -406,7 +431,7 @@ void CAN::listen()
 		//something received
 		std::cout << "Received dummy" << std::endl;
 		memset(&rxBuf[0], 0, 26);
-		rxBuf[0].sid = ntohs(1 << 5);
+		mcp2515_id_to_buf(1, rxBuf[0].id);
 		rxBuf[0].length = 5;
 		memcpy(rxBuf[0].payload,"Hallo", 5);
 		status |= MCP_STAT_RX0IF;
