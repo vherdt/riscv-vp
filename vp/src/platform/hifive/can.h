@@ -3,6 +3,9 @@
 #include "spi.h"
 #include "can/mcp_can_dfs.h"
 
+#include <linux/can.h>
+#include <net/if.h>
+
 #include <functional>
 #include <thread>
 
@@ -43,7 +46,7 @@ class CAN : public SpiInterface
 
 	struct MCPFrame {
 		union {
-			uint8_t raw[26];
+			uint8_t raw[5+CANFD_MAX_DLEN];
 			struct {
 				union {
 					uint8_t id[4];
@@ -59,7 +62,7 @@ class CAN : public SpiInterface
 					};
 				};
 				uint8_t length;
-				uint8_t payload[11];
+				uint8_t payload[CANFD_MAX_DLEN];
 			};
 		};
 	};
@@ -68,6 +71,12 @@ class CAN : public SpiInterface
 	MCPFrame rxBuf[2];
 
 	uint8_t status;
+
+	int s;
+    struct sockaddr_can addr;
+    struct ifreq ifr;
+
+    volatile bool stop;
 
 public:
 	CAN();
@@ -91,5 +100,7 @@ public:
 
 	void mcp2515_id_to_buf(const unsigned long id, uint8_t *idField, const bool extended = false);
 	void mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t *idField);
+
+	void enqueueIncomingCanFrame(const struct can_frame& frame);
 	void listen();
 };

@@ -1,16 +1,46 @@
 #include "can.h"
 #include <unistd.h>
-#include <arpa/inet.h>
+#include <linux/can.h>
+#include <linux/can/raw.h>
+
+#include <endian.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 CAN::CAN()
 {
 	state = State::init;
 	status = 0;
+	stop = false;
 	listener = std::thread(&CAN::listen, this);
+
+    s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    if(s < 0)
+    {
+    	perror("Could not open socket!");
+    }
+
+    memset(&ifr, 0, sizeof(struct ifreq));
+	strcpy(ifr.ifr_name, "slcan0" );
+    if(ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+    	perror("Could not ctl to device");
+    }
+
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+    	perror("Could not bind to can family");
+    }
 }
 
 CAN::~CAN()
 {
+	stop = true;
 	if(listener.joinable())
 		listener.join();
 }
@@ -383,6 +413,10 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 		std::cout << std::hex << unsigned(txBuf[no].raw[i]) << " ";
 	}
 	std::cout << std::endl;
+
+	//nbytes = write(s, &frame, sizeof(struct can_frame));;
+
+	//Set 'sent' status ok
 	registers[MCP_TXB0CTRL] = 0;
 	state = State::readRegister;
 	return 0;
@@ -398,7 +432,7 @@ uint8_t CAN::readRxBuf(uint8_t no, uint8_t)
 		state = State::init;
 		status &= ~(1 << no); 	//MCP_STAT_RX0IF = 1 << 0
 	}
-	std::cout << "[CAN] readRxBuf" << unsigned(no) << " " << unsigned(ret) << std::endl;
+	//std::cout << "[CAN] readRxBuf" << unsigned(no) << " " << unsigned(ret) << std::endl;
 	return ret;
 }
 
@@ -443,20 +477,48 @@ void CAN::mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t *idField)
     }
 }
 
+void CAN::enqueueIncomingCanFrame(const struct can_frame& frame)
+{
+	if((status & 0b11) == 0b11)
+	{
+		//all buffers full
+		return;
+	}
+
+	for(unsigned i = 0; i < 2; i++)
+	{
+		if(!(status & (1 << i)))	//Correnspond to MCP_STAT_RXnIF registers
+		{
+			//empty buffer
+			memset(&rxBuf[i], 0, sizeof(MCPFrame));
+			mcp2515_id_to_buf(frame.can_id, rxBuf[i].id);	//FIXME: This will break if extended frame or stuff happens
+			rxBuf[i].length = frame.can_dlc;
+			memcpy(rxBuf[i].payload, frame.data, frame.can_dlc);
+			status |= 1 << i;
+			return;
+		}
+	}
+}
+
 void CAN::listen()
 {
-	while(true)
+	while(!stop)
 	{
-		sleep(1);
-		//something received
-		if(!(status & MCP_STAT_RX1IF))
-		{
-			std::cout << "Received dummy" << std::endl;
-			memset(&rxBuf[1], 0, 26);
-			mcp2515_id_to_buf(1, rxBuf[1].id);
-			rxBuf[1].length = 5;
-			memcpy(rxBuf[1].payload,"Hallo", 5);
-			status |= MCP_STAT_RX1IF;
-		}
+    	struct can_frame frame;
+
+    	int nbytes = read(s, &frame, sizeof(struct can_frame));
+
+    	if (nbytes < 0) {
+			perror("can raw socket read");
+			continue;
+    	}
+
+    	/* paranoid check ... */
+    	if (nbytes < static_cast<long>(sizeof(struct can_frame))) {
+			fprintf(stderr, "read: incomplete CAN frame\n");
+			continue;
+    	}
+
+    	enqueueIncomingCanFrame(frame);
 	}
 }
