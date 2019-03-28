@@ -47,7 +47,7 @@ struct GenericElfLoader {
             if (use_vaddr) {
                 assert((section->p_vaddr >= offset) && (section->p_vaddr + section->p_memsz < offset + size));
 
-                //OTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
+                //NOTE: if memsz is larger than filesz, the additional bytes are zero initialized (auto. done for memory)
                 memcpy(dst + section->p_vaddr - offset, elf.data() + section->p_offset, section->p_filesz);
             } else {
                 if (section->p_filesz == 0) {
