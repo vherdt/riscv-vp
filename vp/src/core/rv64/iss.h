@@ -151,6 +151,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     uint64_t last_pc = 0;
     bool trace = false;
     bool shall_exit = false;
+    bool ignore_wfi = false;
     csr_table csrs;
     PrivilegeLevel prv = MachineMode;
     uint64_t lr_sc_counter = 0;

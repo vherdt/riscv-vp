@@ -19,7 +19,34 @@
 #include <iomanip>
 #include <iostream>
 
+#include <termios.h>
+#include <unistd.h>
+
 using namespace rv64;
+
+
+struct TerminalNoEchoSetting {
+    struct termios term;
+    struct termios save;
+    bool ok;
+
+    TerminalNoEchoSetting() {
+        ok = tcgetattr(STDOUT_FILENO, &save) == 0;
+        ok = ok && (tcgetattr(STDOUT_FILENO, &term) == 0);
+        if (ok) {
+            term.c_lflag &= ~((tcflag_t) ECHO);
+            if (tcsetattr(STDOUT_FILENO, TCSANOW, &term))
+                std::cout << "WARNING: unable to deactivate terminal echo (tcsetattr): " << std::strerror(errno) << std::endl;
+        } else {
+            std::cout << "WARNING: unable to deactivate terminal echo (tcgetattr): " << std::strerror(errno) << std::endl;
+        }
+    }
+
+    ~TerminalNoEchoSetting() {
+        if (ok)
+            tcsetattr(STDOUT_FILENO, TCSANOW, &term);
+    }
+};
 
 
 struct Options {
@@ -185,11 +212,14 @@ int sc_main(int argc, char **argv) {
     // switch for printing instructions
     core.trace = opt.trace_mode;
 
+    // ignore WFI instructions (handle them as a NOP, which is ok according to the RISC-V ISA) to avoid running too fast ahead with simulation time when the CPU is idle
+    core.ignore_wfi = true;
+
     // emulate RISC-V core boot loader
     core.regs[RegFile::a0] = core.get_hart_id();
     core.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 
-    // load dtb file
+    // load DTB (Device Tree Binary) file
     dtb_rom.load_binary_file(opt.dtb_file, 0);
 
     if (opt.use_debug_runner) {
@@ -197,6 +227,9 @@ int sc_main(int argc, char **argv) {
     } else {
         new DirectCoreRunner(core);
     }
+
+    // deactivate console echo of host system (the guest system linux has its own echo)
+    TerminalNoEchoSetting terminal_no_echo_setting;
 
     sc_core::sc_start();
 

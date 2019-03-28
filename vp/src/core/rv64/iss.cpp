@@ -1292,8 +1292,8 @@ void ISS::exec_step() {
 			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-			if (!has_local_pending_enabled_interrupts())
-				sc_core::wait(wfi_event);
+			if (!ignore_wfi && !has_local_pending_enabled_interrupts())
+                sc_core::wait(wfi_event);
 			break;
 
 		case Opcode::SFENCE_VMA:
