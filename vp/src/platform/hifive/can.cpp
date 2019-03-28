@@ -413,7 +413,12 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t)
 	frame.can_dlc = txBuf[no].length;
 	memcpy(frame.data, txBuf[no].payload, txBuf[no].length);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 	::write(s, &frame, sizeof(struct can_frame));;
+
+#pragma GCC diagnostic pop
 
 	//Set 'sent' status ok
 	registers[MCP_TXB0CTRL] = 0;
