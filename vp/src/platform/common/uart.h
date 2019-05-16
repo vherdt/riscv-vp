@@ -25,8 +25,8 @@ struct UART : public sc_core::sc_module {
 	uint32_t ip = 0;
 	uint32_t div = 0;
 
-	std::queue<uint8_t> tx_fifo;
-	std::queue<uint8_t> rx_fifo;
+	std::queue<char> tx_fifo;
+	std::queue<char> rx_fifo;
 
 	enum {
 		TXDATA_REG_ADDR = 0x0,
