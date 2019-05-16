@@ -63,10 +63,12 @@ struct UART : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &UART::register_access_callback);
 
-		tcgetattr(STDIN_FILENO, &orig_termios);
+		if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
+			throw std::system_error(errno, std::generic_category());
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON); // Bytewise read
-		tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
+			throw std::system_error(errno, std::generic_category());
 
 		rcvthr = std::thread(&UART::run, this);
 		rcvthr.detach();
