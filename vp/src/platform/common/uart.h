@@ -9,9 +9,12 @@
 #include "util/tlm_map.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <queue>
+#include <thread>
+#include <mutex>
 
 struct UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<UART> tsock;
@@ -24,6 +27,9 @@ struct UART : public sc_core::sc_module {
 	uint32_t ie = 0;
 	uint32_t ip = 0;
 	uint32_t div = 0;
+
+	std::thread rcvthr;
+	std::mutex rcvmtx;
 
 	std::queue<char> tx_fifo;
 	std::queue<char> rx_fifo;
@@ -57,12 +63,13 @@ struct UART : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &UART::register_access_callback);
 
-		int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-		fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 		tcgetattr(STDIN_FILENO, &orig_termios);
 		struct termios raw = orig_termios;
-		raw.c_lflag &= ~(ICANON);  // Bytewise read
+		raw.c_lflag &= ~(ICANON); // Bytewise read
 		tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+
+		rcvthr = std::thread(&UART::run, this);
+		rcvthr.detach();
 	}
 
 	~UART() {
@@ -74,12 +81,14 @@ struct UART : public sc_core::sc_module {
 			if (r.vptr == &txdata) {
 				txdata = 0;  // always transmit
 			} else if (r.vptr == &rxdata) {
-				char c;
-				if (read(STDIN_FILENO, &c, 1) >= 0) {
-					rxdata = c;
-				} else {  // rx-queue empty
+				rcvmtx.lock();
+				if (rx_fifo.empty()) {
 					rxdata = 1 << 31;
+				} else {
+					rxdata = rx_fifo.front();
+					rx_fifo.pop();
 				}
+				rcvmtx.unlock();
 			} else if (r.vptr == &txctrl) {
 				// std::cout << "TXctl";
 			} else if (r.vptr == &rxctrl) {
@@ -104,6 +113,31 @@ struct UART : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		router.transport(trans, delay);
+	}
+
+private:
+
+	void run(void) {
+		char buf;
+		ssize_t nread;
+
+		/* XXX: Possible optimization would be setting the size
+		 * of the buffer to the current value of rxcnt, however,
+		 * since that value might change at runtime this would
+		 * require interrupting the read syscall and possibly
+		 * resizing the buffer. */
+
+		for (;;) {
+			nread = read(STDIN_FILENO, &buf, sizeof(buf));
+			if (nread == -1)
+				throw std::system_error(errno, std::generic_category());
+			else if (nread != sizeof(buf))
+				throw std::runtime_error("short read");
+
+			rcvmtx.lock();
+			rx_fifo.push(buf);
+			rcvmtx.unlock();
+		}
 	}
 };
 
