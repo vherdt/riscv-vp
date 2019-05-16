@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <termios.h>
-#include <deque>
+#include <queue>
 
 struct UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<UART> tsock;
@@ -25,8 +25,8 @@ struct UART : public sc_core::sc_module {
 	uint32_t ip = 0;
 	uint32_t div = 0;
 
-	std::deque<uint8_t> tx_fifo;
-	std::deque<uint8_t> rx_fifo;
+	std::queue<uint8_t> tx_fifo;
+	std::queue<uint8_t> rx_fifo;
 
 	enum {
 		TXDATA_REG_ADDR = 0x0,
