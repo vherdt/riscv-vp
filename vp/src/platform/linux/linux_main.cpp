@@ -157,7 +157,7 @@ int sc_main(int argc, char **argv) {
     SimpleBus<2, 6> bus("SimpleBus");
     SyscallHandler sys("SyscallHandler");
     CLINT<1> clint("CLINT");
-    UART uart0("UART0");
+    UART uart0("UART0", 3); /* TODO: connect to a PLIC */
     UART16550 uart16550("UART16550");
     DebugMemoryInterface dbg_if("DebugMemoryInterface");
 

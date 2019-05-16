@@ -8,6 +8,10 @@
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
 
+/* TODO: move this header to common? */
+#include <platform/hifive/async_event.h>
+
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -16,8 +20,17 @@
 #include <thread>
 #include <mutex>
 
+#define UART_TXWM (1 << 0)
+#define UART_RXWM (1 << 1)
+
+/* Extracts the interrupt trigger threshold from a control register */
+#define UART_CTRL_CNT(REG) ((REG) >> 16)
+
 struct UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<UART> tsock;
+
+	interrupt_gateway *plic;
+	uint32_t irq;
 
 	// memory mapped configuration registers
 	uint32_t txdata = 0;
@@ -30,9 +43,12 @@ struct UART : public sc_core::sc_module {
 
 	std::thread rcvthr;
 	std::mutex rcvmtx;
+	AsyncEvent asyncEvent;
 
 	std::queue<char> tx_fifo;
 	std::queue<char> rx_fifo;
+
+	SC_HAS_PROCESS(UART);
 
 	enum {
 		TXDATA_REG_ADDR = 0x0,
@@ -48,7 +64,8 @@ struct UART : public sc_core::sc_module {
 
 	struct termios orig_termios;
 
-	UART(sc_core::sc_module_name) {
+	UART(sc_core::sc_module_name, uint32_t irqsrc) {
+		irq = irqsrc;
 		tsock.register_b_transport(this, &UART::transport);
 
 		router
@@ -70,6 +87,10 @@ struct UART : public sc_core::sc_module {
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 			throw std::system_error(errno, std::generic_category());
 
+		SC_METHOD(interrupt);
+		sensitive << asyncEvent;
+		dont_initialize();
+
 		rcvthr = std::thread(&UART::run, this);
 		rcvthr.detach();
 	}
@@ -90,14 +111,17 @@ struct UART : public sc_core::sc_module {
 					rxdata = rx_fifo.front();
 					rx_fifo.pop();
 				}
+
+				if (rx_fifo.empty() || rx_fifo.size() < UART_CTRL_CNT(rxctrl))
+					ip &= ~UART_RXWM;
 				rcvmtx.unlock();
 			} else if (r.vptr == &txctrl) {
 				// std::cout << "TXctl";
 			} else if (r.vptr == &rxctrl) {
 				// std::cout << "RXctrl";
 			} else if (r.vptr == &ie || r.vptr == &ip) {
-				ie = 0;  // no interrupts enabled
-				ip = 0;  // no interrupts pending
+				/* ie = 0;  // no interrupts enabled */
+				/* ip = 0;  // no interrupts pending */
 			} else if (r.vptr == &div) {
 				// just return the last set value
 			} else {
@@ -139,7 +163,21 @@ private:
 			rcvmtx.lock();
 			rx_fifo.push(buf);
 			rcvmtx.unlock();
+			asyncEvent.notify();
 		}
+	}
+
+	void interrupt(void) {
+		/* XXX: Possible optimization would be to trigger the
+		 * interrupt from the background thread. However,
+		 * the PLIC methods are very likely not thread safe. */
+
+		rcvmtx.lock();
+		if (rx_fifo.size() >= UART_CTRL_CNT(rxctrl)) {
+			ip |= UART_RXWM;
+			plic->gateway_trigger_interrupt(irq);
+		}
+		rcvmtx.unlock();
 	}
 };
 
