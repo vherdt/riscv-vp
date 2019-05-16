@@ -8,6 +8,7 @@
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
 
+#include <stdlib.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <deque>
@@ -56,8 +57,8 @@ struct UART : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &UART::register_access_callback);
 
-		int flags = fcntl(0, F_GETFL, 0);
-		fcntl(0, F_SETFL, flags | O_NONBLOCK);
+		int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+		fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 		tcgetattr(STDIN_FILENO, &orig_termios);
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON);  // Bytewise read
@@ -74,7 +75,7 @@ struct UART : public sc_core::sc_module {
 				txdata = 0;  // always transmit
 			} else if (r.vptr == &rxdata) {
 				char c;
-				if (read(0, &c, 1) >= 0) {
+				if (read(STDIN_FILENO, &c, 1) >= 0) {
 					rxdata = c;
 				} else {  // rx-queue empty
 					rxdata = 1 << 31;
