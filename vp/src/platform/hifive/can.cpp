@@ -26,6 +26,7 @@ CAN::CAN()
     memset(&ifr, 0, sizeof(struct ifreq));
 	strcpy(ifr.ifr_name, "slcan0" );
     if(ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+    	close(s);
     	perror("Could not ctl to device");
     	return;
     }
@@ -35,6 +36,7 @@ CAN::CAN()
 
     if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
+    	close(s);
     	perror("Could not bind to can family");
     	return;
     }
