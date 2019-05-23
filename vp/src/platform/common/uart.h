@@ -85,6 +85,7 @@ struct UART : public sc_core::sc_module {
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON); // Bytewise read
 		raw.c_lflag &= ~(ECHO); // Disable local echo
+		raw.c_iflag &= ~(ICRNL); // Don't map CR to NL
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 			throw std::system_error(errno, std::generic_category());
 
