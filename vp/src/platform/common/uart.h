@@ -172,6 +172,9 @@ private:
 		 * interrupt from the background thread. However,
 		 * the PLIC methods are very likely not thread safe. */
 
+		if (!(ie & UART_RXWM))
+			return;
+
 		rcvmtx.lock();
 		if (rx_fifo.size() >= UART_CTRL_CNT(rxctrl)) {
 			ip |= UART_RXWM;
