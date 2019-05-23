@@ -15,20 +15,19 @@ CAN::CAN()
 	state = State::init;
 	status = 0;
 	stop = false;
-	listener = std::thread(&CAN::listen, this);
 
     s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if(s < 0)
     {
     	perror("Could not open socket!");
-    	stop = true;
+    	return;
     }
 
     memset(&ifr, 0, sizeof(struct ifreq));
 	strcpy(ifr.ifr_name, "slcan0" );
     if(ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
     	perror("Could not ctl to device");
-    	stop = true;
+    	return;
     }
 
     addr.can_family = AF_CAN;
@@ -37,8 +36,10 @@ CAN::CAN()
     if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
     	perror("Could not bind to can family");
-    	stop = true;
+    	return;
     }
+
+	listener = std::thread(&CAN::listen, this);
 }
 
 CAN::~CAN()
