@@ -93,7 +93,7 @@ struct UART : public sc_core::sc_module {
 		sensitive << asyncEvent;
 		dont_initialize();
 
-		rcvthr = std::thread(&UART::run, this);
+		rcvthr = std::thread(&UART::receive, this);
 		rcvthr.detach();
 	}
 
@@ -145,7 +145,7 @@ struct UART : public sc_core::sc_module {
 
 private:
 
-	void run(void) {
+	void receive(void) {
 		char buf;
 		ssize_t nread;
 
