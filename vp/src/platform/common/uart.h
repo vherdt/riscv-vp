@@ -84,6 +84,7 @@ struct UART : public sc_core::sc_module {
 			throw std::system_error(errno, std::generic_category());
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON); // Bytewise read
+		raw.c_lflag &= ~(ECHO); // Disable local echo
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 			throw std::system_error(errno, std::generic_category());
 
