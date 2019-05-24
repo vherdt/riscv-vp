@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <semaphore.h>
 #include <queue>
 #include <thread>
 #include <mutex>
@@ -41,9 +42,10 @@ struct UART : public sc_core::sc_module {
 	uint32_t ip = 0;
 	uint32_t div = 0;
 
-	std::thread rcvthr;
-	std::mutex rcvmtx;
+	std::thread rcvthr, txthr;
+	std::mutex rcvmtx, txmtx;
 	AsyncEvent asyncEvent;
+	sem_t txsem;
 
 	std::queue<char> tx_fifo;
 	std::queue<char> rx_fifo;
@@ -80,6 +82,9 @@ struct UART : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &UART::register_access_callback);
 
+		if (sem_init(&txsem, 0, 0))
+			throw std::system_error(errno, std::generic_category());
+
 		if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
 			throw std::system_error(errno, std::generic_category());
 		struct termios raw = orig_termios;
@@ -95,9 +100,14 @@ struct UART : public sc_core::sc_module {
 
 		rcvthr = std::thread(&UART::receive, this);
 		rcvthr.detach();
+
+		txthr = std::thread(&UART::transmit, this);
+		txthr.detach();
 	}
 
 	~UART() {
+		// TODO: kill threads
+		// TODO: destroy semaphore
 		tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 	}
 
@@ -134,8 +144,13 @@ struct UART : public sc_core::sc_module {
 		r.fn();
 
 		if (r.write && r.vptr == &txdata) {
-			std::cout << static_cast<char>(txdata & 0xff);
-			fflush(stdout);
+			txmtx.lock();
+			tx_fifo.push(txdata);
+			if (sem_post(&txsem))
+				throw std::system_error(errno, std::generic_category());
+			if (tx_fifo.size() > UART_CTRL_CNT(txctrl))
+				ip &= ~UART_TXWM;
+			txmtx.unlock();
 		}
 	}
 
@@ -144,6 +159,28 @@ struct UART : public sc_core::sc_module {
 	}
 
 private:
+
+	void transmit(void) {
+		char ch;
+		ssize_t nwritten;
+
+		for (;;) {
+			if (sem_wait(&txsem))
+				throw std::system_error(errno, std::generic_category());
+
+			txmtx.lock();
+			ch = tx_fifo.front();
+			tx_fifo.pop();
+			txmtx.unlock();
+			asyncEvent.notify();
+
+			nwritten = write(STDOUT_FILENO, &ch, sizeof(ch));
+			if (nwritten == -1)
+				throw std::system_error(errno, std::generic_category());
+			else if (nwritten != sizeof(ch))
+				throw std::runtime_error("short write");
+		}
+	}
 
 	void receive(void) {
 		char buf;
@@ -170,19 +207,32 @@ private:
 	}
 
 	void interrupt(void) {
+		bool trigger;
+
 		/* XXX: Possible optimization would be to trigger the
 		 * interrupt from the background thread. However,
 		 * the PLIC methods are very likely not thread safe. */
 
-		if (!(ie & UART_RXWM))
-			return;
-
-		rcvmtx.lock();
-		if (rx_fifo.size() >= UART_CTRL_CNT(rxctrl)) {
-			ip |= UART_RXWM;
-			plic->gateway_trigger_interrupt(irq);
+		if (ie & UART_RXWM) {
+			rcvmtx.lock();
+			if (rx_fifo.size() > UART_CTRL_CNT(rxctrl)) {
+				ip |= UART_RXWM;
+				trigger = true;
+			}
+			rcvmtx.unlock();
 		}
-		rcvmtx.unlock();
+
+		if (ie & UART_TXWM) {
+			txmtx.lock();
+			if (UART_CTRL_CNT(txctrl) == 0 || tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
+				ip |= UART_TXWM;
+				trigger = true;
+			}
+			txmtx.unlock();
+		}
+
+		if (trigger)
+			plic->gateway_trigger_interrupt(irq);
 	}
 };
 
