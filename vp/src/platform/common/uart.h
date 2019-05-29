@@ -143,6 +143,9 @@ struct UART : public sc_core::sc_module {
 
 		r.fn();
 
+		if (r.write && r.vptr == &ie)
+			asyncEvent.notify();
+
 		if (r.write && r.vptr == &txdata) {
 			txmtx.lock();
 			tx_fifo.push(txdata);
