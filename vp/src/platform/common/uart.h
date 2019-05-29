@@ -141,9 +141,17 @@ struct UART : public sc_core::sc_module {
 			}
 		}
 
+		bool notify = false;
+		if (r.write) {
+			if (r.vptr == &txctrl && UART_CTRL_CNT(r.nv) < UART_CTRL_CNT(txctrl))
+				notify = true;
+			else if (r.vptr == &rxctrl && UART_CTRL_CNT(r.nv) < UART_CTRL_CNT(rxctrl))
+				notify = true;
+		}
+
 		r.fn();
 
-		if (r.write && r.vptr == &ie)
+		if (notify || r.write && r.vptr == &ie)
 			asyncEvent.notify();
 
 		if (r.write && r.vptr == &txdata) {
