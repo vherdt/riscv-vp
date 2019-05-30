@@ -25,30 +25,6 @@
 using namespace rv64;
 
 
-struct TerminalNoEchoSetting {
-    struct termios term;
-    struct termios save;
-    bool ok;
-
-    TerminalNoEchoSetting() {
-        ok = tcgetattr(STDOUT_FILENO, &save) == 0;
-        ok = ok && (tcgetattr(STDOUT_FILENO, &term) == 0);
-        if (ok) {
-            term.c_lflag &= ~((tcflag_t) ECHO);
-            if (tcsetattr(STDOUT_FILENO, TCSANOW, &term))
-                std::cout << "WARNING: unable to deactivate terminal echo (tcsetattr): " << std::strerror(errno) << std::endl;
-        } else {
-            std::cout << "WARNING: unable to deactivate terminal echo (tcgetattr): " << std::strerror(errno) << std::endl;
-        }
-    }
-
-    ~TerminalNoEchoSetting() {
-        if (ok)
-            tcsetattr(STDOUT_FILENO, TCSANOW, &term);
-    }
-};
-
-
 struct Options {
     typedef unsigned int addr_t;
 
@@ -227,9 +203,6 @@ int sc_main(int argc, char **argv) {
     } else {
         new DirectCoreRunner(core);
     }
-
-    // deactivate console echo of host system (the guest system linux has its own echo)
-    TerminalNoEchoSetting terminal_no_echo_setting;
 
     sc_core::sc_start();
 
