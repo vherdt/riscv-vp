@@ -3,7 +3,6 @@
 
 #include "core/common/clint.h"
 #include "platform/common/uart.h"
-#include "platform/common/uart16550.h"
 #include "elf_loader.h"
 #include "iss.h"
 #include "mem.h"
@@ -49,8 +48,6 @@ struct Options {
     addr_t dtb_rom_end_addr     = dtb_rom_start_addr + dtb_rom_size - 1;
     addr_t uart0_start_addr     = 0x10013000;
     addr_t uart0_end_addr       = 0x10013fff;
-    addr_t uart16550_start_addr = 0x10000000;
-    addr_t uart16550_end_addr   = 0x100000ff;
 
     bool use_debug_runner = false;
     bool use_instr_dmi = false;
@@ -130,11 +127,10 @@ int sc_main(int argc, char **argv) {
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
     ELFLoader loader(opt.input_program.c_str());
-    SimpleBus<2, 6> bus("SimpleBus");
+    SimpleBus<2, 5> bus("SimpleBus");
     SyscallHandler sys("SyscallHandler");
     CLINT<1> clint("CLINT");
     UART uart0("UART0", 3); /* TODO: connect to a PLIC */
-    UART16550 uart16550("UART16550");
     DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
     MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -170,7 +166,6 @@ int sc_main(int argc, char **argv) {
     bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
     bus.ports[3] = new PortMapping(opt.dtb_rom_start_addr, opt.dtb_rom_end_addr);
     bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-    bus.ports[5] = new PortMapping(opt.uart16550_start_addr, opt.uart16550_end_addr);
 
     // connect TLM sockets
     core_mem_if.isock.bind(bus.tsocks[0]);
@@ -180,7 +175,6 @@ int sc_main(int argc, char **argv) {
     bus.isocks[2].bind(sys.tsock);
     bus.isocks[3].bind(dtb_rom.tsock);
     bus.isocks[4].bind(uart0.tsock);
-    bus.isocks[5].bind(uart16550.tsock);
 
     // connect interrupt signals/communication
     clint.target_harts[0] = &core;
