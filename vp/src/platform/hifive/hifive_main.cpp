@@ -156,7 +156,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
-	PLIC<1, 53, 7> plic("PLIC");
+	PLIC<1, 53, 64, 7> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");

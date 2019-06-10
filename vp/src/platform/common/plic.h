@@ -7,7 +7,7 @@
 #include "util/tlm_map.h"
 #include "util/memory_map.h"
 
-template <unsigned NumberCores, unsigned NumberInterrupts, uint32_t MaxPriority>
+template <unsigned NumberCores, unsigned NumberInterrupts, unsigned NumberInterruptEntries, uint32_t MaxPriority>
 struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
 	static_assert(NumberCores <= 15360, "out of bound");
@@ -20,9 +20,6 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	// NOTE: addressing starts at 0x4 because interrupt 0 is reserved, however some example SW still writes to address 0x0, hence we added it to the address map
 	RegisterRange regs_interrupt_priorities{0x0, 4*(NumberInterrupts+1)};
 	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
-
-	// how many 32bit entries are required to hold all interrupts
-	static constexpr unsigned NumberInterruptEntries = NumberInterrupts + (32-NumberInterrupts%32);  // clamp to next number divisible by 32
 
 	RegisterRange regs_pending_interrupts{0x1000, 4*NumberInterruptEntries};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
