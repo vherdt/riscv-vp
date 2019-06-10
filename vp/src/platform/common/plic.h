@@ -42,6 +42,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			&regs_hart_config
 	};
 
+	PrivilegeLevel irq_level;
 	std::array<bool, NumberCores> hart_eip{};
 
 	sc_core::sc_event e_run;
@@ -49,7 +50,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	SC_HAS_PROCESS(PLIC);
 
-	PLIC(sc_core::sc_module_name) {
+	PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
 		clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 		tsock.register_b_transport(this, &PLIC::transport);
 
@@ -70,6 +71,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			}
 		}
 
+		irq_level = level;
 		SC_THREAD(run);
 	}
 
@@ -167,10 +169,10 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			if (hart_has_pending_enabled_interrupts(idx)) {
 				assert(hart_eip[idx]);
 				// trigger again to make this work even if the SW clears the harts interrupt pending bit
-				target_harts[idx]->trigger_external_interrupt(MachineMode);
+				target_harts[idx]->trigger_external_interrupt(irq_level);
 			} else {
 				hart_eip[idx] = false;
-				target_harts[idx]->clear_external_interrupt(MachineMode);
+				target_harts[idx]->clear_external_interrupt(irq_level);
 				//std::cout << "[vp::plic] clear eip" << std::endl;
 			}
 		}
@@ -191,7 +193,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 					if (hart_has_pending_enabled_interrupts(i)) {
 						//std::cout << "[vp::plic] trigger interrupt" << std::endl;
 						hart_eip[i] = true;
-						target_harts[i]->trigger_external_interrupt(MachineMode);
+						target_harts[i]->trigger_external_interrupt(irq_level);
 					}
 				}
 			}
