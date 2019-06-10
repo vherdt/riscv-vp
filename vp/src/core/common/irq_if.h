@@ -13,8 +13,8 @@ constexpr uint32_t NoneMode = -1;    // invalid sentinel to avoid passing a bool
 struct external_interrupt_target {
 	virtual ~external_interrupt_target() {}
 
-	virtual void trigger_external_interrupt() = 0;
-	virtual void clear_external_interrupt() = 0;
+	virtual void trigger_external_interrupt(PrivilegeLevel level) = 0;
+	virtual void clear_external_interrupt(PrivilegeLevel level) = 0;
 };
 
 struct clint_interrupt_target {

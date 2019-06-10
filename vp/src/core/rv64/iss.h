@@ -187,9 +187,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
               uint64_t entrypoint, uint64_t sp);
 
-    void trigger_external_interrupt() override;
+    void trigger_external_interrupt(PrivilegeLevel level) override;
 
-    void clear_external_interrupt() override;
+    void clear_external_interrupt(PrivilegeLevel level) override;
 
     void trigger_timer_interrupt(bool status) override;
 

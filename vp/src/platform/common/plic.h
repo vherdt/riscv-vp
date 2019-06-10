@@ -7,7 +7,6 @@
 #include "util/tlm_map.h"
 #include "util/memory_map.h"
 
-
 template <unsigned NumberCores, unsigned NumberInterrupts, uint32_t MaxPriority>
 struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
@@ -171,10 +170,10 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			if (hart_has_pending_enabled_interrupts(idx)) {
 				assert(hart_eip[idx]);
 				// trigger again to make this work even if the SW clears the harts interrupt pending bit
-				target_harts[idx]->trigger_external_interrupt();
+				target_harts[idx]->trigger_external_interrupt(MachineMode);
 			} else {
 				hart_eip[idx] = false;
-				target_harts[idx]->clear_external_interrupt();
+				target_harts[idx]->clear_external_interrupt(MachineMode);
 				//std::cout << "[vp::plic] clear eip" << std::endl;
 			}
 		}
@@ -195,7 +194,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 					if (hart_has_pending_enabled_interrupts(i)) {
 						//std::cout << "[vp::plic] trigger interrupt" << std::endl;
 						hart_eip[i] = true;
-						target_harts[i]->trigger_external_interrupt();
+						target_harts[i]->trigger_external_interrupt(MachineMode);
 					}
 				}
 			}

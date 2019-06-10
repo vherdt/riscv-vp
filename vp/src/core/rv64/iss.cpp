@@ -1607,17 +1607,40 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 }
 
 
-void ISS::trigger_external_interrupt() {
+void ISS::trigger_external_interrupt(PrivilegeLevel level) {
 	if (trace)
 		std::cout << "[vp::iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.meip = true;
+
+	switch (level) {
+	case UserMode:
+		csrs.mip.ueip = true;
+		break;
+	case SupervisorMode:
+		csrs.mip.seip = true;
+		break;
+	case MachineMode:
+		csrs.mip.meip = true;
+		break;
+	}
+
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
-void ISS::clear_external_interrupt() {
+void ISS::clear_external_interrupt(PrivilegeLevel level) {
 	if (trace)
 		std::cout << "[vp::iss] clear external interrupt, " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.meip = false;
+
+	switch (level) {
+	case UserMode:
+		csrs.mip.ueip = false;
+		break;
+	case SupervisorMode:
+		csrs.mip.seip = false;
+		break;
+	case MachineMode:
+		csrs.mip.meip = false;
+		break;
+	}
 }
 
 void ISS::trigger_timer_interrupt(bool status) {
