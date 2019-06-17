@@ -151,7 +151,7 @@ struct UART : public sc_core::sc_module {
 
 		r.fn();
 
-		if (notify || r.write && r.vptr == &ie)
+		if (notify || (r.write && r.vptr == &ie))
 			asyncEvent.notify();
 
 		if (r.write && r.vptr == &txdata) {
