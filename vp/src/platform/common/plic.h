@@ -66,8 +66,9 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 		}
 
 		for (unsigned n=0; n<NumberCores; ++n) {
+			hart_eip[n] = false;
 			for (unsigned i=0; i<NumberInterruptEntries; ++i) {
-				hart_enabled_interrupts(n,i) = 0xffffffff;	// all interrupts enabled by default
+				hart_enabled_interrupts(n,i) = 0x0;	// all interrupts disabled by default
 			}
 		}
 
