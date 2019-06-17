@@ -7,8 +7,7 @@
 #include "util/tlm_map.h"
 #include "util/memory_map.h"
 
-
-template <unsigned NumberCores, unsigned NumberInterrupts, uint32_t MaxPriority>
+template <unsigned NumberCores, unsigned NumberInterrupts, unsigned NumberInterruptEntries, uint32_t MaxPriority>
 struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
 	static_assert(NumberCores <= 15360, "out of bound");
@@ -21,9 +20,6 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	// NOTE: addressing starts at 0x4 because interrupt 0 is reserved, however some example SW still writes to address 0x0, hence we added it to the address map
 	RegisterRange regs_interrupt_priorities{0x0, 4*(NumberInterrupts+1)};
 	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
-
-	// how many 32bit entries are required to hold all interrupts
-	static constexpr unsigned NumberInterruptEntries = NumberInterrupts + (32-NumberInterrupts%32);  // clamp to next number divisible by 32
 
 	RegisterRange regs_pending_interrupts{0x1000, 4*NumberInterruptEntries};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
@@ -46,6 +42,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			&regs_hart_config
 	};
 
+	PrivilegeLevel irq_level;
 	std::array<bool, NumberCores> hart_eip{};
 
 	sc_core::sc_event e_run;
@@ -53,7 +50,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	SC_HAS_PROCESS(PLIC);
 
-	PLIC(sc_core::sc_module_name) {
+	PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
 		clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 		tsock.register_b_transport(this, &PLIC::transport);
 
@@ -74,6 +71,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			}
 		}
 
+		irq_level = level;
 		SC_THREAD(run);
 	}
 
@@ -171,10 +169,10 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 			if (hart_has_pending_enabled_interrupts(idx)) {
 				assert(hart_eip[idx]);
 				// trigger again to make this work even if the SW clears the harts interrupt pending bit
-				target_harts[idx]->trigger_external_interrupt();
+				target_harts[idx]->trigger_external_interrupt(irq_level);
 			} else {
 				hart_eip[idx] = false;
-				target_harts[idx]->clear_external_interrupt();
+				target_harts[idx]->clear_external_interrupt(irq_level);
 				//std::cout << "[vp::plic] clear eip" << std::endl;
 			}
 		}
@@ -195,7 +193,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 					if (hart_has_pending_enabled_interrupts(i)) {
 						//std::cout << "[vp::plic] trigger interrupt" << std::endl;
 						hart_eip[i] = true;
-						target_harts[i]->trigger_external_interrupt();
+						target_harts[i]->trigger_external_interrupt(irq_level);
 					}
 				}
 			}

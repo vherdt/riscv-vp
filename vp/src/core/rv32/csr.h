@@ -16,14 +16,6 @@ constexpr unsigned FS_INITIAL = 0b01;
 constexpr unsigned FS_CLEAN = 0b10;
 constexpr unsigned FS_DIRTY = 0b11;
 
-
-typedef uint32_t PrivilegeLevel;
-
-constexpr uint32_t MachineMode = 0b11;
-constexpr uint32_t SupervisorMode = 0b01;
-constexpr uint32_t UserMode = 0b00;
-constexpr uint32_t NoneMode = -1;    // invalid sentinel to avoid passing a boolean alongside a privilege level
-
 inline bool is_valid_privilege_level(PrivilegeLevel mode) {
 	return mode == MachineMode || mode == SupervisorMode || mode == UserMode;
 }

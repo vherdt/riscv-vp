@@ -164,7 +164,7 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<3, 12> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
-	PLIC<1, 64, 32> plic("PLIC");
+	PLIC<1, 64, 96, 32> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	SimpleSensor sensor("SimpleSensor", 2);
 	SimpleSensor2 sensor2("SimpleSensor2", 5);

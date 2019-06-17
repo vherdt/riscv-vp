@@ -1,6 +1,5 @@
 #pragma once
 
-
 enum ExceptionCode {
     // interrupt exception codes (mcause)
     EXC_U_SOFTWARE_INTERRUPT = 0,

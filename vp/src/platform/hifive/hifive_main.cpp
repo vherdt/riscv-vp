@@ -156,7 +156,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
-	PLIC<1, 53, 7> plic("PLIC");
+	PLIC<1, 53, 64, 7> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");
@@ -165,7 +165,7 @@ int sc_main(int argc, char **argv) {
     CAN can;
     spi1.connect(0, can);
     SPI spi2("SPI2");
-	UART uart0("UART0");
+	UART uart0("UART0", 3);
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
     DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -228,6 +228,7 @@ int sc_main(int argc, char **argv) {
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
+	uart0.plic = &plic;
 
 	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
