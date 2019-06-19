@@ -48,7 +48,7 @@ private:
 			throw std::runtime_error("short write");
 	}
 
-	uint8_t read_data(void) {
+	void read_data(std::mutex &mtx, std::queue<uint8_t> &queue) {
 		uint8_t buf;
 		ssize_t nread;
 
@@ -58,7 +58,9 @@ private:
 		else if (nread != sizeof(buf))
 			throw std::runtime_error("short read");
 
-		return buf;
+		mtx.lock();
+		queue.push(buf);
+		mtx.unlock();
 	}
 };
 

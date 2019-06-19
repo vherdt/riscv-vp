@@ -103,7 +103,7 @@ protected:
 
 private:
 	virtual void write_data(uint8_t) = 0;
-	virtual uint8_t read_data(void) = 0;
+	virtual void read_data(std::mutex&, std::queue<uint8_t>&) = 0;
 
 	void register_access_callback(const vp::map::register_access_t &r) {
 		if (r.read) {
@@ -181,14 +181,8 @@ private:
 	}
 
 	void receive(void) {
-		uint8_t data;
-
 		for (;;) {
-			data = read_data();
-		
-			rcvmtx.lock();
-			rx_fifo.push(data);
-			rcvmtx.unlock();
+			read_data(rcvmtx, rx_fifo);
 			asyncEvent.notify();
 		}
 	}
