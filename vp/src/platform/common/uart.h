@@ -3,6 +3,7 @@
 
 #include "abstract_uart.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
@@ -37,18 +38,18 @@ public:
 	}
 
 private:
-	void write_data(char ch) {
+	void write_data(uint8_t data) {
 		ssize_t nwritten;
 
-		nwritten = write(STDOUT_FILENO, &ch, sizeof(ch));
+		nwritten = write(STDOUT_FILENO, &data, sizeof(data));
 		if (nwritten == -1)
 			throw std::system_error(errno, std::generic_category());
-		else if (nwritten != sizeof(ch))
+		else if (nwritten != sizeof(data))
 			throw std::runtime_error("short write");
 	}
 
-	char read_data(void) {
-		char buf;
+	uint8_t read_data(void) {
+		uint8_t buf;
 		ssize_t nread;
 
 		nread = read(STDIN_FILENO, &buf, sizeof(buf));

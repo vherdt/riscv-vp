@@ -42,8 +42,8 @@ class AbstractUART : public sc_core::sc_module {
 	AsyncEvent asyncEvent;
 	sem_t txsem;
 
-	std::queue<char> tx_fifo;
-	std::queue<char> rx_fifo;
+	std::queue<uint8_t> tx_fifo;
+	std::queue<uint8_t> rx_fifo;
 
 	SC_HAS_PROCESS(AbstractUART);
 
@@ -102,8 +102,8 @@ protected:
 	}
 
 private:
-	virtual void write_data(char ch) = 0;
-	virtual char read_data(void) = 0;
+	virtual void write_data(uint8_t) = 0;
+	virtual uint8_t read_data(void) = 0;
 
 	void register_access_callback(const vp::map::register_access_t &r) {
 		if (r.read) {
@@ -164,30 +164,30 @@ private:
 	}
 
 	void transmit(void) {
-		char ch;
+		uint8_t data;
 
 		for (;;) {
 			if (sem_wait(&txsem))
 				throw std::system_error(errno, std::generic_category());
 
 			txmtx.lock();
-			ch = tx_fifo.front();
+			data = tx_fifo.front();
 			tx_fifo.pop();
 			txmtx.unlock();
 			asyncEvent.notify();
 
-			write_data(ch);
+			write_data(data);
 		}
 	}
 
 	void receive(void) {
-		char ch;
+		uint8_t data;
 
 		for (;;) {
-			ch = read_data();
+			data = read_data();
 		
 			rcvmtx.lock();
-			rx_fifo.push(ch);
+			rx_fifo.push(data);
 			rcvmtx.unlock();
 			asyncEvent.notify();
 		}
