@@ -24,6 +24,7 @@ public:
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON); // Bytewise read
 		raw.c_lflag &= ~(ECHO); // Disable local echo
+		raw.c_lflag &= ~(ISIG); // Don't catch Ctrl+C, etc.
 		raw.c_iflag &= ~(ICRNL); // Don't map CR to NL
 
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
