@@ -47,7 +47,7 @@ class UART : public AbstractUART {
 			throw std::runtime_error("short write");
 	}
 
-	void read_data(std::mutex &mtx, std::queue<uint8_t> &queue) {
+	void read_data(void) {
 		uint8_t buf;
 		ssize_t nread;
 
@@ -57,9 +57,7 @@ class UART : public AbstractUART {
 		else if (nread != sizeof(buf))
 			throw std::runtime_error("short read");
 
-		mtx.lock();
-		queue.push(buf);
-		mtx.unlock();
+		rxpush(buf);
 	}
 };
 
