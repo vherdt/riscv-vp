@@ -15,6 +15,7 @@
 #include "spi.h"
 #include "can.h"
 #include "uart.h"
+#include "slip.h"
 #include "core/rv32/syscall.h"
 
 #include <boost/io/ios_state.hpp>
@@ -61,6 +62,8 @@ struct Options {
 	addr_t prci_end_addr = 0x1000FFFF;
 	addr_t uart0_start_addr = 0x10013000;
 	addr_t uart0_end_addr = 0x10013FFF;
+	addr_t uart1_start_addr = 0x10023000;
+	addr_t uart1_end_addr = 0x10023FFF;
 	addr_t spi0_start_addr = 0x10014000;
 	addr_t spi0_end_addr = 0x10014FFF;
     addr_t spi1_start_addr = 0x10024000;
@@ -152,7 +155,7 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 13> bus("SimpleBus");
+	SimpleBus<2, 14> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
@@ -166,6 +169,7 @@ int sc_main(int argc, char **argv) {
     spi1.connect(0, can);
     SPI spi2("SPI2");
 	UART uart0("UART0", 3);
+	SLIP slip("SLIP", 4, "tun0"); // TODO: pass tun device name as option
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
     DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -198,6 +202,7 @@ int sc_main(int argc, char **argv) {
     bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
     bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr);
     bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
+    bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
 
 	loader.load_executable_image(flash.data, flash.size, opt.flash_start_addr, false);
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.dram_end_addr));
@@ -223,12 +228,14 @@ int sc_main(int argc, char **argv) {
     bus.isocks[10].bind(sys.tsock);
     bus.isocks[11].bind(spi1.tsock);
     bus.isocks[12].bind(spi2.tsock);
+    bus.isocks[13].bind(slip.tsock);
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
 	uart0.plic = &plic;
+	slip.plic = &plic;
 
 	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
