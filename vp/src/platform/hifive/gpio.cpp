@@ -39,7 +39,7 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 
 GPIO::~GPIO() {
 	server.quit();
-	//serverThread.join();
+	// serverThread.join();
 }
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
@@ -138,7 +138,7 @@ void GPIO::synchronousChange() {
 						// cout << "and is being fired at " << int_gpio_base + i
 						// << endl;
 						rise_intr_pending &= ~(1l << i);
-                        plic->gateway_trigger_interrupt(int_gpio_base + i);
+						plic->gateway_trigger_interrupt(int_gpio_base + i);
 					}
 				} else {
 					// cout << "but no interrupt is registered." << endl;
@@ -154,7 +154,7 @@ void GPIO::synchronousChange() {
 						// cout << "and is being fired at " << int_gpio_base + i
 						// << endl;
 						fall_intr_pending &= ~(1l << i);
-                        plic->gateway_trigger_interrupt(int_gpio_base + i);
+						plic->gateway_trigger_interrupt(int_gpio_base + i);
 					}
 				} else {
 					// cout << "but no interrupt is registered." << endl;

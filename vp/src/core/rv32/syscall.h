@@ -50,17 +50,16 @@
 #define SYS_dup 23
 
 // custom extensions
-#define SYS_host_error 1      // indicate an error, i.e. this instruction should never be reached so something went wrong during exec.
+#define SYS_host_error \
+	1  // indicate an error, i.e. this instruction should never be reached so something went wrong during exec.
 #define SYS_host_test_pass 2  // RISC-V test execution successfully completed
 #define SYS_host_test_fail 3  // RISC-V test execution failed
 
-
-#include <systemc>
 #include <tlm_utils/simple_target_socket.h>
+#include <systemc>
 
-#include "syscall_if.h"
 #include "iss.h"
-
+#include "syscall_if.h"
 
 namespace rv32 {
 
@@ -69,25 +68,25 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	std::unordered_map<uint32_t, iss_syscall_if *> cores;
 
 	void register_core(ISS *core) {
-        assert (cores.find(core->get_hart_id()) == cores.end());
-        cores[core->get_hart_id()] = core;
+		assert(cores.find(core->get_hart_id()) == cores.end());
+		cores[core->get_hart_id()] = core;
 	}
 
 	SyscallHandler(sc_core::sc_module_name) {
-			tsock.register_b_transport(this, &SyscallHandler::transport);
+		tsock.register_b_transport(this, &SyscallHandler::transport);
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-        (void) delay;
+		(void)delay;
 
 		auto addr = trans.get_address();
-		assert (addr % 4 == 0);
-		assert (trans.get_data_length() == 4);
+		assert(addr % 4 == 0);
+		assert(trans.get_data_length() == 4);
 		auto hart_id = *((uint32_t *)trans.get_data_ptr());
 
-		assert ((cores.find(hart_id) != cores.end()) && "core not registered in syscall handler");
+		assert((cores.find(hart_id) != cores.end()) && "core not registered in syscall handler");
 
-        execute_syscall(cores[hart_id]);
+		execute_syscall(cores[hart_id]);
 	}
 
 	virtual void execute_syscall(iss_syscall_if *core) override {
@@ -97,7 +96,7 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 		auto a1 = core->read_register(RegFile::a1);
 		auto a0 = core->read_register(RegFile::a0);
 
-		//printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
+		// printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
 
 		auto ans = execute_syscall(syscall, a0, a1, a2, a3);
 
@@ -149,4 +148,4 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	int execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
 };
 
-} // namespace rv32
+}  // namespace rv32

@@ -104,7 +104,7 @@ struct SimpleSensor : public sc_core::sc_module {
 				}
 			}
 
-            plic->gateway_trigger_interrupt(irq_number);
+			plic->gateway_trigger_interrupt(irq_number);
 		}
 	}
 };

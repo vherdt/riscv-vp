@@ -1,357 +1,344 @@
 #pragma once
 
-#include "util/common.h"
-#include "core/common/clint_if.h"
-#include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
-#include "core/common/instr.h"
-#include "core/common/trap.h"
+#include "core/common/clint_if.h"
 #include "core/common/core_defs.h"
-#include "syscall_if.h"
-#include "mem_if.h"
+#include "core/common/instr.h"
+#include "core/common/irq_if.h"
+#include "core/common/trap.h"
 #include "csr.h"
 #include "fp.h"
+#include "mem_if.h"
+#include "syscall_if.h"
+#include "util/common.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
-#include <functional>
 
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <systemc>
 
-
 namespace rv64 {
 
 struct RegFile {
-    static constexpr unsigned NUM_REGS = 32;
+	static constexpr unsigned NUM_REGS = 32;
 
-    int64_t regs[NUM_REGS];
+	int64_t regs[NUM_REGS];
 
-    RegFile();
+	RegFile();
 
-    RegFile(const RegFile &other);
+	RegFile(const RegFile &other);
 
-    void write(uint64_t index, int64_t value);
+	void write(uint64_t index, int64_t value);
 
-    int64_t read(uint64_t index);
+	int64_t read(uint64_t index);
 
-    uint64_t shamt_w(uint64_t index);
+	uint64_t shamt_w(uint64_t index);
 
-    uint64_t shamt(uint64_t index);
+	uint64_t shamt(uint64_t index);
 
-    int64_t &operator[](const uint64_t idx);
+	int64_t &operator[](const uint64_t idx);
 
-    void show();
+	void show();
 
-    enum e {
-        x0 = 0,
-        x1,
-        x2,
-        x3,
-        x4,
-        x5,
-        x6,
-        x7,
-        x8,
-        x9,
-        x10,
-        x11,
-        x12,
-        x13,
-        x14,
-        x15,
-        x16,
-        x17,
-        x18,
-        x19,
-        x20,
-        x21,
-        x22,
-        x23,
-        x24,
-        x25,
-        x26,
-        x27,
-        x28,
-        x29,
-        x30,
-        x31,
+	enum e {
+		x0 = 0,
+		x1,
+		x2,
+		x3,
+		x4,
+		x5,
+		x6,
+		x7,
+		x8,
+		x9,
+		x10,
+		x11,
+		x12,
+		x13,
+		x14,
+		x15,
+		x16,
+		x17,
+		x18,
+		x19,
+		x20,
+		x21,
+		x22,
+		x23,
+		x24,
+		x25,
+		x26,
+		x27,
+		x28,
+		x29,
+		x30,
+		x31,
 
-        zero = x0,
-        ra = x1,
-        sp = x2,
-        gp = x3,
-        tp = x4,
-        t0 = x5,
-        t1 = x6,
-        t2 = x7,
-        s0 = x8,
-        fp = x8,
-        s1 = x9,
-        a0 = x10,
-        a1 = x11,
-        a2 = x12,
-        a3 = x13,
-        a4 = x14,
-        a5 = x15,
-        a6 = x16,
-        a7 = x17,
-        s2 = x18,
-        s3 = x19,
-        s4 = x20,
-        s5 = x21,
-        s6 = x22,
-        s7 = x23,
-        s8 = x24,
-        s9 = x25,
-        s10 = x26,
-        s11 = x27,
-        t3 = x28,
-        t4 = x29,
-        t5 = x30,
-        t6 = x31,
-    };
+		zero = x0,
+		ra = x1,
+		sp = x2,
+		gp = x3,
+		tp = x4,
+		t0 = x5,
+		t1 = x6,
+		t2 = x7,
+		s0 = x8,
+		fp = x8,
+		s1 = x9,
+		a0 = x10,
+		a1 = x11,
+		a2 = x12,
+		a3 = x13,
+		a4 = x14,
+		a5 = x15,
+		a6 = x16,
+		a7 = x17,
+		s2 = x18,
+		s3 = x19,
+		s4 = x20,
+		s5 = x21,
+		s6 = x22,
+		s7 = x23,
+		s8 = x24,
+		s9 = x25,
+		s10 = x26,
+		s11 = x27,
+		t3 = x28,
+		t4 = x29,
+		t5 = x30,
+		t6 = x31,
+	};
 };
-
 
 // NOTE: on this branch, currently the *simple-timing* model is still directly
 // integrated in the ISS. Merge the *timedb* branch to use the timing_if.
 struct ISS;
 
 struct timing_if {
-    virtual ~timing_if() {}
+	virtual ~timing_if() {}
 
-    virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
+	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
-
 
 struct PendingInterrupts {
-    PrivilegeLevel target_mode;
-    uint64_t pending;
+	PrivilegeLevel target_mode;
+	uint64_t pending;
 };
-
 
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
-    clint_if *clint = nullptr;
-    instr_memory_if *instr_mem = nullptr;
-    data_memory_if *mem = nullptr;
-    syscall_emulator_if *sys = nullptr;    // optional, if provided, the iss will intercept and handle syscalls directly
-    RegFile regs;
-    FpRegs fp_regs;
-    uint64_t pc = 0;
-    uint64_t last_pc = 0;
-    bool trace = false;
-    bool shall_exit = false;
-    bool ignore_wfi = false;
-    csr_table csrs;
-    PrivilegeLevel prv = MachineMode;
-    uint64_t lr_sc_counter = 0;
+	clint_if *clint = nullptr;
+	instr_memory_if *instr_mem = nullptr;
+	data_memory_if *mem = nullptr;
+	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
+	RegFile regs;
+	FpRegs fp_regs;
+	uint64_t pc = 0;
+	uint64_t last_pc = 0;
+	bool trace = false;
+	bool shall_exit = false;
+	bool ignore_wfi = false;
+	csr_table csrs;
+	PrivilegeLevel prv = MachineMode;
+	uint64_t lr_sc_counter = 0;
 
-    // last decoded and executed instruction and opcode
-    Instruction instr;
-    Opcode::Mapping op;
+	// last decoded and executed instruction and opcode
+	Instruction instr;
+	Opcode::Mapping op;
 
-    CoreExecStatus status = CoreExecStatus::Runnable;
-    std::unordered_set<uint64_t> breakpoints;
-    bool debug_mode = false;
+	CoreExecStatus status = CoreExecStatus::Runnable;
+	std::unordered_set<uint64_t> breakpoints;
+	bool debug_mode = false;
 
-    sc_core::sc_event wfi_event;
+	sc_core::sc_event wfi_event;
 
-    std::string systemc_name;
-    tlm_utils::tlm_quantumkeeper quantum_keeper;
-    sc_core::sc_time cycle_time;
-    sc_core::sc_time cycle_counter;    // use a separate cycle counter, since cycle count can be inhibited
-    std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
+	std::string systemc_name;
+	tlm_utils::tlm_quantumkeeper quantum_keeper;
+	sc_core::sc_time cycle_time;
+	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
+	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
-    static constexpr int64_t REG_MIN = INT64_MIN;
-    static constexpr int64_t REG32_MIN = INT32_MIN;
-    static constexpr unsigned xlen = 64;
+	static constexpr int64_t REG_MIN = INT64_MIN;
+	static constexpr int64_t REG32_MIN = INT32_MIN;
+	static constexpr unsigned xlen = 64;
 
+	ISS(uint64_t hart_id);
 
-    ISS(uint64_t hart_id);
+	void exec_step();
 
+	uint64_t _compute_and_get_current_cycles();
 
-    void exec_step();
+	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint64_t entrypoint, uint64_t sp);
 
-    uint64_t _compute_and_get_current_cycles();
+	void trigger_external_interrupt(PrivilegeLevel level) override;
 
-    void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
-              uint64_t entrypoint, uint64_t sp);
+	void clear_external_interrupt(PrivilegeLevel level) override;
 
-    void trigger_external_interrupt(PrivilegeLevel level) override;
+	void trigger_timer_interrupt(bool status) override;
 
-    void clear_external_interrupt(PrivilegeLevel level) override;
+	void trigger_software_interrupt(bool status) override;
 
-    void trigger_timer_interrupt(bool status) override;
+	void sys_exit() override;
 
-    void trigger_software_interrupt(bool status) override;
+	uint64_t read_register(unsigned idx) override;
 
-    void sys_exit() override;
+	void write_register(unsigned idx, uint64_t value) override;
 
-    uint64_t read_register(unsigned idx) override;
+	uint64_t get_hart_id();
 
-    void write_register(unsigned idx, uint64_t value) override;
+	void release_lr_sc_reservation() {
+		lr_sc_counter = 0;
+		mem->atomic_unlock();
+	}
 
-    uint64_t get_hart_id();
+	void fp_prepare_instr();
+	void fp_finish_instr();
+	void fp_set_dirty();
+	void fp_update_exception_flags();
+	void fp_setup_rm();
+	void fp_require_not_off();
 
+	uint64_t get_csr_value(uint64_t addr);
 
-    void release_lr_sc_reservation() {
-        lr_sc_counter = 0;
-        mem->atomic_unlock();
-    }
+	void set_csr_value(uint64_t addr, uint64_t value);
 
+	inline bool is_invalid_csr_access(uint64_t csr_addr, bool is_write) {
+		PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
+		bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+		return (is_write && csr_readonly) || (prv < csr_prv);
+	}
 
-    void fp_prepare_instr();
-    void fp_finish_instr();
-    void fp_set_dirty();
-    void fp_update_exception_flags();
-    void fp_setup_rm();
-    void fp_require_not_off();
+	void validate_csr_counter_read_access_rights(uint64_t addr);
 
-    uint64_t get_csr_value(uint64_t addr);
+	uint64_t pc_alignment_mask() {
+		if (csrs.misa.has_C_extension())
+			return ~uint64_t(0x1);
+		else
+			return ~uint64_t(0x3);
+	}
 
-    void set_csr_value(uint64_t addr, uint64_t value);
+	inline void trap_check_pc_alignment() {
+		assert(!(pc & 0x1) && "not possible due to immediate formats and jump execution");
 
-    inline bool is_invalid_csr_access(uint64_t csr_addr, bool is_write) {
-        PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
-        bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-        return (is_write && csr_readonly) || (prv < csr_prv);
-    }
+		if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
+			// NOTE: misaligned instruction address not possible on machines supporting compressed instructions
+			raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
+		}
+	}
 
-    void validate_csr_counter_read_access_rights(uint64_t addr);
+	template <unsigned Alignment, bool isLoad>
+	inline void trap_check_addr_alignment(uint64_t addr) {
+		if (unlikely(addr % Alignment)) {
+			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
+		}
+	}
 
-    uint64_t pc_alignment_mask() {
-        if (csrs.misa.has_C_extension())
-            return ~uint64_t(0x1);
-        else
-            return ~uint64_t(0x3);
-    }
+	inline void execute_amo_w(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
+		uint64_t addr = regs[instr.rs1()];
+		trap_check_addr_alignment<4, false>(addr);
+		int32_t data;
+		try {
+			data = mem->atomic_load_word(addr);
+		} catch (SimulationTrap &e) {
+			if (e.reason == EXC_LOAD_ACCESS_FAULT)
+				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+			throw e;
+		}
+		int32_t val = operation(data, (int32_t)regs[instr.rs2()]);
+		mem->atomic_store_word(addr, val);
+		regs[instr.rd()] = data;
+	}
 
-    inline void trap_check_pc_alignment() {
-        assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");
+	inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
+		uint64_t addr = regs[instr.rs1()];
+		trap_check_addr_alignment<8, false>(addr);
+		uint64_t data;
+		try {
+			data = mem->atomic_load_double(addr);
+		} catch (SimulationTrap &e) {
+			if (e.reason == EXC_LOAD_ACCESS_FAULT)
+				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+			throw e;
+		}
+		uint64_t val = operation(data, regs[instr.rs2()]);
+		mem->atomic_store_double(addr, val);
+		regs[instr.rd()] = data;
+	}
 
-        if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
-            // NOTE: misaligned instruction address not possible on machines supporting compressed instructions
-            raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
-        }
-    }
+	inline bool m_mode() {
+		return prv == MachineMode;
+	}
 
-    template<unsigned Alignment, bool isLoad>
-    inline void trap_check_addr_alignment(uint64_t addr) {
-        if (unlikely(addr % Alignment)) {
-            raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
-        }
-    }
+	inline bool s_mode() {
+		return prv == SupervisorMode;
+	}
 
-    inline void execute_amo_w(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
-        uint64_t addr = regs[instr.rs1()];
-        trap_check_addr_alignment<4, false>(addr);
-        int32_t data;
-        try {
-            data = mem->atomic_load_word(addr);
-        } catch (SimulationTrap &e) {
-            if (e.reason == EXC_LOAD_ACCESS_FAULT)
-                e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-            throw e;
-        }
-        int32_t val = operation(data, (int32_t) regs[instr.rs2()]);
-        mem->atomic_store_word(addr, val);
-        regs[instr.rd()] = data;
-    }
+	inline bool u_mode() {
+		return prv == UserMode;
+	}
 
-    inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
-        uint64_t addr = regs[instr.rs1()];
-        trap_check_addr_alignment<8, false>(addr);
-        uint64_t data;
-        try {
-            data = mem->atomic_load_double(addr);
-        } catch (SimulationTrap &e) {
-            if (e.reason == EXC_LOAD_ACCESS_FAULT)
-                e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-            throw e;
-        }
-        uint64_t val = operation(data, regs[instr.rs2()]);
-        mem->atomic_store_double(addr, val);
-        regs[instr.rd()] = data;
-    }
+	PrivilegeLevel prepare_trap(SimulationTrap &e);
 
+	void prepare_interrupt(const PendingInterrupts &x);
 
-    inline bool m_mode() {
-        return prv == MachineMode;
-    }
+	PendingInterrupts compute_pending_interrupts();
 
-    inline bool s_mode() {
-        return prv == SupervisorMode;
-    }
+	bool has_pending_enabled_interrupts() {
+		return compute_pending_interrupts().target_mode != NoneMode;
+	}
 
-    inline bool u_mode() {
-        return prv == UserMode;
-    }
+	bool has_local_pending_enabled_interrupts() {
+		return csrs.mie.reg & csrs.mip.reg;
+	}
 
+	void return_from_trap_handler(PrivilegeLevel return_mode);
 
-    PrivilegeLevel prepare_trap(SimulationTrap &e);
+	void switch_to_trap_handler(PrivilegeLevel target_mode);
 
-    void prepare_interrupt(const PendingInterrupts &x);
+	void performance_and_sync_update(Opcode::Mapping executed_op);
 
-    PendingInterrupts compute_pending_interrupts();
+	void run_step();
 
-    bool has_pending_enabled_interrupts() {
-        return compute_pending_interrupts().target_mode != NoneMode;
-    }
+	void run();
 
-    bool has_local_pending_enabled_interrupts() {
-        return csrs.mie.reg & csrs.mip.reg;
-    }
-
-    void return_from_trap_handler(PrivilegeLevel return_mode);
-
-    void switch_to_trap_handler(PrivilegeLevel target_mode);
-
-    void performance_and_sync_update(Opcode::Mapping executed_op);
-
-    void run_step();
-
-    void run();
-
-    void show();
+	void show();
 };
-
 
 /* Do not call the run function of the ISS directly but use one of the Runner
  * wrappers. */
 struct DirectCoreRunner : public sc_core::sc_module {
-    ISS &core;
-    std::string thread_name;
+	ISS &core;
+	std::string thread_name;
 
-    SC_HAS_PROCESS(DirectCoreRunner);
+	SC_HAS_PROCESS(DirectCoreRunner);
 
-    DirectCoreRunner(ISS &core)
-            : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
-        thread_name = "run" + std::to_string(core.get_hart_id());
-        SC_NAMED_THREAD(run, thread_name.c_str());
-    }
+	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+		thread_name = "run" + std::to_string(core.get_hart_id());
+		SC_NAMED_THREAD(run, thread_name.c_str());
+	}
 
-    void run() {
-        core.run();
+	void run() {
+		core.run();
 
-        if (core.status == CoreExecStatus::HitBreakpoint) {
-            throw std::runtime_error(
-                    "Breakpoints are not supported in the direct runner, use the debug "
-                    "runner instead.");
-        }
-        assert(core.status == CoreExecStatus::Terminated);
+		if (core.status == CoreExecStatus::HitBreakpoint) {
+			throw std::runtime_error(
+			    "Breakpoints are not supported in the direct runner, use the debug "
+			    "runner instead.");
+		}
+		assert(core.status == CoreExecStatus::Terminated);
 
-        sc_core::sc_stop();
-    }
+		sc_core::sc_stop();
+	}
 };
 
-} // namespace rv64
+}  // namespace rv64

@@ -105,16 +105,15 @@ int sys_time(SyscallHandler *sys, rv32_time_t *tloc) {
 	return boost::lexical_cast<int>(guest_ans);
 }
 
-
 namespace rv_sc {
-	// see: riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
-	constexpr uint32_t RDONLY = 0x0000; /* +1 == FREAD */
-	constexpr uint32_t WRONLY = 0x0001; /* +1 == FWRITE */
-	constexpr uint32_t RDWR = 0x0002;   /* +1 == FREAD|FWRITE */
-	constexpr uint32_t APPEND = 0x0008;
-	constexpr uint32_t CREAT = 0x0200;
-	constexpr uint32_t TRUNC = 0x0400;
-}
+// see: riscv-gnu-toolchain/riscv/riscv32-unknown-elf/include/sys/_default_fcntl.h
+constexpr uint32_t RDONLY = 0x0000; /* +1 == FREAD */
+constexpr uint32_t WRONLY = 0x0001; /* +1 == FWRITE */
+constexpr uint32_t RDWR = 0x0002;   /* +1 == FREAD|FWRITE */
+constexpr uint32_t APPEND = 0x0008;
+constexpr uint32_t CREAT = 0x0200;
+constexpr uint32_t TRUNC = 0x0400;
+}  // namespace rv_sc
 
 int translateRVFlagsToHost(const int flags) {
 	int ret = 0;
@@ -131,7 +130,6 @@ int translateRVFlagsToHost(const int flags) {
 
 	return ret;
 }
-
 
 int sys_brk(SyscallHandler *sys, void *addr) {
 	if (addr == 0) {
@@ -159,12 +157,11 @@ int sys_write(SyscallHandler *sys, int fd, const void *buf, size_t count) {
 		std::cout << "WARNING [sys-write error]: " << strerror(errno) << std::endl;
 		std::cout << "  fd = " << fd << std::endl;
 		std::cout << "  count = " << count << std::endl;
-		assert (false);
+		assert(false);
 	}
 
 	return ans;
 }
-
 
 int sys_read(SyscallHandler *sys, int fd, void *buf, size_t count) {
 	char *p = (char *)sys->guest_to_host_pointer(buf);
@@ -202,9 +199,9 @@ int sys_close(int fd) {
 	}
 }
 
-//TODO: add support for additional syscalls if necessary
+// TODO: add support for additional syscalls if necessary
 int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
-	//NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
+	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 
 	switch (n) {
 		case SYS_fstat:

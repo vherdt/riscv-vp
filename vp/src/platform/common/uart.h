@@ -5,8 +5,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <termios.h>
+#include <unistd.h>
 #include <systemc>
 
 #include <sys/types.h>
@@ -14,18 +14,16 @@
 class UART : public AbstractUART {
 	struct termios orig_termios;
 
-public:
-	UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
-		: AbstractUART(name, irqsrc)
-	{
+   public:
+	UART(const sc_core::sc_module_name &name, uint32_t irqsrc) : AbstractUART(name, irqsrc) {
 		if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
 			throw std::system_error(errno, std::generic_category());
 
 		struct termios raw = orig_termios;
-		raw.c_lflag &= ~(ICANON); // Bytewise read
-		raw.c_lflag &= ~(ECHO); // Disable local echo
-		raw.c_lflag &= ~(ISIG); // Don't catch Ctrl+C, etc.
-		raw.c_iflag &= ~(ICRNL); // Don't map CR to NL
+		raw.c_lflag &= ~(ICANON);  // Bytewise read
+		raw.c_lflag &= ~(ECHO);    // Disable local echo
+		raw.c_lflag &= ~(ISIG);    // Don't catch Ctrl+C, etc.
+		raw.c_iflag &= ~(ICRNL);   // Don't map CR to NL
 
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 			throw std::system_error(errno, std::generic_category());
@@ -38,7 +36,7 @@ public:
 		tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 	}
 
-private:
+   private:
 	void write_data(uint8_t data) {
 		ssize_t nwritten;
 

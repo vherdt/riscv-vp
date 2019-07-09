@@ -25,7 +25,6 @@ struct PortMapping {
 	}
 };
 
-
 template <unsigned int NR_OF_INITIATORS, unsigned int NR_OF_TARGETS>
 struct SimpleBus : sc_core::sc_module {
 	std::array<tlm_utils::simple_target_socket<SimpleBus>, NR_OF_INITIATORS> tsocks;
@@ -75,7 +74,6 @@ struct SimpleBus : sc_core::sc_module {
 	}
 };
 
-
 #include "core/common/bus_lock_if.h"
 
 /*
@@ -101,28 +99,27 @@ struct PeripheralWriteConnector : sc_core::sc_module {
 	}
 };
 
-
 class BusLock : public bus_lock_if {
 	bool locked = false;
 	unsigned owner = 0;
 	sc_core::sc_event lock_event;
 
-public:
+   public:
 	virtual void lock(unsigned hart_id) override {
 		if (locked && (hart_id != owner)) {
 			wait_until_unlocked();
 		}
 
-		assert (!locked || (hart_id == owner));
+		assert(!locked || (hart_id == owner));
 		locked = true;
 		owner = hart_id;
 	}
 
 	virtual void unlock(unsigned hart_id) override {
 		if (locked && (owner == hart_id)) {
-		    locked = false;
-            lock_event.notify(sc_core::SC_ZERO_TIME);
-        }
+			locked = false;
+			lock_event.notify(sc_core::SC_ZERO_TIME);
+		}
 	}
 
 	virtual bool is_locked() override {
@@ -134,8 +131,7 @@ public:
 	}
 
 	virtual void wait_until_unlocked() override {
-		while (locked)
-			sc_core::wait(lock_event);
+		while (locked) sc_core::wait(lock_event);
 	}
 };
 

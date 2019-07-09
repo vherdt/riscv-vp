@@ -1,11 +1,10 @@
 #include "iss.h"
 
 // to save *cout* format setting, see *ISS::show*
-#include <boost/io/ios_state.hpp>
 #include <boost/format.hpp>
+#include <boost/io/ios_state.hpp>
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
-
 
 using namespace rv64;
 
@@ -15,15 +14,12 @@ using namespace rv64;
 typedef __int128_t int128_t;
 typedef __uint128_t uint128_t;
 
-
-#define RAISE_ILLEGAL_INSTRUCTION()  \
-    raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+#define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 #define RD instr.rd()
 #define RS1 instr.rs1()
 #define RS2 instr.rs2()
 #define RS3 instr.rs3()
-
 
 const char *regnames[] = {
     "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
@@ -91,9 +87,8 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint64_t hart_id)
-    : systemc_name("Core-" + std::to_string(hart_id)) {
-    csrs.mhartid.reg = hart_id;
+ISS::ISS(uint64_t hart_id) : systemc_name("Core-" + std::to_string(hart_id)) {
+	csrs.mhartid.reg = hart_id;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -101,8 +96,7 @@ ISS::ISS(uint64_t hart_id)
 	assert(qt >= cycle_time);
 	assert(qt % cycle_time == sc_core::SC_ZERO_TIME);
 
-	for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i)
-		instr_cycles[i] = cycle_time;
+	for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i) instr_cycles[i] = cycle_time;
 
 	const sc_core::sc_time memory_access_cycles = 4 * cycle_time;
 	const sc_core::sc_time mul_div_cycles = 8 * cycle_time;
@@ -126,16 +120,16 @@ ISS::ISS(uint64_t hart_id)
 }
 
 void ISS::exec_step() {
-	assert (((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
+	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
 	uint32_t mem_word;
 	try {
 		mem_word = instr_mem->load_instr(pc);
-        instr = Instruction(mem_word);
-    } catch (SimulationTrap &e) {
-	    op = Opcode::UNDEF;
-	    instr = Instruction(0);
-	    throw;
+		instr = Instruction(mem_word);
+	} catch (SimulationTrap &e) {
+		op = Opcode::UNDEF;
+		instr = Instruction(0);
+		throw;
 	}
 
 	if (instr.is_compressed()) {
@@ -147,7 +141,8 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg, prv, last_pc, mem_word, Opcode::mappingStr.at(op));
+		printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg, prv, last_pc, mem_word,
+		       Opcode::mappingStr.at(op));
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -156,10 +151,10 @@ void ISS::exec_step() {
 				break;
 			case Opcode::Type::R4:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT ", " COLORFRMT,
-					   COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
-					   COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
-					   COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]),
-					   COLORPRINT(regcolors[instr.rs3()], regnames[instr.rs3()]));
+				       COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]),
+				       COLORPRINT(regcolors[instr.rs3()], regnames[instr.rs3()]));
 				break;
 			case Opcode::Type::I:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -187,7 +182,8 @@ void ISS::exec_step() {
 	switch (op) {
 		case Opcode::UNDEF:
 			if (trace)
-				std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'" << std::endl;
+				std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
+				          << std::to_string(last_pc) << "'" << std::endl;
 			raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			break;
 
@@ -276,17 +272,17 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::JAL: {
-            auto link = pc;
-            pc = last_pc + instr.J_imm();
+			auto link = pc;
+			pc = last_pc + instr.J_imm();
 			trap_check_pc_alignment();
-            regs[instr.rd()] = link;
-        } break;
+			regs[instr.rd()] = link;
+		} break;
 
 		case Opcode::JALR: {
-            auto link = pc;
-            pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+			auto link = pc;
+			pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
 			trap_check_pc_alignment();
-            regs[instr.rd()] = link;
+			regs[instr.rd()] = link;
 		} break;
 
 		case Opcode::SB: {
@@ -306,11 +302,11 @@ void ISS::exec_step() {
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
 
-        case Opcode::SD: {
-            uint64_t addr = regs[instr.rs1()] + instr.S_imm();
-            trap_check_addr_alignment<8, false>(addr);
-            mem->store_double(addr, regs[instr.rs2()]);
-        } break;
+		case Opcode::SD: {
+			uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+			trap_check_addr_alignment<8, false>(addr);
+			mem->store_double(addr, regs[instr.rs2()]);
+		} break;
 
 		case Opcode::LB: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
@@ -330,10 +326,10 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::LD: {
-            uint64_t addr = regs[instr.rs1()] + instr.I_imm();
-            trap_check_addr_alignment<8, true>(addr);
-            regs[instr.rd()] = mem->load_double(addr);
-        } break;
+			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<8, true>(addr);
+			regs[instr.rd()] = mem->load_double(addr);
+		} break;
 
 		case Opcode::LBU: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
@@ -346,91 +342,89 @@ void ISS::exec_step() {
 			regs[instr.rd()] = mem->load_uhalf(addr);
 		} break;
 
-        case Opcode::LWU: {
-            uint64_t addr = regs[instr.rs1()] + instr.I_imm();
-            trap_check_addr_alignment<4, true>(addr);
-            regs[instr.rd()] = mem->load_uword(addr);
-        } break;
+		case Opcode::LWU: {
+			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<4, true>(addr);
+			regs[instr.rd()] = mem->load_uword(addr);
+		} break;
 
 		case Opcode::BEQ:
 			if (regs[instr.rs1()] == regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
 		case Opcode::BNE:
 			if (regs[instr.rs1()] != regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
 		case Opcode::BLT:
 			if (regs[instr.rs1()] < regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
 		case Opcode::BGE:
 			if (regs[instr.rs1()] >= regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
 		case Opcode::BLTU:
 			if ((uint64_t)regs[instr.rs1()] < (uint64_t)regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
 		case Opcode::BGEU:
 			if ((uint64_t)regs[instr.rs1()] >= (uint64_t)regs[instr.rs2()]) {
-                pc = last_pc + instr.B_imm();
+				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+			}
 			break;
 
+		case Opcode::ADDIW:
+			regs[instr.rd()] = (int32_t)regs[instr.rs1()] + (int32_t)instr.I_imm();
+			break;
 
-        case Opcode::ADDIW:
-            regs[instr.rd()] = (int32_t)regs[instr.rs1()] + (int32_t)instr.I_imm();
-            break;
+		case Opcode::SLLIW:
+			regs[instr.rd()] = (int32_t)((uint32_t)regs[instr.rs1()] << instr.shamt_w());
+			break;
 
-        case Opcode::SLLIW:
-            regs[instr.rd()] = (int32_t)((uint32_t)regs[instr.rs1()] << instr.shamt_w());
-            break;
+		case Opcode::SRLIW:
+			regs[instr.rd()] = (int32_t)(((uint32_t)regs[instr.rs1()]) >> instr.shamt_w());
+			break;
 
-        case Opcode::SRLIW:
-            regs[instr.rd()] = (int32_t)(((uint32_t)regs[instr.rs1()]) >> instr.shamt_w());
-            break;
+		case Opcode::SRAIW:
+			regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> instr.shamt_w());
+			break;
 
-        case Opcode::SRAIW:
-            regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> instr.shamt_w());
-            break;
+		case Opcode::ADDW:
+			regs[instr.rd()] = (int32_t)regs[instr.rs1()] + (int32_t)regs[instr.rs2()];
+			break;
 
-        case Opcode::ADDW:
-            regs[instr.rd()] = (int32_t)regs[instr.rs1()] + (int32_t)regs[instr.rs2()];
-            break;
+		case Opcode::SUBW:
+			regs[instr.rd()] = (int32_t)regs[instr.rs1()] - (int32_t)regs[instr.rs2()];
+			break;
 
-        case Opcode::SUBW:
-            regs[instr.rd()] = (int32_t)regs[instr.rs1()] - (int32_t)regs[instr.rs2()];
-            break;
+		case Opcode::SLLW:
+			regs[instr.rd()] = (int32_t)((uint32_t)regs[instr.rs1()] << regs.shamt_w(instr.rs2()));
+			break;
 
-        case Opcode::SLLW:
-            regs[instr.rd()] = (int32_t)((uint32_t)regs[instr.rs1()] << regs.shamt_w(instr.rs2()));
-            break;
+		case Opcode::SRLW:
+			regs[instr.rd()] = (int32_t)(((uint32_t)regs[instr.rs1()]) >> regs.shamt_w(instr.rs2()));
+			break;
 
-        case Opcode::SRLW:
-            regs[instr.rd()] = (int32_t)(((uint32_t)regs[instr.rs1()]) >> regs.shamt_w(instr.rs2()));
-            break;
-
-        case Opcode::SRAW:
-            regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> regs.shamt_w(instr.rs2()));
-            break;
-
+		case Opcode::SRAW:
+			regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> regs.shamt_w(instr.rs2()));
+			break;
 
 		case Opcode::FENCE:
 		case Opcode::FENCE_I: {
@@ -438,29 +432,29 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::ECALL: {
-		    if (sys) {
+			if (sys) {
 				sys->execute_syscall(this);
 			} else {
-		    	switch (prv) {
-		    		case MachineMode:
+				switch (prv) {
+					case MachineMode:
 						raise_trap(EXC_ECALL_M_MODE, last_pc);
 						break;
-		    		case SupervisorMode:
+					case SupervisorMode:
 						raise_trap(EXC_ECALL_S_MODE, last_pc);
 						break;
 					case UserMode:
 						raise_trap(EXC_ECALL_U_MODE, last_pc);
 						break;
-		    		default:
-		    			throw std::runtime_error("unknown privilege level " + std::to_string(prv));
-		    	}
+					default:
+						throw std::runtime_error("unknown privilege level " + std::to_string(prv));
+				}
 			}
 		} break;
 
 		case Opcode::EBREAK: {
-		    //TODO: also raise trap and let the SW deal with it?
-            status = CoreExecStatus::HitBreakpoint;
-        } break;
+			// TODO: also raise trap and let the SW deal with it?
+			status = CoreExecStatus::HitBreakpoint;
+		} break;
 
 		case Opcode::CSRRW: {
 			auto addr = instr.csr();
@@ -619,10 +613,9 @@ void ISS::exec_step() {
 			}
 		} break;
 
-
-        case Opcode::MULW: {
+		case Opcode::MULW: {
 			regs[instr.rd()] = (int32_t)(regs[instr.rs1()] * regs[instr.rs2()]);
-        } break;
+		} break;
 
 		case Opcode::DIVW: {
 			int32_t a = regs[instr.rs1()];
@@ -668,156 +661,127 @@ void ISS::exec_step() {
 			}
 		} break;
 
-
 		case Opcode::LR_W: {
 			uint64_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, true>(addr);
-            regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
-            lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
+			regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
+			lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V
+			                     // forward progress property
 		} break;
 
 		case Opcode::SC_W: {
-            uint64_t addr = regs[instr.rs1()];
+			uint64_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, false>(addr);
-            int32_t val  = regs[instr.rs2()];
-            regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
-            regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
+			int32_t val = regs[instr.rs2()];
+			regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
+			regs[instr.rd()] =
+			    mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
 		} break;
 
 		case Opcode::AMOSWAP_W: {
 			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				(void) a;
+				(void)a;
 				return b;
 			});
 		} break;
 
 		case Opcode::AMOADD_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return a + b;
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a + b; });
 		} break;
 
 		case Opcode::AMOXOR_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return a ^ b;
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a ^ b; });
 		} break;
 
 		case Opcode::AMOAND_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return a & b;
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a & b; });
 		} break;
 
 		case Opcode::AMOOR_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return a | b;
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a | b; });
 		} break;
 
 		case Opcode::AMOMIN_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return std::min(a, b);
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::min(a, b); });
 		} break;
 
 		case Opcode::AMOMINU_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return std::min((uint32_t)a, (uint32_t)b);
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::min((uint32_t)a, (uint32_t)b); });
 		} break;
 
 		case Opcode::AMOMAX_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return std::max(a, b);
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::max(a, b); });
 		} break;
 
 		case Opcode::AMOMAXU_W: {
-			execute_amo_w(instr, [](int32_t a, int32_t b) {
-				return std::max((uint32_t)a, (uint32_t)b);
-			});
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::max((uint32_t)a, (uint32_t)b); });
 		} break;
-
 
 		case Opcode::LR_D: {
 			uint64_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<8, true>(addr);
 			regs[instr.rd()] = mem->atomic_load_reserved_double(addr);
-			lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
+			lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V
+			                     // forward progress property
 		} break;
 
 		case Opcode::SC_D: {
 			uint64_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<8, false>(addr);
-			uint64_t val  = regs[instr.rs2()];
-			regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
-			regs[instr.rd()] = mem->atomic_store_conditional_double(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
+			uint64_t val = regs[instr.rs2()];
+			regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
+			regs[instr.rd()] = mem->atomic_store_conditional_double(addr, val)
+			                       ? 0
+			                       : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
 		} break;
 
 		case Opcode::AMOSWAP_D: {
 			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				(void) a;
+				(void)a;
 				return b;
 			});
 		} break;
 
 		case Opcode::AMOADD_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return a + b;
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return a + b; });
 		} break;
 
 		case Opcode::AMOXOR_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return a ^ b;
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return a ^ b; });
 		} break;
 
 		case Opcode::AMOAND_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return a & b;
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return a & b; });
 		} break;
 
 		case Opcode::AMOOR_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return a | b;
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return a | b; });
 		} break;
 
 		case Opcode::AMOMIN_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return std::min(a, b);
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return std::min(a, b); });
 		} break;
 
 		case Opcode::AMOMINU_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return std::min((uint64_t)a, (uint64_t)b);
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return std::min((uint64_t)a, (uint64_t)b); });
 		} break;
 
 		case Opcode::AMOMAX_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return std::max(a, b);
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return std::max(a, b); });
 		} break;
 
 		case Opcode::AMOMAXU_D: {
-			execute_amo_d(instr, [](int64_t a, int64_t b) {
-				return std::max((uint64_t)a, (uint64_t)b);
-			});
+			execute_amo_d(instr, [](int64_t a, int64_t b) { return std::max((uint64_t)a, (uint64_t)b); });
 		} break;
 
-		// RV64 F/D extension
+			// RV64 F/D extension
 
 		case Opcode::FLW: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			fp_regs.write(RD, float32_t{ (uint32_t)mem->load_uword(addr) });
+			fp_regs.write(RD, float32_t{(uint32_t)mem->load_uword(addr)});
 		} break;
 
 		case Opcode::FSW: {
@@ -865,7 +829,7 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 
 			bool rs1_smaller = f32_lt_quiet(fp_regs.f32(RS1), fp_regs.f32(RS2)) ||
-							   (f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2)) && f32_isNegative(fp_regs.f32(RS1)));
+			                   (f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2)) && f32_isNegative(fp_regs.f32(RS1)));
 
 			if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
 				fp_regs.write(RD, f32_defaultNaN);
@@ -883,7 +847,7 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 
 			bool rs1_greater = f32_lt_quiet(fp_regs.f32(RS2), fp_regs.f32(RS1)) ||
-							   (f32_eq(fp_regs.f32(RS2), fp_regs.f32(RS1)) && f32_isNegative(fp_regs.f32(RS2)));
+			                   (f32_eq(fp_regs.f32(RS2), fp_regs.f32(RS1)) && f32_isNegative(fp_regs.f32(RS2)));
 
 			if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
 				fp_regs.write(RD, f32_defaultNaN);
@@ -979,7 +943,7 @@ void ISS::exec_step() {
 
 		case Opcode::FMV_W_X: {
 			fp_prepare_instr();
-			fp_regs.write(RD, float32_t{ (uint32_t)((int32_t)regs[RS1]) });
+			fp_regs.write(RD, float32_t{(uint32_t)((int32_t)regs[RS1])});
 			fp_set_dirty();
 		} break;
 
@@ -1039,11 +1003,10 @@ void ISS::exec_step() {
 			fp_finish_instr();
 		} break;
 
-
 		case Opcode::FLD: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<8, true>(addr);
-			fp_regs.write(RD, float64_t{ (uint64_t)mem->load_double(addr) });
+			fp_regs.write(RD, float64_t{(uint64_t)mem->load_double(addr)});
 		} break;
 
 		case Opcode::FSD: {
@@ -1091,7 +1054,7 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 
 			bool rs1_smaller = f64_lt_quiet(fp_regs.f64(RS1), fp_regs.f64(RS2)) ||
-							   (f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2)) && f64_isNegative(fp_regs.f64(RS1)));
+			                   (f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2)) && f64_isNegative(fp_regs.f64(RS1)));
 
 			if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
 				fp_regs.write(RD, f64_defaultNaN);
@@ -1109,7 +1072,7 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 
 			bool rs1_greater = f64_lt_quiet(fp_regs.f64(RS2), fp_regs.f64(RS1)) ||
-							   (f64_eq(fp_regs.f64(RS2), fp_regs.f64(RS1)) && f64_isNegative(fp_regs.f64(RS2)));
+			                   (f64_eq(fp_regs.f64(RS2), fp_regs.f64(RS1)) && f64_isNegative(fp_regs.f64(RS2)));
 
 			if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
 				fp_regs.write(RD, f64_defaultNaN);
@@ -1200,7 +1163,7 @@ void ISS::exec_step() {
 
 		case Opcode::FMV_D_X: {
 			fp_prepare_instr();
-			fp_regs.write(RD, float64_t{ (uint64_t)regs[RS1] });
+			fp_regs.write(RD, float64_t{(uint64_t)regs[RS1]});
 			fp_set_dirty();
 		} break;
 
@@ -1279,7 +1242,7 @@ void ISS::exec_step() {
 			fp_finish_instr();
 		} break;
 
-		// privileged instructions
+			// privileged instructions
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
@@ -1293,7 +1256,7 @@ void ISS::exec_step() {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
 			if (!ignore_wfi && !has_local_pending_enabled_interrupts())
-                sc_core::wait(wfi_event);
+				sc_core::wait(wfi_event);
 			break;
 
 		case Opcode::SFENCE_VMA:
@@ -1323,7 +1286,6 @@ void ISS::exec_step() {
 	}
 }
 
-
 uint64_t ISS::_compute_and_get_current_cycles() {
 	assert(cycle_counter % cycle_time == sc_core::SC_ZERO_TIME);
 	assert(cycle_counter.value() % cycle_time.value() == 0);
@@ -1333,11 +1295,10 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
-
 void ISS::validate_csr_counter_read_access_rights(uint64_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F)) {
-		auto cnt = addr & 0x1F; // 32 counter in total, naturally aligned with the mcounteren and scounteren CSRs
+		auto cnt = addr & 0x1F;  // 32 counter in total, naturally aligned with the mcounteren and scounteren CSRs
 
 		if (s_mode() && !csr::is_bitset(csrs.mcounteren, cnt))
 			RAISE_ILLEGAL_INSTRUCTION();
@@ -1347,13 +1308,10 @@ void ISS::validate_csr_counter_read_access_rights(uint64_t addr) {
 	}
 }
 
-
 uint64_t ISS::get_csr_value(uint64_t addr) {
 	validate_csr_counter_read_access_rights(addr);
 
-	auto read = [=](auto &x, uint64_t mask) {
-		return x.reg & mask;
-	};
+	auto read = [=](auto &x, uint64_t mask) { return x.reg & mask; };
 
 	using namespace csr;
 
@@ -1372,29 +1330,38 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 		case MINSTRET_ADDR:
 			return csrs.instret.reg;
 
-		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:	// not implemented
+		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:  // not implemented
 			return 0;
 
-			//TODO: SD should be updated as SD=XS|FS and SD should be read-only -> update mask
-		case MSTATUS_ADDR: return read(csrs.mstatus, MSTATUS_READ_MASK);
-		case SSTATUS_ADDR: return read(csrs.mstatus, SSTATUS_READ_MASK);
-		case USTATUS_ADDR: return read(csrs.mstatus, USTATUS_MASK);
+			// TODO: SD should be updated as SD=XS|FS and SD should be read-only -> update mask
+		case MSTATUS_ADDR:
+			return read(csrs.mstatus, MSTATUS_READ_MASK);
+		case SSTATUS_ADDR:
+			return read(csrs.mstatus, SSTATUS_READ_MASK);
+		case USTATUS_ADDR:
+			return read(csrs.mstatus, USTATUS_MASK);
 
-		case MIP_ADDR: return read(csrs.mip, MIP_READ_MASK);
-		case SIP_ADDR: return read(csrs.mip, SIP_MASK);
-		case UIP_ADDR: return read(csrs.mip, UIP_MASK);
+		case MIP_ADDR:
+			return read(csrs.mip, MIP_READ_MASK);
+		case SIP_ADDR:
+			return read(csrs.mip, SIP_MASK);
+		case UIP_ADDR:
+			return read(csrs.mip, UIP_MASK);
 
-		case MIE_ADDR: return read(csrs.mie, MIE_MASK);
-		case SIE_ADDR: return read(csrs.mie, SIE_MASK);
-		case UIE_ADDR: return read(csrs.mie, UIE_MASK);
+		case MIE_ADDR:
+			return read(csrs.mie, MIE_MASK);
+		case SIE_ADDR:
+			return read(csrs.mie, SIE_MASK);
+		case UIE_ADDR:
+			return read(csrs.mie, UIE_MASK);
 
 		case SATP_ADDR:
-            if (csrs.mstatus.tvm)
-                RAISE_ILLEGAL_INSTRUCTION();
-            break;
+			if (csrs.mstatus.tvm)
+				RAISE_ILLEGAL_INSTRUCTION();
+			break;
 
-	    case FCSR_ADDR:
-	        return read(csrs.fcsr, FCSR_MASK);
+		case FCSR_ADDR:
+			return read(csrs.fcsr, FCSR_MASK);
 
 		case FFLAGS_ADDR:
 			return csrs.fcsr.fflags;
@@ -1409,49 +1376,76 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 	return csrs.default_read64(addr);
 }
 
-
 void ISS::set_csr_value(uint64_t addr, uint64_t value) {
-
-	auto write = [=](auto &x, uint64_t mask) {
-		x.reg = (x.reg & ~mask) | (value & mask);
-	};
+	auto write = [=](auto &x, uint64_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
 
 	using namespace csr;
 
 	switch (addr) {
-		case MISA_ADDR: // currently, read-only, thus cannot be changed at runtime
-		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:	// not implemented
+		case MISA_ADDR:                         // currently, read-only, thus cannot be changed at runtime
+		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:  // not implemented
 			break;
 
-        case SATP_ADDR: {
-            if (csrs.mstatus.tvm)
-                RAISE_ILLEGAL_INSTRUCTION();
-            auto mode = csrs.satp.mode;
-            write(csrs.satp, SATP_MASK);
-            if (csrs.satp.mode != SATP_MODE_BARE && csrs.satp.mode != SATP_MODE_SV39 && csrs.satp.mode != SATP_MODE_SV48)
-                csrs.satp.mode = mode;
-            //std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
-        } break;
+		case SATP_ADDR: {
+			if (csrs.mstatus.tvm)
+				RAISE_ILLEGAL_INSTRUCTION();
+			auto mode = csrs.satp.mode;
+			write(csrs.satp, SATP_MASK);
+			if (csrs.satp.mode != SATP_MODE_BARE && csrs.satp.mode != SATP_MODE_SV39 &&
+			    csrs.satp.mode != SATP_MODE_SV48)
+				csrs.satp.mode = mode;
+			// std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
+		} break;
 
-	    case MTVEC_ADDR: write(csrs.mtvec, MTVEC_MASK); break;
-		case STVEC_ADDR: write(csrs.stvec, MTVEC_MASK); break;
-		case UTVEC_ADDR: write(csrs.utvec, MTVEC_MASK); break;
+		case MTVEC_ADDR:
+			write(csrs.mtvec, MTVEC_MASK);
+			break;
+		case STVEC_ADDR:
+			write(csrs.stvec, MTVEC_MASK);
+			break;
+		case UTVEC_ADDR:
+			write(csrs.utvec, MTVEC_MASK);
+			break;
 
-		case MEPC_ADDR: write(csrs.mepc, pc_alignment_mask()); break;
-		case SEPC_ADDR: write(csrs.sepc, pc_alignment_mask()); break;
-		case UEPC_ADDR: write(csrs.uepc, pc_alignment_mask()); break;
+		case MEPC_ADDR:
+			write(csrs.mepc, pc_alignment_mask());
+			break;
+		case SEPC_ADDR:
+			write(csrs.sepc, pc_alignment_mask());
+			break;
+		case UEPC_ADDR:
+			write(csrs.uepc, pc_alignment_mask());
+			break;
 
-		case MSTATUS_ADDR: write(csrs.mstatus, MSTATUS_WRITE_MASK); break;
-		case SSTATUS_ADDR: write(csrs.mstatus, SSTATUS_WRITE_MASK); break;
-		case USTATUS_ADDR: write(csrs.mstatus, USTATUS_MASK); break;
+		case MSTATUS_ADDR:
+			write(csrs.mstatus, MSTATUS_WRITE_MASK);
+			break;
+		case SSTATUS_ADDR:
+			write(csrs.mstatus, SSTATUS_WRITE_MASK);
+			break;
+		case USTATUS_ADDR:
+			write(csrs.mstatus, USTATUS_MASK);
+			break;
 
-		case MIP_ADDR: write(csrs.mip, MIP_WRITE_MASK); break;
-		case SIP_ADDR: write(csrs.mip, SIP_MASK); break;
-		case UIP_ADDR: write(csrs.mip, UIP_MASK); break;
+		case MIP_ADDR:
+			write(csrs.mip, MIP_WRITE_MASK);
+			break;
+		case SIP_ADDR:
+			write(csrs.mip, SIP_MASK);
+			break;
+		case UIP_ADDR:
+			write(csrs.mip, UIP_MASK);
+			break;
 
-		case MIE_ADDR: write(csrs.mie, MIE_MASK); break;
-		case SIE_ADDR: write(csrs.mie, SIE_MASK); break;
-		case UIE_ADDR: write(csrs.mie, UIE_MASK); break;
+		case MIE_ADDR:
+			write(csrs.mie, MIE_MASK);
+			break;
+		case SIE_ADDR:
+			write(csrs.mie, SIE_MASK);
+			break;
+		case UIE_ADDR:
+			write(csrs.mie, UIE_MASK);
+			break;
 
 		case MIDELEG_ADDR:
 			write(csrs.mideleg, MIDELEG_MASK);
@@ -1481,9 +1475,9 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 			write(csrs.mcountinhibit, MCOUNTINHIBIT_MASK);
 			break;
 
-        case FCSR_ADDR:
-            write(csrs.fcsr, FCSR_MASK);
-            break;
+		case FCSR_ADDR:
+			write(csrs.fcsr, FCSR_MASK);
+			break;
 
 		case FFLAGS_ADDR:
 			csrs.fcsr.fflags = value;
@@ -1493,17 +1487,16 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 			csrs.fcsr.frm = value;
 			break;
 
-	    default:
+		default:
 			if (!csrs.is_valid_csr64_addr(addr))
 				RAISE_ILLEGAL_INSTRUCTION();
 
-            csrs.default_write64(addr, value);
+			csrs.default_write64(addr, value);
 	}
 }
 
-
-void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
-               uint64_t entrypoint, uint64_t sp) {
+void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint64_t entrypoint,
+               uint64_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
@@ -1511,9 +1504,8 @@ void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *c
 	pc = entrypoint;
 }
 
-
 void ISS::sys_exit() {
-    shall_exit = true;
+	shall_exit = true;
 }
 
 uint64_t ISS::read_register(unsigned idx) {
@@ -1528,14 +1520,13 @@ uint64_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
 }
 
-
 void ISS::fp_finish_instr() {
 	fp_set_dirty();
 	fp_update_exception_flags();
 }
 
 void ISS::fp_prepare_instr() {
-	assert (softfloat_exceptionFlags == 0);
+	assert(softfloat_exceptionFlags == 0);
 	fp_require_not_off();
 }
 
@@ -1565,7 +1556,6 @@ void ISS::fp_require_not_off() {
 	if (csrs.mstatus.fs == FS_OFF)
 		RAISE_ILLEGAL_INSTRUCTION();
 }
-
 
 void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	switch (return_mode) {
@@ -1599,28 +1589,28 @@ void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 			break;
 
 		default:
-            throw std::runtime_error("unknown privilege level " + std::to_string(return_mode));
+			throw std::runtime_error("unknown privilege level " + std::to_string(return_mode));
 	}
 
 	if (trace)
-	    printf("[vp::iss] return from trap handler, time %s, pc %16lx, prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
+		printf("[vp::iss] return from trap handler, time %s, pc %16lx, prv %1x\n",
+		       quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
 }
-
 
 void ISS::trigger_external_interrupt(PrivilegeLevel level) {
 	if (trace)
 		std::cout << "[vp::iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 
 	switch (level) {
-	case UserMode:
-		csrs.mip.ueip = true;
-		break;
-	case SupervisorMode:
-		csrs.mip.seip = true;
-		break;
-	case MachineMode:
-		csrs.mip.meip = true;
-		break;
+		case UserMode:
+			csrs.mip.ueip = true;
+			break;
+		case SupervisorMode:
+			csrs.mip.seip = true;
+			break;
+		case MachineMode:
+			csrs.mip.meip = true;
+			break;
 	}
 
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
@@ -1631,15 +1621,15 @@ void ISS::clear_external_interrupt(PrivilegeLevel level) {
 		std::cout << "[vp::iss] clear external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 
 	switch (level) {
-	case UserMode:
-		csrs.mip.ueip = false;
-		break;
-	case SupervisorMode:
-		csrs.mip.seip = false;
-		break;
-	case MachineMode:
-		csrs.mip.meip = false;
-		break;
+		case UserMode:
+			csrs.mip.ueip = false;
+			break;
+		case SupervisorMode:
+			csrs.mip.seip = false;
+			break;
+		case MachineMode:
+			csrs.mip.meip = false;
+			break;
 	}
 }
 
@@ -1657,9 +1647,9 @@ void ISS::trigger_software_interrupt(bool status) {
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
-
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
-	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's successor)
+	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's
+	// successor)
 	pc = last_pc;
 	unsigned exc_bit = (1 << e.reason);
 
@@ -1680,17 +1670,17 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 		return SupervisorMode;
 	}
 
-	assert (prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
+	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
 	csrs.ucause.interrupt = 0;
 	csrs.ucause.exception_code = e.reason;
 	csrs.utval.reg = e.mtval;
 	return UserMode;
 }
 
-
 void ISS::prepare_interrupt(const PendingInterrupts &e) {
-	if (trace){
-		std::cout << "[vp::iss] prepare interrupt, pending=" << e.pending << ", target-mode=" << e.target_mode << std::endl;
+	if (trace) {
+		std::cout << "[vp::iss] prepare interrupt, pending=" << e.pending << ", target-mode=" << e.target_mode
+		          << std::endl;
 	}
 
 	csr_mip x{e.pending};
@@ -1738,7 +1728,6 @@ void ISS::prepare_interrupt(const PendingInterrupts &e) {
 	}
 }
 
-
 PendingInterrupts ISS::compute_pending_interrupts() {
 	uint64_t pending = csrs.mie.reg & csrs.mip.reg;
 
@@ -1764,11 +1753,11 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 	return {NoneMode, 0};
 }
 
-
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
-    if (trace){
-    	printf("[vp::iss] switch to trap handler, time %s, last_pc %16lx, pc %16lx, irq %u, t-prv %1x\n", quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
-    }
+	if (trace) {
+		printf("[vp::iss] switch to trap handler, time %s, last_pc %16lx, pc %16lx, irq %u, t-prv %1x\n",
+		       quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
+	}
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
 	release_lr_sc_reservation();
@@ -1791,7 +1780,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			break;
 
 		case SupervisorMode:
-			assert (prv == SupervisorMode || prv == UserMode);
+			assert(prv == SupervisorMode || prv == UserMode);
 
 			csrs.sepc.reg = pc;
 
@@ -1806,7 +1795,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			break;
 
 		case UserMode:
-			assert (prv == UserMode);
+			assert(prv == UserMode);
 
 			csrs.uepc.reg = pc;
 
@@ -1823,7 +1812,6 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
 	}
 }
-
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 	if (!csrs.mcountinhibit.IR)
@@ -1842,7 +1830,7 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
-		if (lr_sc_counter == 0)	// only an optimization, to avoid (SystemC) context switching while the bus is locked
+		if (lr_sc_counter == 0)  // only an optimization, to avoid (SystemC) context switching while the bus is locked
 			quantum_keeper.sync();
 	}
 }
@@ -1860,10 +1848,11 @@ void ISS::run_step() {
 			switch_to_trap_handler(x.target_mode);
 		}
 	} catch (SimulationTrap &e) {
-        if (trace)
-            std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval << ", pc=" << boost::format("%x") % last_pc << std::endl;
-        auto target_mode = prepare_trap(e);
-        switch_to_trap_handler(target_mode);
+		if (trace)
+			std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
+			          << ", pc=" << boost::format("%x") % last_pc << std::endl;
+		auto target_mode = prepare_trap(e);
+		switch_to_trap_handler(target_mode);
 	}
 
 	// NOTE: writes to zero register are supposedly allowed but must be ignored
