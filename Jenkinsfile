@@ -25,7 +25,8 @@ pipeline {
     post {  
         always {  
             echo 'This will always run'
-            mail    bcc: '', 
+            emailext attachLog: true,
+                    bcc: '', 
                     body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}", 
                     cc: '', 
                     charset: 'UTF-8', 
@@ -34,7 +35,7 @@ pipeline {
                     replyTo: 'plsdontask-ppieper@tzi.de',
                     subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
                     to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}";
-            emailext attachLog: true
+            
         }  
         success {  
             echo 'This will run only if successful'  
