@@ -1,4 +1,5 @@
 pipeline {
+    def msg = "git log --format=\"medium\" -1 ${GIT_COMMIT} # print commit, author, date, title & commit message"
     agent {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
@@ -26,8 +27,9 @@ pipeline {
         always {  
             echo 'This will always run'
             emailext(
+                    recipientProviders: [culprits, brokenBuildSuspects],
                     attachLog: true,
-                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}", 
+                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${msg}</br>${env.CHANGES}", 
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
