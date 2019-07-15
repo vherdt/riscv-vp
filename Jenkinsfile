@@ -39,8 +39,10 @@ pipeline {
         }  
         success {  
             //echo 'This will run only if successful'  
-            if (currentBuild.result == null) {
-                currentBuild.result = 'SUCCESS'    
+            script {
+                if (currentBuild.result == null) {
+                    currentBuild.result = 'SUCCESS'    
+                }
             }
         }  
         failure {  
@@ -60,8 +62,10 @@ pipeline {
                 </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
                 """
             )
-            if (currentBuild.result == null) {
-                currentBuild.result = 'FAILURE'
+            script {
+                if (currentBuild.result == null) {
+                    currentBuild.result = 'FAILURE'
+                }
             }
         }  
         unstable {  
@@ -71,7 +75,6 @@ pipeline {
             echo 'This will run only if the state of the Pipeline has changed'  
             echo 'For example, if the Pipeline was previously failing but is now successful'  
             script {
-                currentBuild.getPreviousBuild().result
                 if (currentBuild.previousBuild != null && currentBuild.previousBuild.result != 'SUCCESS') {
                 emailext(
                     //recipientProviders: [culprits, brokenBuildSuspects],
