@@ -43,7 +43,7 @@ pipeline {
         failure {  
             echo 'This will run only if not successful'  
             emailext(
-                recipientProviders: [culprits, brokenBuildSuspects],
+                //recipientProviders: [culprits, brokenBuildSuspects],
                 attachLog: true,
                 body:
                 """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} ${env.BUILD_NUMBER}</b></br>
