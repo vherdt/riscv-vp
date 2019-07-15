@@ -25,18 +25,13 @@ pipeline {
     post {  
         always {  
             echo 'This will always run'
-            def emailBody = "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}"
-            def emailSubject = "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}"
             emailext(
                     attachLog: true,
-                    bcc: '', 
-                    body: emailBody, 
-                    cc: '', 
-                    charset: 'UTF-8', 
+                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}", 
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
-                    subject: emailSubject,
+                    subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
                     to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}"
             )
             
@@ -45,7 +40,7 @@ pipeline {
             echo 'This will run only if successful'  
         }  
         failure {  
-
+            echo 'This will run only if not successful'  
         }  
         unstable {  
             echo 'This will run only if the run was marked as unstable'  
