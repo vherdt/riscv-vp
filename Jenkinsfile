@@ -13,8 +13,8 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                //sh 'make all'
-                sh 'echo mock-build'
+                sh 'make all'
+                //sh 'echo mock-build'
             }
         }
 //        stage('Test') {
