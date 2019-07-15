@@ -14,10 +14,12 @@ pipeline {
 //            }
 //        }
         stage ("Archive") {
-              archiveArtifacts artifacts: 'vp/build/bin/*'
-              archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
-              archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
-              //archiveArtifacts artifacts: 'env/riscview/vp-display/build/vp-display'
+            steps {
+                archiveArtifacts artifacts: 'vp/build/bin/*'
+                archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
+                archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
+                //archiveArtifacts artifacts: 'env/riscview/vp-display/build/vp-display'
+            }
         }
     }
 }
