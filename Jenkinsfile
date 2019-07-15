@@ -1,5 +1,4 @@
 pipeline {
-    def msg = "git log --format=\"medium\" -1 ${GIT_COMMIT} # print commit, author, date, title & commit message"
     agent {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
