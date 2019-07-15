@@ -3,7 +3,7 @@ pipeline {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
     environment {
-        DEVELOPERS = "ppieper@informatik.uni-bremen.de" // vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
+        DEVELOPERS = "ppieper@informatik.uni-bremen.de vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
     
         GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
