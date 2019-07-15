@@ -3,7 +3,7 @@ pipeline {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
     environment {
-        DEVELOPERS = "vherdt@informatik.uni-bremen.de ppieper@informatik.uni-bremen.de nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
+        DEVELOPERS = "ppieper@informatik.uni-bremen.de" // vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
     
         GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
@@ -46,13 +46,13 @@ pipeline {
                 //recipientProviders: [culprits, brokenBuildSuspects],
                 attachLog: true,
                 body:
-                """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} ${env.BUILD_NUMBER}</b></br>
+                """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
                 ${env.GIT_COMMIT_MSG}
-                </br>(ask ${env.GIT_COMMITTER_MAIL} or see ${env.BUILD_URL})
+                </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
                 """,
                 from: 'jenkins@informatik.uni-bremen.de', 
                 mimeType: 'text/html',
-                replyTo: 'plsdontask-ppieper@tzi.de',
+                //replyTo: 'plsdontask-ppieper@tzi.de',
                 subject: "Build failed in Jenkins: ${env.JOB_NAME}",
                 to: "${env.DEVELOPERS}"
             )
