@@ -34,7 +34,7 @@ pipeline {
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
                     subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
-                    to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}"
+                    to: "ppieper@informatik.uni-bremen.de"
             )
             
         }  
