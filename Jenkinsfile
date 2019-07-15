@@ -2,6 +2,9 @@ pipeline {
     agent {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
+    environment {
+        GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"Author: %an at %ai%n >>%s<<"', returnStdout: true).trim()
+    }
     stages {
         stage('Build') {
             steps {
@@ -31,7 +34,7 @@ pipeline {
                     attachLog: true,
                     body:
                     """<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>
-                    ${CHANGES}
+                    ${env.GIT_COMMIT_MSG}
                     """,
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
