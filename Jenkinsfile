@@ -9,7 +9,7 @@ pipeline {
         GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
         GIT_COMMITTER  = sh (script: 'git log -n1 --pretty=format:"%an"', returnStdout: true).trim()
-        GIT_COMMITTER_MAIL  = sh (script: 'git log -n1 --pretty=format:"%ae"', returnStdout: true).trim()
+        GIT_COMMITTER_MAIL = sh (script: 'git log -n1 --pretty=format:"%ae"', returnStdout: true).trim()
     }
     stages {
         stage('Build') {
@@ -60,7 +60,6 @@ pipeline {
                         <blockquote><code>
                             ${env.GIT_COMMIT_MSG}
                         </code></blockquote>
-                        </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
                         """
                     )
                 } 
