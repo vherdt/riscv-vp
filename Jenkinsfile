@@ -3,9 +3,12 @@ pipeline {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
     environment {
+        DEVELOPERS = "vherdt@informatik.uni-bremen.de ppieper@informatik.uni-bremen.de nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
+    
         GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
-        GIT_COMMITTER  = sh (script: 'git log -n1 --pretty=format:"%an <%ae>"', returnStdout: true).trim()
+        GIT_COMMITTER  = sh (script: 'git log -n1 --pretty=format:"%an"', returnStdout: true).trim()
+        GIT_COMMITTER_MAIL  = sh (script: 'git log -n1 --pretty=format:"%ae"', returnStdout: true).trim()
     }
     stages {
         stage('Build') {
@@ -31,19 +34,7 @@ pipeline {
     post {  
         always {  
             echo 'This will always run'
-            emailext(
-                    //recipientProviders: [culprits, brokenBuildSuspects],
-                    attachLog: true,
-                    body:
-                    """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} ${env.BUILD_NUMBER}</b> (see ${env.BUILD_URL})</br>
-                    ${env.GIT_COMMIT_MSG}
-                    """,
-                    from: 'jenkins@informatik.uni-bremen.de', 
-                    mimeType: 'text/html',
-                    replyTo: 'plsdontask-ppieper@tzi.de',
-                    subject: "Build failed in Jenkins: ${env.JOB_NAME}",
-                    to: "ppieper@informatik.uni-bremen.de"
-            )
+
             
         }  
         success {  
@@ -51,6 +42,20 @@ pipeline {
         }  
         failure {  
             echo 'This will run only if not successful'  
+            emailext(
+                recipientProviders: [culprits, brokenBuildSuspects],
+                attachLog: true,
+                body:
+                """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} ${env.BUILD_NUMBER}</b></br>
+                ${env.GIT_COMMIT_MSG}
+                </br>(ask ${env.GIT_COMMITTER_MAIL} or see ${env.BUILD_URL})
+                """,
+                from: 'jenkins@informatik.uni-bremen.de', 
+                mimeType: 'text/html',
+                replyTo: 'plsdontask-ppieper@tzi.de',
+                subject: "Build failed in Jenkins: ${env.JOB_NAME}",
+                to: "${env.DEVELOPERS}"
+            )
         }  
         unstable {  
             echo 'This will run only if the run was marked as unstable'  
