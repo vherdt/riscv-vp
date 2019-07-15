@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label: "fedora-28 || ubuntu-18.04 || debian-9"
+        label "fedora-28 || ubuntu-18.04 || debian-9"
     }
 //    environment {
 //        CI = 'true'
@@ -11,10 +11,11 @@ pipeline {
                 sh 'make all'
             }
         }
-        stage('Test') {
+//        stage('Test') {
 //            steps {
 //                sh './jenkins/scripts/test.sh'
 //            }
-        }
+//        }
+
     }
 }
