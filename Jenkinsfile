@@ -38,26 +38,31 @@ pipeline {
             
         }  
         success {  
-            echo 'This will run only if successful'  
+            //echo 'This will run only if successful'  
+            if (currentBuild.result == null) {
+                currentBuild.result = 'SUCCESS'    
+            }
         }  
         failure {  
             echo 'This will run only if not successful'  
             emailext(
                 //recipientProviders: [culprits, brokenBuildSuspects],
                 attachLog: true,
+                subject: "Build failed in Jenkins: ${env.JOB_NAME}",
+                from: 'jenkins@informatik.uni-bremen.de', 
+                mimeType: 'text/html',
+                to: "${env.DEVELOPERS}",
                 body:
                 """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
                 <blockquote><code>
                     ${env.GIT_COMMIT_MSG}
                 </code></blockquote>
                 </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
-                """,
-                from: 'jenkins@informatik.uni-bremen.de', 
-                mimeType: 'text/html',
-                //replyTo: 'plsdontask-ppieper@tzi.de',
-                subject: "Build failed in Jenkins: ${env.JOB_NAME}",
-                to: "${env.DEVELOPERS}"
+                """
             )
+            if (currentBuild.result == null) {
+                currentBuild.result = 'FAILURE'
+            }
         }  
         unstable {  
             echo 'This will run only if the run was marked as unstable'  
@@ -65,6 +70,29 @@ pipeline {
         changed {  
             echo 'This will run only if the state of the Pipeline has changed'  
             echo 'For example, if the Pipeline was previously failing but is now successful'  
+            script {
+                currentBuild.getPreviousBuild().result
+                if (currentBuild.previousBuild != null && currentBuild.previousBuild.result != 'SUCCESS') {
+                emailext(
+                    //recipientProviders: [culprits, brokenBuildSuspects],
+                    attachLog: false,
+                    subject: "Build back to normal: ${env.JOB_NAME}",
+                    from: 'jenkins@informatik.uni-bremen.de', 
+                    mimeType: 'text/html',
+                    to: "${env.DEVELOPERS}",
+                    body:
+                    """<b>${env.GIT_COMMITTER} repaired Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
+                    <blockquote><code>
+                        ${env.GIT_COMMIT_MSG}
+                    </code></blockquote>
+                    </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
+                    """
+                )
+            } 
+                
+            }
+
+            
         }  
     } 
 }
