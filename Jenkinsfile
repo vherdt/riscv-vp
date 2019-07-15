@@ -3,7 +3,9 @@ pipeline {
         label "fedora-28 || ubuntu-18.04 || debian-9"
     }
     environment {
-        GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"Author: %an at %ai%n >>%s<<"', returnStdout: true).trim()
+        GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
+        GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
+        GIT_COMMITER   = sh (script: 'git log -n1 --pretty=format:"%an <%ae>"', returnStdout: true).trim()
     }
     stages {
         stage('Build') {
@@ -33,13 +35,13 @@ pipeline {
                     //recipientProviders: [culprits, brokenBuildSuspects],
                     attachLog: true,
                     body:
-                    """<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>
+                    """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} ${env.BUILD_NUMBER}</b> (see ${env.BUILD_URL})</br>
                     ${env.GIT_COMMIT_MSG}
                     """,
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
-                    subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
+                    subject: "Build failed in Jenkins: ${env.JOB_NAME}",
                     to: "ppieper@informatik.uni-bremen.de"
             )
             
