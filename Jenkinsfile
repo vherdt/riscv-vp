@@ -47,9 +47,9 @@ pipeline {
                 attachLog: true,
                 body:
                 """<b>${env.GIT_COMMITTER} broke Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
-                <blockquote>
+                <blockquote><code>
                     ${env.GIT_COMMIT_MSG}
-                </blockquote>
+                </code></blockquote>
                 </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
                 """,
                 from: 'jenkins@informatik.uni-bremen.de', 
