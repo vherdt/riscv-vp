@@ -1,7 +1,7 @@
 pipeline {
     agent {
         //label "fedora-28 || ubuntu-18.04 || debian-9"
-        label "fedora-28 || ubuntu-18.04"
+        label "ubuntu-18.04"
     }
     environment {
         DEVELOPERS = "ppieper@informatik.uni-bremen.de" // vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
@@ -14,7 +14,8 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make all'
+                sh 'make'
+                //sh 'make all'
                 //sh 'echo mock-build'
             }
         }
@@ -26,8 +27,8 @@ pipeline {
         stage ("Archive") {
             steps {
                 archiveArtifacts artifacts: 'vp/build/bin/*'
-                archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
-                archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
+                //archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
+                //archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
                 //archiveArtifacts artifacts: 'env/riscview/vp-display/build/vp-display'
             }
         }
