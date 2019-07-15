@@ -1,7 +1,6 @@
 pipeline {
     agent {
-        //label "fedora-28 || ubuntu-18.04 || debian-9"
-        label "ubuntu-18.04"
+        label "fedora-28 || ubuntu-18.04 || debian-9"
     }
     environment {
         DEVELOPERS = "ppieper@informatik.uni-bremen.de" // vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
@@ -14,8 +13,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'make'
-                //sh 'make all'
+                sh 'make all'
                 //sh 'echo mock-build'
             }
         }
@@ -27,18 +25,16 @@ pipeline {
         stage ("Archive") {
             steps {
                 archiveArtifacts artifacts: 'vp/build/bin/*'
-                //archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
-                //archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
-                //archiveArtifacts artifacts: 'env/riscview/vp-display/build/vp-display'
+                archiveArtifacts artifacts: 'env/basic/vp-display/build/vp-display'
+                archiveArtifacts artifacts: 'env/hifive/vp-breadboard/build/vp-breadboard'
+                archiveArtifacts artifacts: 'env/riscview/vp-display/build/vp-display'
             }
         }
     }
     post {  
-        always {  
-            echo 'This will always run'
-
-            
-        }  
+        //always {  
+        //    echo 'This will always run'
+        //}  
         success {  
             //echo 'This will run only if successful'  
             script {
@@ -66,7 +62,7 @@ pipeline {
             }
         }  
         failure {  
-            echo 'This will run only if not successful'  
+            //echo 'This will run only if not successful'  
             emailext(
                 //recipientProviders: [culprits, brokenBuildSuspects],
                 attachLog: true,
@@ -91,9 +87,9 @@ pipeline {
         unstable {  
             echo 'This will run only if the run was marked as unstable'  
         }  
-        changed {  
-            echo 'This will run only if the state of the Pipeline has changed'  
-            echo 'For example, if the Pipeline was previously failing but is now successful'  
-        }  
+        //changed {  
+        //    echo 'This will run only if the state of the Pipeline has changed'  
+        //    echo 'For example, if the Pipeline was previously failing but is now successful'  
+        //}  
     } 
 }
