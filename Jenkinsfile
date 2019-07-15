@@ -44,6 +44,25 @@ pipeline {
                     currentBuild.result = 'SUCCESS'    
                 }
             }
+            script {
+                if (currentBuild.previousBuild != null && currentBuild.previousBuild.result != 'SUCCESS') {
+                    emailext(
+                        //recipientProviders: [culprits, brokenBuildSuspects],
+                        attachLog: false,
+                        subject: "Build back to normal: ${env.JOB_NAME}",
+                        from: 'jenkins@informatik.uni-bremen.de', 
+                        mimeType: 'text/html',
+                        to: "${env.DEVELOPERS}",
+                        body:
+                        """<b>${env.GIT_COMMITTER} repaired Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
+                        <blockquote><code>
+                            ${env.GIT_COMMIT_MSG}
+                        </code></blockquote>
+                        </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
+                        """
+                    )
+                } 
+            }
         }  
         failure {  
             echo 'This will run only if not successful'  
@@ -74,28 +93,6 @@ pipeline {
         changed {  
             echo 'This will run only if the state of the Pipeline has changed'  
             echo 'For example, if the Pipeline was previously failing but is now successful'  
-            script {
-                if (currentBuild.previousBuild != null && currentBuild.previousBuild.result != 'SUCCESS') {
-                emailext(
-                    //recipientProviders: [culprits, brokenBuildSuspects],
-                    attachLog: false,
-                    subject: "Build back to normal: ${env.JOB_NAME}",
-                    from: 'jenkins@informatik.uni-bremen.de', 
-                    mimeType: 'text/html',
-                    to: "${env.DEVELOPERS}",
-                    body:
-                    """<b>${env.GIT_COMMITTER} repaired Project ${env.JOB_NAME} #${env.BUILD_NUMBER}</b></br>
-                    <blockquote><code>
-                        ${env.GIT_COMMIT_MSG}
-                    </code></blockquote>
-                    </br>(ask ${env.GIT_COMMITTER_MAIL} or see <a href=${env.BUILD_URL}>this link, if you have the ssh-tunnel active</a>)
-                    """
-                )
-            } 
-                
-            }
-
-            
         }  
     } 
 }
