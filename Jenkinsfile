@@ -25,32 +25,27 @@ pipeline {
     post {  
         always {  
             echo 'This will always run'
-            emailext attachLog: true,
+            def emailBody = "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}"
+            def emailSubject = "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}"
+            emailext(
+                    attachLog: true,
                     bcc: '', 
-                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}", 
+                    body: emailBody, 
                     cc: '', 
                     charset: 'UTF-8', 
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
-                    subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
-                    to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}";
+                    subject: emailSubject,
+                    to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}"
+            )
             
         }  
         success {  
             echo 'This will run only if successful'  
         }  
         failure {  
-            mail    bcc: '', 
-                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${GIT_COMMIT}", 
-                    cc: '', 
-                    charset: 'UTF-8', 
-                    from: 'jenkins@informatik.uni-bremen.de', 
-                    mimeType: 'text/html',
-                    replyTo: 'plsdontask-ppieper@tzi.de',
-                    subject: "Build failed in Jenkins: ${env.JOB_NAME} - ${env.BRANCH_NAME} - ${env.BUILD_NUMBER}",
-                    to: "ppieper@informatik.uni-bremen.de, ${env.GIT_COMMITTER_EMAIL}";
-            emailext attachLog: true
+
         }  
         unstable {  
             echo 'This will run only if the run was marked as unstable'  
