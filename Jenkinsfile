@@ -5,7 +5,7 @@ pipeline {
     environment {
         GIT_COMMIT_MSG = sh (script: 'git log -n1 --pretty=format:"%s"', returnStdout: true).trim()
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
-        GIT_COMMITER   = sh (script: 'git log -n1 --pretty=format:"%an <%ae>"', returnStdout: true).trim()
+        GIT_COMMITTER  = sh (script: 'git log -n1 --pretty=format:"%an <%ae>"', returnStdout: true).trim()
     }
     stages {
         stage('Build') {
