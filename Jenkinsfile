@@ -29,7 +29,7 @@ pipeline {
             emailext(
                     recipientProviders: [culprits, brokenBuildSuspects],
                     attachLog: true,
-                    body: "<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${CHANGES, showPaths=true, format="%a: %r %p \n--\"%m\"", pathFormat="\n\t- %p"}",
+                    body: '<b>Build failed in Project ${env.JOB_NAME} - ${env.BRANCH_NAME}</b> (see ${env.BUILD_URL})</br>${CHANGES, showPaths=true, format="%a: %r %p \n--\"%m\"", pathFormat="\n\t- %p"}',
                     from: 'jenkins@informatik.uni-bremen.de', 
                     mimeType: 'text/html',
                     replyTo: 'plsdontask-ppieper@tzi.de',
