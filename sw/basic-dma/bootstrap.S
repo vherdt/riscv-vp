@@ -2,12 +2,18 @@
 .globl main
 .globl level_1_interrupt_handler
 
+.equ PLIC_ENABLED_IRQ_ADDR, 0x40002000
+
 _start:
 la t0, level_0_interrupt_handler
 csrw mtvec, t0
 li t1, 0x888
 csrw mie, t1
 csrwi mstatus, 8
+li t0, PLIC_ENABLED_IRQ_ADDR
+li t1, -1
+sw t1, 0(t0)
+sw t1, 4(t0)
 jal main
 
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)

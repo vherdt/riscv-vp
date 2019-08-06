@@ -3,6 +3,7 @@
 .globl level_1_interrupt_handler
 
 .equ SYSCALL_ADDR, 0x02010000
+.equ PLIC_ENABLED_IRQ_ADDR, 0x40002000
 
 .macro SYS_EXIT, exit_code
 li   a7, 93
@@ -19,6 +20,10 @@ csrw mtvec, t0
 li t1, 0x888
 csrw mie, t1
 csrsi mstatus, 8
+li t0, PLIC_ENABLED_IRQ_ADDR
+li t1, -1
+sw t1, 0(t0)
+sw t1, 4(t0)
 jal main
 
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
@@ -60,6 +65,7 @@ bnez    t3, handle_irq
 
 li      t0, SYSCALL_ADDR
 csrr    t1, mhartid
+csrr    a7, mcause
 sw      t1, 0(t0)
 csrr    t0, mepc
 addi    t0, t0, 4
