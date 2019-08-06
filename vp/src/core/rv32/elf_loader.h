@@ -64,16 +64,7 @@ typedef struct {
 	Elf32_Half st_shndx;
 } Elf32_Sym;
 
-enum Elf32_PhdrType {
-	PT_NULL = 0,
-	PT_LOAD = 1,
-	PT_DYNAMIC = 2,
-	PT_INTERP = 3,
-	PT_NOTE = 4,
-	PT_SHLIB = 5,
-	PT_PHDR = 6
-};
-
+enum Elf32_PhdrType { PT_NULL = 0, PT_LOAD = 1, PT_DYNAMIC = 2, PT_INTERP = 3, PT_NOTE = 4, PT_SHLIB = 5, PT_PHDR = 6 };
 
 struct Elf32Types {
 	typedef uint32_t addr_t;
@@ -86,4 +77,4 @@ struct Elf32Types {
 
 typedef GenericElfLoader<Elf32Types> ELFLoader;
 
-} // namespace rv32
+}  // namespace rv32

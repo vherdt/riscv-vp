@@ -17,8 +17,8 @@ struct SimpleMemory : public sc_core::sc_module {
 	uint32_t size;
 	bool read_only;
 
-	SimpleMemory(sc_core::sc_module_name, uint32_t size, bool read_only=false)
-		: data(new uint8_t[size]()), size(size), read_only(read_only) {
+	SimpleMemory(sc_core::sc_module_name, uint32_t size, bool read_only = false)
+	    : data(new uint8_t[size]()), size(size), read_only(read_only) {
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
 		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);

@@ -16,8 +16,8 @@
 #include "plic.h"
 #include "sensor.h"
 #include "sensor2.h"
-#include "terminal.h"
 #include "syscall.h"
+#include "terminal.h"
 #include "util/options.h"
 
 #include <boost/io/ios_state.hpp>
@@ -46,7 +46,8 @@ struct Options {
 	std::string network_device;
 	std::string test_signature;
 
-	addr_t mem_size = 1024*1024*32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume memory start at zero) without modifications
+	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
+	                                     // memory start at zero) without modifications
 	addr_t mem_start_addr = 0x00000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
@@ -104,26 +105,32 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()
-		("help", "produce help message")
-		("memory-start", po::value<unsigned int>(&opt.mem_start_addr), "set memory start address")
-		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
-        ("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
-		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls), "directly intercept and handle syscalls in the ISS")
-		("debug-mode", po::bool_switch(&opt.use_debug_runner), "start execution in debugger (using GDB RSP interface)")
-		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
-		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
-		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
-		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
-		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
-		("use-dmi", po::bool_switch(), "use instr and data dmi")
-		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
-		("entry-point", po::value<std::string>(&opt.entry_point.option), "set entry point address (ISS program counter)")
-		("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""),"MRAM image file for persistency")
-		("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
-		("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""), "blockdevice for flash emulation")
-		("network-device", po::value<std::string>(&opt.network_device)->default_value(""), "name of the tap network adapter, e.g. /dev/tap6")
-		("signature", po::value<std::string>(&opt.test_signature)->default_value(""), "output filename for the test execution signature");
+		desc.add_options()("help", "produce help message")("memory-start", po::value<unsigned int>(&opt.mem_start_addr),
+		                                                   "set memory start address")(
+		    "memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")(
+		    "use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")(
+		    "intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),
+		    "directly intercept and handle syscalls in the ISS")(
+		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
+		    "start execution in debugger (using GDB RSP interface)")(
+		    "debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")(
+		    "trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")(
+		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
+		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
+		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
+		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
+		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
+		    "entry-point", po::value<std::string>(&opt.entry_point.option),
+		    "set entry point address (ISS program counter)")("mram-image",
+		                                                     po::value<std::string>(&opt.mram_image)->default_value(""),
+		                                                     "MRAM image file for persistency")(
+		    "mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")(
+		    "flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),
+		    "blockdevice for flash emulation")("network-device",
+		                                       po::value<std::string>(&opt.network_device)->default_value(""),
+		                                       "name of the tap network adapter, e.g. /dev/tap6")(
+		    "signature", po::value<std::string>(&opt.test_signature)->default_value(""),
+		    "output filename for the test execution signature");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -174,7 +181,7 @@ int sc_main(int argc, char **argv) {
 	Flashcontroller flashController("Flashcontroller", opt.flash_device);
 	EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);
 	Display display("Display");
-    DebugMemoryInterface dbg_if("DebugMemoryInterface");
+	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -187,7 +194,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
-        iss_mem_if.dmi_ranges.emplace_back(dmi);
+		iss_mem_if.dmi_ranges.emplace_back(dmi);
 	}
 
 	uint64_t entry_point = loader.get_entrypoint();
@@ -201,7 +208,6 @@ int sc_main(int argc, char **argv) {
 
 	if (opt.intercept_syscalls)
 		core.sys = &sys;
-
 
 	// address mapping
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
@@ -219,9 +225,9 @@ int sc_main(int argc, char **argv) {
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
-    dbg_if.isock.bind(bus.tsocks[2]);
+	dbg_if.isock.bind(bus.tsocks[2]);
 
-	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");     // to respect ISS bus locking
+	PeripheralWriteConnector dma_connector("SimpleDMA-Connector");  // to respect ISS bus locking
 	dma_connector.isock.bind(bus.tsocks[1]);
 	dma.isock.bind(dma_connector.tsock);
 	dma_connector.bus_lock = bus_lock;
@@ -248,8 +254,7 @@ int sc_main(int argc, char **argv) {
 	sensor2.plic = &plic;
 	ethernet.plic = &plic;
 
-
-	core.trace = opt.trace_mode; // switch for printing instructions
+	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
 		new DebugCoreRunner<ISS, RV32>(core, &dbg_if, opt.debug_port);
 	} else {

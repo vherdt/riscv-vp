@@ -4,16 +4,16 @@
 #include "abstract_uart.h"
 
 #include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <termios.h>
+#include <unistd.h>
 #include <systemc>
 
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <linux/if.h>
 #include <linux/if_tun.h>
@@ -22,8 +22,8 @@
 // subsequently allocate memory for the packet buffer using realloc(3).
 #define SLIP_SNDBUF_STEP 128
 
-#define SLIP_END     0300
-#define SLIP_ESC     0333
+#define SLIP_END 0300
+#define SLIP_ESC 0333
 #define SLIP_ESC_END 0334
 #define SLIP_ESC_ESC 0335
 
@@ -33,10 +33,8 @@ class SLIP : public AbstractUART {
 	uint8_t *sndbuf, *rcvbuf;
 	size_t sndsiz, rcvsiz;
 
-public:
-	SLIP(const sc_core::sc_module_name& name, uint32_t irqsrc, std::string netdev)
-		: AbstractUART(name, irqsrc)
-	{
+   public:
+	SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string netdev) : AbstractUART(name, irqsrc) {
 		tunfd = open("/dev/net/tun", O_RDWR);
 		if (tunfd == -1)
 			goto err0;
@@ -45,27 +43,27 @@ public:
 		memset(&ifr, 0, sizeof(ifr));
 		ifr.ifr_flags = IFF_TUN | IFF_NO_PI; /* read/write raw IP packets */
 		strncpy(ifr.ifr_name, netdev.c_str(), IFNAMSIZ);
-		if (ioctl(tunfd, TUNSETIFF, (void*)&ifr) == -1)
+		if (ioctl(tunfd, TUNSETIFF, (void *)&ifr) == -1)
 			goto err1;
 
 		sndsiz = 0;
-		if (!(sndbuf = (uint8_t*)malloc(SLIP_SNDBUF_STEP * sizeof(uint8_t))))
+		if (!(sndbuf = (uint8_t *)malloc(SLIP_SNDBUF_STEP * sizeof(uint8_t))))
 			goto err1;
 		rcvsiz = get_mtu(ifr.ifr_name);
-		if (!(rcvbuf = (uint8_t*)malloc(rcvsiz * sizeof(uint8_t))))
+		if (!(rcvbuf = (uint8_t *)malloc(rcvsiz * sizeof(uint8_t))))
 			goto err2;
 
 		start_threads();
 		return;
-err2:
+	err2:
 		free(sndbuf);
-err1:
+	err1:
 		close(tunfd);
-err0:
+	err0:
 		std::system_error(errno, std::generic_category());
 	}
 
-private:
+   private:
 	int get_mtu(const char *dev) {
 		struct ifreq ifr;
 
@@ -76,7 +74,7 @@ private:
 		if (fd == -1)
 			throw std::system_error(errno, std::generic_category());
 
-		if (ioctl(fd, SIOCGIFMTU, (void*)&ifr) == -1) {
+		if (ioctl(fd, SIOCGIFMTU, (void *)&ifr) == -1) {
 			close(fd);
 			throw std::system_error(errno, std::generic_category());
 		}
@@ -93,7 +91,7 @@ private:
 			throw std::runtime_error("short write");
 		}
 
-		if (sndsiz > SLIP_SNDBUF_STEP && !(sndbuf = (uint8_t*)realloc(sndbuf, SLIP_SNDBUF_STEP)))
+		if (sndsiz > SLIP_SNDBUF_STEP && !(sndbuf = (uint8_t *)realloc(sndbuf, SLIP_SNDBUF_STEP)))
 			throw std::system_error(errno, std::generic_category());
 		sndsiz = 0;
 	}
@@ -107,18 +105,18 @@ private:
 
 		if (sndsiz > 0 && sndbuf[sndsiz - 1] == SLIP_ESC) {
 			switch (data) {
-			case SLIP_ESC_END:
-				sndbuf[sndsiz - 1] = SLIP_END;
-				return;
-			case SLIP_ESC_ESC:
-				sndbuf[sndsiz - 1] = SLIP_ESC;
-				return;
+				case SLIP_ESC_END:
+					sndbuf[sndsiz - 1] = SLIP_END;
+					return;
+				case SLIP_ESC_ESC:
+					sndbuf[sndsiz - 1] = SLIP_ESC;
+					return;
 			}
 		}
 
 		if (sndsiz && sndsiz % SLIP_SNDBUF_STEP == 0) {
 			size_t newsiz = (sndsiz + SLIP_SNDBUF_STEP) * sizeof(uint8_t);
-			if (!(sndbuf = (uint8_t*)realloc(sndbuf, newsiz)))
+			if (!(sndbuf = (uint8_t *)realloc(sndbuf, newsiz)))
 				throw std::system_error(errno, std::generic_category());
 		}
 		sndbuf[sndsiz++] = data;

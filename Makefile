@@ -47,4 +47,4 @@ clean-all: vp-clean qt-clean sysc-clean softfloat-clean
 clean: vp-clean
 
 codestyle:
-	find . -not -path '*/\.*' -name "*.h*" -o -name "*.cpp" | xargs clang-format -i -style=file      #file is .clang-format 
+	find . -type d \( -name .git -o -name dependencies \) -prune -o -name '*.h' -o -name '*.hpp' -o -name '*.cpp' -print | xargs clang-format -i -style=file

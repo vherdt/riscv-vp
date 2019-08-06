@@ -11,13 +11,13 @@
 /* TODO: move this header to common? */
 #include <platform/hifive/async_event.h>
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <mutex>
 #include <queue>
 #include <thread>
-#include <mutex>
 
 #define UART_TXWM (1 << 0)
 #define UART_RXWM (1 << 1)
@@ -59,7 +59,7 @@ class AbstractUART : public sc_core::sc_module {
 
 	vp::map::LocalRouter router = {"UART"};
 
-public:
+   public:
 	interrupt_gateway *plic;
 	tlm_utils::simple_target_socket<AbstractUART> tsock;
 
@@ -92,7 +92,7 @@ public:
 		// TODO: destroy semaphore
 	}
 
-protected:
+   protected:
 	void start_threads(void) {
 		rcvthr = std::thread(&AbstractUART::receive, this);
 		rcvthr.detach();
@@ -101,9 +101,9 @@ protected:
 		txthr.detach();
 	}
 
-private:
+   private:
 	virtual void write_data(uint8_t) = 0;
-	virtual void read_data(std::mutex&, std::queue<uint8_t>&) = 0;
+	virtual void read_data(std::mutex &, std::queue<uint8_t> &) = 0;
 
 	void register_access_callback(const vp::map::register_access_t &r) {
 		if (r.read) {

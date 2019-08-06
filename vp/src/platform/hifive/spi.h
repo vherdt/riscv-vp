@@ -8,14 +8,11 @@
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
 
-#include <queue>
 #include <map>
+#include <queue>
 
-
-
-class SpiInterface
-{
-public:
+class SpiInterface {
+   public:
 	virtual ~SpiInterface(){};
 	virtual uint8_t write(uint8_t byte) = 0;
 };
@@ -25,9 +22,9 @@ typedef uint32_t Pin;
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
-	//assumption: all elements come from same chip select :o FIXME
+	// assumption: all elements come from same chip select :o FIXME
 	std::queue<uint8_t> rxqueue;
-	std::map<Pin, SpiInterface*> targets;
+	std::map<Pin, SpiInterface *> targets;
 
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
@@ -48,22 +45,22 @@ struct SPI : public sc_core::sc_module {
 	uint32_t ip = 0;
 
 	enum {
-		SCKDIV_REG_ADDR  = 0x00,
+		SCKDIV_REG_ADDR = 0x00,
 		SCKMODE_REG_ADDR = 0x04,
-		CSID_REG_ADDR    = 0x10,
-		CSDEF_REG_ADDR   = 0x14,
-		CSMODE_REG_ADDR  = 0x18,
-		DELAY0_REG_ADDR  = 0x28,
-		DELAY1_REG_ADDR  = 0x2C,
-		FMT_REG_ADDR     = 0x40,
-		TXDATA_REG_ADDR  = 0x48,
-		RXDATA_REG_ADDR  = 0x4C,
-		TXMARK_REG_ADDR  = 0x50,
-		RXMARK_REG_ADDR  = 0x54,
-		FCTRL_REG_ADDR   = 0x60,
-		FFMT_REG_ADDR    = 0x64,
-		IE_REG_ADDR      = 0x70,
-		EP_REG_ADDR      = 0x74,
+		CSID_REG_ADDR = 0x10,
+		CSDEF_REG_ADDR = 0x14,
+		CSMODE_REG_ADDR = 0x18,
+		DELAY0_REG_ADDR = 0x28,
+		DELAY1_REG_ADDR = 0x2C,
+		FMT_REG_ADDR = 0x40,
+		TXDATA_REG_ADDR = 0x48,
+		RXDATA_REG_ADDR = 0x4C,
+		TXMARK_REG_ADDR = 0x50,
+		RXMARK_REG_ADDR = 0x54,
+		FCTRL_REG_ADDR = 0x60,
+		FFMT_REG_ADDR = 0x64,
+		IE_REG_ADDR = 0x70,
+		EP_REG_ADDR = 0x74,
 	};
 
 	vp::map::LocalRouter router = {"SPI"};
@@ -73,40 +70,36 @@ struct SPI : public sc_core::sc_module {
 
 		router
 		    .add_register_bank({
-		        {SCKDIV_REG_ADDR , &sckdiv},
-				{SCKMODE_REG_ADDR, &sckmode},
-				{CSID_REG_ADDR   , &csid},
-				{CSDEF_REG_ADDR  , &csdef},
-				{CSMODE_REG_ADDR , &csmode},
-				{DELAY0_REG_ADDR , &delay0},
-				{DELAY1_REG_ADDR , &delay1},
-				{FMT_REG_ADDR    , &fmt},
-				{TXDATA_REG_ADDR , &txdata},
-				{RXDATA_REG_ADDR , &rxdata},
-				{TXMARK_REG_ADDR , &txmark},
-				{RXMARK_REG_ADDR , &rxmark},
-				{FCTRL_REG_ADDR  , &fctrl},
-				{FFMT_REG_ADDR   , &ffmt},
-				{IE_REG_ADDR     , &ie},
-				{EP_REG_ADDR     , &ip},
+		        {SCKDIV_REG_ADDR, &sckdiv},
+		        {SCKMODE_REG_ADDR, &sckmode},
+		        {CSID_REG_ADDR, &csid},
+		        {CSDEF_REG_ADDR, &csdef},
+		        {CSMODE_REG_ADDR, &csmode},
+		        {DELAY0_REG_ADDR, &delay0},
+		        {DELAY1_REG_ADDR, &delay1},
+		        {FMT_REG_ADDR, &fmt},
+		        {TXDATA_REG_ADDR, &txdata},
+		        {RXDATA_REG_ADDR, &rxdata},
+		        {TXMARK_REG_ADDR, &txmark},
+		        {RXMARK_REG_ADDR, &rxmark},
+		        {FCTRL_REG_ADDR, &fctrl},
+		        {FFMT_REG_ADDR, &ffmt},
+		        {IE_REG_ADDR, &ie},
+		        {EP_REG_ADDR, &ip},
 		    })
 		    .register_handler(this, &SPI::register_access_callback);
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
-		if(r.read)
-		{
-			if(r.vptr == &rxdata){
+		if (r.read) {
+			if (r.vptr == &rxdata) {
 				auto target = targets.find(csid);
-				if(target == targets.end()){
+				if (target == targets.end()) {
 					std::cerr << "Read on unregistered Chip-Select " << csid << std::endl;
 				} else {
-					if(rxqueue.empty())
-					{
+					if (rxqueue.empty()) {
 						rxdata = 1 << 31;
-					}
-					else
-					{
+					} else {
 						rxdata = rxqueue.front();
 						rxqueue.pop();
 					}
@@ -116,14 +109,13 @@ struct SPI : public sc_core::sc_module {
 
 		r.fn();
 
-		if(r.write)
-		{
-			if(r.vptr == &csid){
+		if (r.write) {
+			if (r.vptr == &csid) {
 				std::cout << "Chip select " << csid << std::endl;
-			}else if(r.vptr == &txdata){
-				//std::cout << std::hex << txdata << " ";
+			} else if (r.vptr == &txdata) {
+				// std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
-				if(target != targets.end()){
+				if (target != targets.end()) {
 					rxqueue.push(target->second->write(txdata));
 				} else {
 					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
@@ -137,9 +129,8 @@ struct SPI : public sc_core::sc_module {
 		router.transport(trans, delay);
 	}
 
-	void connect(Pin cs, SpiInterface& interface)
-	{
-		targets.insert(std::pair<const Pin,SpiInterface*>(cs, &interface));
+	void connect(Pin cs, SpiInterface &interface) {
+		targets.insert(std::pair<const Pin, SpiInterface *>(cs, &interface));
 	}
 };
 

@@ -4,10 +4,10 @@
  *  Created on: 22 Mar 2019
  *      Author: dwd
  */
-#include <cstring>
-#include <iostream>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <cstring>
+#include <iostream>
 
 #include <endian.h>
 #include <net/if.h>
@@ -18,61 +18,56 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
+	int s;
+	struct sockaddr_can addr;
+	struct ifreq ifr;
 
-    int s;
-    struct sockaddr_can addr;
-    struct ifreq ifr;
+	s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+	if (s < 0) {
+		perror("Could not open socket!");
+	}
 
-    s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    if(s < 0)
-    {
-    	perror("Could not open socket!");
-    }
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strcpy(ifr.ifr_name, "slcan0");
+	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+		perror("Could not ctl to device");
+	}
 
-    memset(&ifr, 0, sizeof(struct ifreq));
-	strcpy(ifr.ifr_name, "slcan0" );
-    if(ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-    	perror("Could not ctl to device");
-    }
+	addr.can_family = AF_CAN;
+	addr.can_ifindex = ifr.ifr_ifindex;
 
-    addr.can_family = AF_CAN;
-    addr.can_ifindex = ifr.ifr_ifindex;
+	if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+		perror("Could not bind to can family");
+	}
 
-    if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-    	perror("Could not bind to can family");
-    }
+	// while(true)
+	{
+		struct can_frame frame;
 
-    //while(true)
-    {
-    	struct can_frame frame;
+		int nbytes = read(s, &frame, sizeof(struct can_frame));
 
-    	int nbytes = read(s, &frame, sizeof(struct can_frame));
+		if (nbytes < 0) {
+			perror("can raw socket read");
+			return 1;
+		}
 
-    	if (nbytes < 0) {
-    	        perror("can raw socket read");
-    	        return 1;
-    	}
+		/* paranoid check ... */
+		if (nbytes < sizeof(struct can_frame)) {
+			fprintf(stderr, "read: incomplete CAN frame\n");
+			return 1;
+		}
 
-    	/* paranoid check ... */
-    	if (nbytes < sizeof(struct can_frame)) {
-    	        fprintf(stderr, "read: incomplete CAN frame\n");
-    	        return 1;
-    	}
+		/* do something with the received CAN frame */
 
-    	/* do something with the received CAN frame */
-
-    	cout << "received id " << frame.can_id << " len " << unsigned(frame.can_dlc) << endl;
+		cout << "received id " << frame.can_id << " len " << unsigned(frame.can_dlc) << endl;
 
 		for (uint8_t i = 0; i < frame.can_dlc; i++) {
 			printf("%s%02X", i > 0 ? " " : "", frame.data[i]);
 		}
 		cout << endl;
 
-    	nbytes = write(s, &frame, sizeof(struct can_frame));
-
-    }
-    close(s);
+		nbytes = write(s, &frame, sizeof(struct can_frame));
+	}
+	close(s);
 }

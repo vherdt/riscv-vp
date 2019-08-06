@@ -2,11 +2,10 @@
 #define RISCV_ISA_INSTR_H
 
 #include <stdint.h>
-#include <iostream>
 #include <array>
+#include <iostream>
 
 #include "core_defs.h"
-
 
 namespace Opcode {
 // opcode masks used to decode an instruction
@@ -27,7 +26,7 @@ enum Parts {
 	F3_LBU = 0b100,
 	F3_LHU = 0b101,
 	F3_LWU = 0b110,
-	F3_LD  = 0b011,
+	F3_LD = 0b011,
 
 	OP_SB = 0b0100011,
 	F3_SB = 0b000,
@@ -54,8 +53,8 @@ enum Parts {
 	F3_SRLI = 0b101,
 	F7_SRLI = 0b0000000,
 	F7_SRAI = 0b0100000,
-    F6_SRLI = 0b000000, // RV64 special case
-    F6_SRAI = 0b010000, // RV64 special case
+	F6_SRLI = 0b000000,  // RV64 special case
+	F6_SRAI = 0b010000,  // RV64 special case
 
 	OP_ADD = 0b0110011,
 	F3_ADD = 0b000,
@@ -117,33 +116,33 @@ enum Parts {
 	F5_AMOMAXU_W = 0b11100,
 
 	F3_AMO_W = 0b010,
-    F3_AMO_D = 0b011,
+	F3_AMO_D = 0b011,
 
 	OP_ADDIW = 0b0011011,
 	F3_ADDIW = 0b000,
 	F3_SLLIW = 0b001,
-    F3_SRLIW = 0b101,
-    F7_SRLIW = 0b0000000,
-    F7_SRAIW = 0b0100000,
+	F3_SRLIW = 0b101,
+	F7_SRLIW = 0b0000000,
+	F7_SRAIW = 0b0100000,
 
-    OP_ADDW = 0b0111011,
-    F3_ADDW = 0b000,
-    F7_ADDW = 0b0000000,
-    F3_SUBW = 0b000,
-    F7_SUBW = 0b0100000,
-    F3_SLLW = 0b001,
-    F3_SRLW = 0b101,
-    F7_SRLW = 0b0000000,
-    F3_SRAW = 0b101,
-    F7_SRAW = 0b0100000,
-    F7_MULW = 0b0000001,
-    F3_MULW = 0b000,
-    F3_DIVW = 0b100,
-    F3_DIVUW = 0b101,
-    F3_REMW = 0b110,
-    F3_REMUW = 0b111,
+	OP_ADDW = 0b0111011,
+	F3_ADDW = 0b000,
+	F7_ADDW = 0b0000000,
+	F3_SUBW = 0b000,
+	F7_SUBW = 0b0100000,
+	F3_SLLW = 0b001,
+	F3_SRLW = 0b101,
+	F7_SRLW = 0b0000000,
+	F3_SRAW = 0b101,
+	F7_SRAW = 0b0100000,
+	F7_MULW = 0b0000001,
+	F3_MULW = 0b000,
+	F3_DIVW = 0b100,
+	F3_DIVUW = 0b101,
+	F3_REMW = 0b110,
+	F3_REMUW = 0b111,
 
-    // F and D extension
+	// F and D extension
 	OP_FMADD_S = 0b1000011,
 	F2_FMADD_S = 0b00,
 	F2_FMADD_D = 0b01,
@@ -519,13 +518,13 @@ struct Instruction {
 		return BIT_RANGE(instr, 19, 15) >> 15;
 	}
 
-    inline unsigned shamt() {
-        return (BIT_RANGE(instr, 25, 20) >> 20);
-    }
+	inline unsigned shamt() {
+		return (BIT_RANGE(instr, 25, 20) >> 20);
+	}
 
-    inline unsigned shamt_w() {
-        return (BIT_RANGE(instr, 24, 20) >> 20);
-    }
+	inline unsigned shamt_w() {
+		return (BIT_RANGE(instr, 24, 20) >> 20);
+	}
 
 	inline int32_t funct2() {
 		return (BIT_RANGE(instr, 26, 25) >> 25);
@@ -545,19 +544,19 @@ struct Instruction {
 		return (BIT_RANGE((uint32_t)instr, 31, 25) >> 25);
 	}
 
-    inline int32_t funct6() {
-        // cast to unsigned to avoid sign extension when shifting
-        return (BIT_RANGE((uint32_t)instr, 31, 26) >> 26);
-    }
+	inline int32_t funct6() {
+		// cast to unsigned to avoid sign extension when shifting
+		return (BIT_RANGE((uint32_t)instr, 31, 26) >> 26);
+	}
 
 	inline int32_t funct5() {
 		// cast to unsigned to avoid sign extension when shifting
 		return (BIT_RANGE((uint32_t)instr, 31, 27) >> 27);
 	}
 
-    inline uint32_t frm() {
-        return BIT_SLICE(instr, 14, 12);
-    }
+	inline uint32_t frm() {
+		return BIT_SLICE(instr, 14, 12);
+	}
 
 	inline uint32_t fence_succ() {
 		return BIT_SLICE(instr, 23, 20);
@@ -585,7 +584,7 @@ struct Instruction {
 
 	inline int32_t J_imm() {
 		return (BIT_SINGLE(instr, 31) >> 11) | BIT_RANGE(instr, 19, 12) | (BIT_SINGLE(instr, 20) >> 9) |
-			   (BIT_RANGE(instr, 30, 21) >> 20);
+		       (BIT_RANGE(instr, 30, 21) >> 20);
 	}
 
 	inline int32_t I_imm() {
@@ -598,7 +597,7 @@ struct Instruction {
 
 	inline int32_t B_imm() {
 		return (BIT_SINGLE(instr, 31) >> 19) | (BIT_SINGLE(instr, 7) << 4) | (BIT_RANGE(instr, 30, 25) >> 20) |
-			   (BIT_RANGE(instr, 11, 8) >> 7);
+		       (BIT_RANGE(instr, 11, 8) >> 7);
 	}
 
 	inline int32_t U_imm() {
@@ -613,9 +612,9 @@ struct Instruction {
 		return BIT_RANGE(instr, 24, 20) >> 20;
 	}
 
-    inline uint32_t rs3() {
-        return BIT_RANGE((uint32_t)instr, 31, 27) >> 27;
-    }
+	inline uint32_t rs3() {
+		return BIT_RANGE((uint32_t)instr, 31, 27) >> 27;
+	}
 
 	inline uint32_t rd() {
 		return BIT_RANGE(instr, 11, 7) >> 7;
@@ -625,7 +624,7 @@ struct Instruction {
 		return instr;
 	}
 
-private:
+   private:
 	// use signed variable to have correct sign extension in immediates
 	int32_t instr;
 };

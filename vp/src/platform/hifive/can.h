@@ -1,7 +1,7 @@
 #pragma once
 
-#include "spi.h"
 #include "can/mcp_can_dfs.h"
+#include "spi.h"
 
 #include <linux/can.h>
 #include <net/if.h>
@@ -9,10 +9,8 @@
 #include <functional>
 #include <thread>
 
-class CAN : public SpiInterface
-{
-	enum class State
-	{
+class CAN : public SpiInterface {
+	enum class State {
 		init,
 		readRegister,
 		writeRegister,
@@ -38,24 +36,24 @@ class CAN : public SpiInterface
 		arse,
 		crap,
 		dick,
-	} state ;
+	} state;
 
 	std::thread listener;
 
-	uint8_t registers[MCP_RXB1SIDH+1];
+	uint8_t registers[MCP_RXB1SIDH + 1];
 
 	struct MCPFrame {
 		union {
-			uint8_t raw[5+CANFD_MAX_DLEN];
+			uint8_t raw[5 + CANFD_MAX_DLEN];
 			struct {
 				union {
 					uint8_t id[4];
 					struct {
 						/*
 						 *	MCP_SIDH        0
-							MCP_SIDL        1
-							MCP_EID8        2
-							MCP_EID0		3
+						    MCP_SIDL        1
+						    MCP_EID8        2
+						    MCP_EID0		3
 						 */
 						uint16_t sid;
 						uint16_t eid;
@@ -73,12 +71,12 @@ class CAN : public SpiInterface
 	uint8_t status;
 
 	int s;
-    struct sockaddr_can addr;
-    struct ifreq ifr;
+	struct sockaddr_can addr;
+	struct ifreq ifr;
 
-    volatile bool stop;
+	volatile bool stop;
 
-public:
+   public:
 	CAN();
 	~CAN();
 
@@ -98,8 +96,8 @@ public:
 
 	uint8_t readRxBuf(uint8_t no, uint8_t byte);
 
-	void mcp2515_id_to_buf(const unsigned long id, uint8_t *idField, const bool extended = false);
-	void mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t *idField);
+	void mcp2515_id_to_buf(const unsigned long id, uint8_t* idField, const bool extended = false);
+	void mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t* idField);
 
 	void enqueueIncomingCanFrame(const struct can_frame& frame);
 	void listen();

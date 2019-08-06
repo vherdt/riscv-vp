@@ -1,27 +1,27 @@
 #pragma once
 
-#include "util/common.h"
-#include "core/common/clint_if.h"
-#include "core/common/irq_if.h"
 #include "core/common/bus_lock_if.h"
-#include "core/common/trap.h"
+#include "core/common/clint_if.h"
 #include "core/common/instr.h"
-#include "syscall_if.h"
-#include "mem_if.h"
+#include "core/common/irq_if.h"
+#include "core/common/trap.h"
 #include "csr.h"
 #include "fp.h"
+#include "mem_if.h"
+#include "syscall_if.h"
+#include "util/common.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
-#include <functional>
 
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -118,7 +118,6 @@ struct RegFile {
 	};
 };
 
-
 // NOTE: on this branch, currently the *simple-timing* model is still directly
 // integrated in the ISS. Merge the *timedb* branch to use the timing_if.
 struct ISS;
@@ -128,7 +127,6 @@ struct timing_if {
 
 	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
-
 
 /* Buffer to be used between the ISS and instruction memory interface to cache compressed instructions.
  * In case the ISS does not support compressed instructions, then this buffer is not necessary and the ISS
@@ -148,18 +146,16 @@ struct InstructionBuffer {
 	}
 };
 
-
 struct PendingInterrupts {
-    PrivilegeLevel target_mode;
-    uint32_t pending;
+	PrivilegeLevel target_mode;
+	uint32_t pending;
 };
-
 
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
-	syscall_emulator_if *sys = nullptr;	// optional, if provided, the iss will intercept and handle syscalls directly
+	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
 	uint32_t pc = 0;
@@ -171,8 +167,8 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	uint64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
-    Instruction instr;
-    Opcode::Mapping op;
+	Instruction instr;
+	Opcode::Mapping op;
 
 	CoreExecStatus status = CoreExecStatus::Runnable;
 	std::unordered_set<uint32_t> breakpoints;
@@ -183,20 +179,18 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
-	sc_core::sc_time cycle_counter;	// use a separate cycle counter, since cycle count can be inhibited
+	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
 
-
-	ISS(uint32_t hart_id, bool use_E_base_isa=false);
+	ISS(uint32_t hart_id, bool use_E_base_isa = false);
 
 	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();
 
-	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint,
-	          uint32_t entrypoint, uint32_t sp);
+	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint, uint32_t sp);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 
@@ -204,7 +198,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void trigger_timer_interrupt(bool status) override;
 
-    void trigger_software_interrupt(bool status) override;
+	void trigger_software_interrupt(bool status) override;
 
 	void sys_exit() override;
 	unsigned get_syscall_register_index() override;
@@ -212,7 +206,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void write_register(unsigned idx, uint32_t value) override;
 
 	uint32_t get_hart_id();
-
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
@@ -224,62 +217,61 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void fp_set_dirty();
 	void fp_update_exception_flags();
 	void fp_setup_rm();
-    void fp_require_not_off();
+	void fp_require_not_off();
 
-    uint32_t get_csr_value(uint32_t addr);
-    void set_csr_value(uint32_t addr, uint32_t value);
+	uint32_t get_csr_value(uint32_t addr);
+	void set_csr_value(uint32_t addr, uint32_t value);
 
-    inline bool is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
-        PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
-        bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-        return (is_write && csr_readonly) || (prv < csr_prv);
-    }
+	inline bool is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
+		PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
+		bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+		return (is_write && csr_readonly) || (prv < csr_prv);
+	}
 
-    void validate_csr_counter_read_access_rights(uint32_t addr);
+	void validate_csr_counter_read_access_rights(uint32_t addr);
 
-    unsigned pc_alignment_mask() {
-        if (csrs.misa.has_C_extension())
-            return ~0x1;
-        else
-            return ~0x3;
-    }
+	unsigned pc_alignment_mask() {
+		if (csrs.misa.has_C_extension())
+			return ~0x1;
+		else
+			return ~0x3;
+	}
 
-    inline void trap_check_pc_alignment() {
-        assert (!(pc & 0x1) && "not possible due to immediate formats and jump execution");
+	inline void trap_check_pc_alignment() {
+		assert(!(pc & 0x1) && "not possible due to immediate formats and jump execution");
 
-        if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
-            // NOTE: misaligned instruction address not possible on machines supporting compressed instructions
-            raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
-        }
-    }
+		if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
+			// NOTE: misaligned instruction address not possible on machines supporting compressed instructions
+			raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
+		}
+	}
 
-    template <unsigned Alignment, bool isLoad>
-    inline void trap_check_addr_alignment(uint32_t addr) {
+	template <unsigned Alignment, bool isLoad>
+	inline void trap_check_addr_alignment(uint32_t addr) {
 		if (unlikely(addr % Alignment)) {
 			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
 		}
-    }
+	}
 
-    inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
-        uint32_t addr = regs[instr.rs1()];
-        trap_check_addr_alignment<4, false>(addr);
-        uint32_t data;
-        try {
-            data = mem->atomic_load_word(addr);
-        } catch (SimulationTrap &e) {
-            if (e.reason == EXC_LOAD_ACCESS_FAULT)
-                e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-            throw e;
-        }
-        uint32_t val = operation(data, regs[instr.rs2()]);
-        mem->atomic_store_word(addr, val);
-        regs[instr.rd()] = data;
-    }
+	inline void execute_amo(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
+		uint32_t addr = regs[instr.rs1()];
+		trap_check_addr_alignment<4, false>(addr);
+		uint32_t data;
+		try {
+			data = mem->atomic_load_word(addr);
+		} catch (SimulationTrap &e) {
+			if (e.reason == EXC_LOAD_ACCESS_FAULT)
+				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+			throw e;
+		}
+		uint32_t val = operation(data, regs[instr.rs2()]);
+		mem->atomic_store_word(addr, val);
+		regs[instr.rd()] = data;
+	}
 
-
-    inline bool m_mode() {
-    	return prv == MachineMode;
-    }
+	inline bool m_mode() {
+		return prv == MachineMode;
+	}
 
 	inline bool s_mode() {
 		return prv == SupervisorMode;
@@ -289,16 +281,15 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 		return prv == UserMode;
 	}
 
-
 	PrivilegeLevel prepare_trap(SimulationTrap &e);
 
 	void prepare_interrupt(const PendingInterrupts &x);
 
-    PendingInterrupts compute_pending_interrupts();
+	PendingInterrupts compute_pending_interrupts();
 
-    bool has_pending_enabled_interrupts() {
-        return compute_pending_interrupts().target_mode != NoneMode;
-    }
+	bool has_pending_enabled_interrupts() {
+		return compute_pending_interrupts().target_mode != NoneMode;
+	}
 
 	bool has_local_pending_enabled_interrupts() {
 		return csrs.mie.reg & csrs.mip.reg;
@@ -317,7 +308,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void show();
 };
 
-
 /* Do not call the run function of the ISS directly but use one of the Runner
  * wrappers. */
 struct DirectCoreRunner : public sc_core::sc_module {
@@ -326,24 +316,23 @@ struct DirectCoreRunner : public sc_core::sc_module {
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core)
-            : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
 		thread_name = "run" + std::to_string(core.get_hart_id());
-        SC_NAMED_THREAD(run, thread_name.c_str());
-    }
+		SC_NAMED_THREAD(run, thread_name.c_str());
+	}
 
 	void run() {
-        core.run();
+		core.run();
 
-        if (core.status == CoreExecStatus::HitBreakpoint) {
-            throw std::runtime_error(
-                    "Breakpoints are not supported in the direct runner, use the debug "
-                    "runner instead.");
-        }
-        assert(core.status == CoreExecStatus::Terminated);
+		if (core.status == CoreExecStatus::HitBreakpoint) {
+			throw std::runtime_error(
+			    "Breakpoints are not supported in the direct runner, use the debug "
+			    "runner instead.");
+		}
+		assert(core.status == CoreExecStatus::Terminated);
 
-        sc_core::sc_stop();
+		sc_core::sc_stop();
 	}
 };
 
-} // namespace rv32
+}  // namespace rv32
