@@ -188,7 +188,7 @@ class AbstractUART : public sc_core::sc_module {
 	}
 
 	void interrupt(void) {
-		bool trigger;
+		bool trigger = false;
 
 		/* XXX: Possible optimization would be to trigger the
 		 * interrupt from the background thread. However,
