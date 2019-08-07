@@ -20,7 +20,7 @@
 
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).
-#define SLIP_SNDBUF_STEP 128
+#define SLIP_SNDBUF_STEP 1500
 
 #define SLIP_END 0300
 #define SLIP_ESC 0333
