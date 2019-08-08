@@ -95,6 +95,8 @@ struct Options {
 		std::cout << "  tlm global quantum = " << tlm_global_quantum << std::endl;
 		std::cout << "}" << std::endl;
 	}
+
+	std::string tun_device = "tun0";
 };
 
 Options parse_command_line_arguments(int argc, char **argv) {
@@ -118,7 +120,8 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
 		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
 		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
+		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
+		    "tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -170,7 +173,7 @@ int sc_main(int argc, char **argv) {
 	spi1.connect(0, can);
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);
-	SLIP slip("SLIP", 4, "tun0");  // TODO: pass tun device name as option
+	SLIP slip("SLIP", 4, opt.tun_device);
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
