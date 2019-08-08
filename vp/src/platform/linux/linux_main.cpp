@@ -64,6 +64,7 @@ struct Options {
 
 	OptionValue<unsigned long> entry_point;
 	std::string dtb_file;
+	std::string tun_device = "tun0";
 };
 
 Options parse_command_line_arguments(int argc, char **argv) {
@@ -92,7 +93,8 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
 		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
 		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
-		    "dtb-file", po::value<std::string>(&opt.dtb_file)->required(), "dtb file for boot loading");
+		    "dtb-file", po::value<std::string>(&opt.dtb_file)->required(), "dtb file for boot loading")(
+		    "tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -137,7 +139,7 @@ int sc_main(int argc, char **argv) {
 	PLIC<1, 511, 16, 7> plic("PLIC", SupervisorMode);
 	CLINT<1> clint("CLINT");
 	UART uart0("UART0", 3);
-	SLIP slip("SLIP", 4, "tun0");  // TODO: pass tun device name as option
+	SLIP slip("SLIP", 4, opt.tun_device);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
