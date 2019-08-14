@@ -20,7 +20,7 @@
 
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).
-#define SLIP_SNDBUF_STEP 128
+#define SLIP_SNDBUF_STEP 1500
 
 #define SLIP_END 0300
 #define SLIP_ESC 0333
@@ -122,29 +122,27 @@ class SLIP : public AbstractUART {
 		sndbuf[sndsiz++] = data;
 	}
 
-	void read_data(std::mutex &mtx, std::queue<uint8_t> &queue) {
+	void read_data(void) {
 		ssize_t ret = read(tunfd, rcvbuf, rcvsiz);
 		if (ret == -1)
 			throw std::system_error(errno, std::generic_category());
 
-		mtx.lock();
 		for (size_t i = 0; i < (size_t)ret; i++) {
 			switch (rcvbuf[i]) {
 				case SLIP_END:
-					queue.push(SLIP_ESC);
-					queue.push(SLIP_ESC_END);
+					rxpush(SLIP_ESC);
+					rxpush(SLIP_ESC_END);
 					break;
 				case SLIP_ESC:
-					queue.push(SLIP_ESC);
-					queue.push(SLIP_ESC_ESC);
+					rxpush(SLIP_ESC);
+					rxpush(SLIP_ESC_ESC);
 					break;
 				default:
-					queue.push(rcvbuf[i]);
+					rxpush(rcvbuf[i]);
 					break;
 			}
 		}
-		queue.push(SLIP_END);
-		mtx.unlock();
+		rxpush(SLIP_END);
 	}
 };
 

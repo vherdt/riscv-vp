@@ -21,6 +21,10 @@
 
 #define UART_TXWM (1 << 0)
 #define UART_RXWM (1 << 1)
+#define UART_FULL (1 << 31)
+
+/* 8-entry transmit and receive FIFO buffers */
+#define UART_FIFO_DEPTH 8
 
 /* Extracts the interrupt trigger threshold from a control register */
 #define UART_CTRL_CNT(REG) ((REG) >> 16)
@@ -40,10 +44,11 @@ class AbstractUART : public sc_core::sc_module {
 	std::thread rcvthr, txthr;
 	std::mutex rcvmtx, txmtx;
 	AsyncEvent asyncEvent;
-	sem_t txsem;
 
 	std::queue<uint8_t> tx_fifo;
+	sem_t txfull;
 	std::queue<uint8_t> rx_fifo;
+	sem_t rxempty;
 
 	SC_HAS_PROCESS(AbstractUART);
 
@@ -79,7 +84,9 @@ class AbstractUART : public sc_core::sc_module {
 		    })
 		    .register_handler(this, &AbstractUART::register_access_callback);
 
-		if (sem_init(&txsem, 0, 0))
+		if (sem_init(&txfull, 0, 0))
+			throw std::system_error(errno, std::generic_category());
+		if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
 			throw std::system_error(errno, std::generic_category());
 
 		SC_METHOD(interrupt);
@@ -101,14 +108,24 @@ class AbstractUART : public sc_core::sc_module {
 		txthr.detach();
 	}
 
+	void rxpush(uint8_t data) {
+		swait(&rxempty);
+		rcvmtx.lock();
+		rx_fifo.push(data);
+		rcvmtx.unlock();
+		asyncEvent.notify();
+	}
+
    private:
 	virtual void write_data(uint8_t) = 0;
-	virtual void read_data(std::mutex &, std::queue<uint8_t> &) = 0;
+	virtual void read_data(void) = 0;
 
 	void register_access_callback(const vp::map::register_access_t &r) {
 		if (r.read) {
 			if (r.vptr == &txdata) {
-				txdata = 0;  // always transmit
+				txmtx.lock();
+				txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
+				txmtx.unlock();
 			} else if (r.vptr == &rxdata) {
 				rcvmtx.lock();
 				if (rx_fifo.empty()) {
@@ -116,6 +133,7 @@ class AbstractUART : public sc_core::sc_module {
 				} else {
 					rxdata = rx_fifo.front();
 					rx_fifo.pop();
+					spost(&rxempty);
 				}
 
 				if (rx_fifo.empty() || rx_fifo.size() < UART_CTRL_CNT(rxctrl))
@@ -150,12 +168,16 @@ class AbstractUART : public sc_core::sc_module {
 
 		if (r.write && r.vptr == &txdata) {
 			txmtx.lock();
+			if (tx_fifo.size() >= UART_FIFO_DEPTH) {
+				txmtx.unlock();
+				return; /* write is ignored */
+			}
+
 			tx_fifo.push(txdata);
-			if (sem_post(&txsem))
-				throw std::system_error(errno, std::generic_category());
-			if (tx_fifo.size() > UART_CTRL_CNT(txctrl))
+			if (tx_fifo.size() >= UART_CTRL_CNT(txctrl))
 				ip &= ~UART_TXWM;
 			txmtx.unlock();
+			spost(&txfull);
 		}
 	}
 
@@ -167,23 +189,20 @@ class AbstractUART : public sc_core::sc_module {
 		uint8_t data;
 
 		for (;;) {
-			if (sem_wait(&txsem))
-				throw std::system_error(errno, std::generic_category());
-
+			swait(&txfull);
 			txmtx.lock();
 			data = tx_fifo.front();
 			tx_fifo.pop();
 			txmtx.unlock();
-			asyncEvent.notify();
 
+			asyncEvent.notify();
 			write_data(data);
 		}
 	}
 
 	void receive(void) {
 		for (;;) {
-			read_data(rcvmtx, rx_fifo);
-			asyncEvent.notify();
+			read_data();
 		}
 	}
 
@@ -205,7 +224,7 @@ class AbstractUART : public sc_core::sc_module {
 
 		if (ie & UART_TXWM) {
 			txmtx.lock();
-			if (UART_CTRL_CNT(txctrl) == 0 || tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
+			if (tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
 				ip |= UART_TXWM;
 				trigger = true;
 			}
@@ -214,6 +233,16 @@ class AbstractUART : public sc_core::sc_module {
 
 		if (trigger)
 			plic->gateway_trigger_interrupt(irq);
+	}
+
+	void swait(sem_t *sem) {
+		if (sem_wait(sem))
+			throw std::system_error(errno, std::generic_category());
+	}
+
+	void spost(sem_t *sem) {
+		if (sem_post(sem))
+			throw std::system_error(errno, std::generic_category());
 	}
 };
 

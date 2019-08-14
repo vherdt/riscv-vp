@@ -2,38 +2,27 @@
 #define RISCV_VP_UART_H
 
 #include "abstract_uart.h"
+#include "core/common/rawmode.h"
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <termios.h>
 #include <unistd.h>
 #include <systemc>
 
 #include <sys/types.h>
 
 class UART : public AbstractUART {
-	struct termios orig_termios;
 
-   public:
-	UART(const sc_core::sc_module_name &name, uint32_t irqsrc) : AbstractUART(name, irqsrc) {
-		if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
-			throw std::system_error(errno, std::generic_category());
-
-		struct termios raw = orig_termios;
-		raw.c_lflag &= ~(ICANON);  // Bytewise read
-		raw.c_lflag &= ~(ECHO);    // Disable local echo
-		raw.c_lflag &= ~(ISIG);    // Don't catch Ctrl+C, etc.
-		raw.c_iflag &= ~(ICRNL);   // Don't map CR to NL
-
-		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-			throw std::system_error(errno, std::generic_category());
-
+public:
+	UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
+		: AbstractUART(name, irqsrc)
+	{
+		enableRawMode(STDIN_FILENO);
 		start_threads();
 	}
 
 	~UART() {
-		// TODO: Don't ignore return value
-		tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+		disableRawMode(STDIN_FILENO);
 	}
 
    private:
@@ -47,7 +36,7 @@ class UART : public AbstractUART {
 			throw std::runtime_error("short write");
 	}
 
-	void read_data(std::mutex &mtx, std::queue<uint8_t> &queue) {
+	void read_data(void) {
 		uint8_t buf;
 		ssize_t nread;
 
@@ -57,9 +46,7 @@ class UART : public AbstractUART {
 		else if (nread != sizeof(buf))
 			throw std::runtime_error("short read");
 
-		mtx.lock();
-		queue.push(buf);
-		mtx.unlock();
+		rxpush(buf);
 	}
 };
 
