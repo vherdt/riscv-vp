@@ -72,9 +72,10 @@ class Core {
 	ISS iss;
 	MMU mmu;
 	CombinedMemoryInterface memif;
+	InstrMemoryProxy imemif;
 
-	Core(unsigned int id) :
-			iss(id), mmu(iss), memif("MemoryInterface" + id, iss, mmu) {
+	Core(unsigned int id, MemoryDMI dmi)
+	    : iss(id), mmu(iss), memif("MemoryInterface" + id, iss, mmu), imemif(dmi, iss) {
 		return;
 	}
 };
@@ -140,8 +141,6 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	Core core0(0);
-
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
@@ -154,7 +153,7 @@ int sc_main(int argc, char **argv) {
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
-	InstrMemoryProxy instr_mem(dmi, core0.iss);
+	Core core0(0, dmi);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0.memif.bus_lock = bus_lock;
@@ -163,7 +162,7 @@ int sc_main(int argc, char **argv) {
 	instr_memory_if *instr_mem_if = &core0.memif;
 	data_memory_if *data_mem_if = &core0.memif;
 	if (opt.use_instr_dmi)
-		instr_mem_if = &instr_mem;
+		instr_mem_if = &core0.imemif;
 	if (opt.use_data_dmi) {
 		core0.memif.dmi_ranges.emplace_back(dmi);
 	}
