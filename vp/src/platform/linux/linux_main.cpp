@@ -140,7 +140,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	Core core(0);
+	Core core0(0);
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
@@ -154,18 +154,18 @@ int sc_main(int argc, char **argv) {
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
-	InstrMemoryProxy instr_mem(dmi, core.iss);
+	InstrMemoryProxy instr_mem(dmi, core0.iss);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
-	core.memif.bus_lock = bus_lock;
-	core.mmu.mem = &core.memif;
+	core0.memif.bus_lock = bus_lock;
+	core0.mmu.mem = &core0.memif;
 
-	instr_memory_if *instr_mem_if = &core.memif;
-	data_memory_if *data_mem_if = &core.memif;
+	instr_memory_if *instr_mem_if = &core0.memif;
+	data_memory_if *data_mem_if = &core0.memif;
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
-		core.memif.dmi_ranges.emplace_back(dmi);
+		core0.memif.dmi_ranges.emplace_back(dmi);
 	}
 
 	uint64_t entry_point = loader.get_entrypoint();
@@ -173,12 +173,12 @@ int sc_main(int argc, char **argv) {
 		entry_point = opt.entry_point.value;
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core.iss.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+	core0.iss.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
-	sys.register_core(&core.iss);
+	sys.register_core(&core0.iss);
 
 	if (opt.intercept_syscalls)
-		core.iss.sys = &sys;
+		core0.iss.sys = &sys;
 
 	// setup port mapping
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
@@ -190,7 +190,7 @@ int sc_main(int argc, char **argv) {
 	bus.ports[6] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
 
 	// connect TLM sockets
-	core.memif.isock.bind(bus.tsocks[0]);
+	core0.memif.isock.bind(bus.tsocks[0]);
 	dbg_if.isock.bind(bus.tsocks[1]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
@@ -201,34 +201,34 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[6].bind(slip.tsock);
 
 	// connect interrupt signals/communication
-	plic.target_harts[0] = &core.iss;
-	clint.target_harts[0] = &core.iss;
+	plic.target_harts[0] = &core0.iss;
+	clint.target_harts[0] = &core0.iss;
 	uart0.plic = &plic;
 	slip.plic = &plic;
 
 	// switch for printing instructions
-	core.iss.trace = opt.trace_mode;
+	core0.iss.trace = opt.trace_mode;
 
 	// ignore WFI instructions (handle them as a NOP, which is ok according to the RISC-V ISA) to avoid running too fast
 	// ahead with simulation time when the CPU is idle
-	core.iss.ignore_wfi = true;
+	core0.iss.ignore_wfi = true;
 
-	// emulate RISC-V core boot loader
-	core.iss.regs[RegFile::a0] = core.iss.get_hart_id();
-	core.iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
+	// emulate RISC-V core0 boot loader
+	core0.iss.regs[RegFile::a0] = core0.iss.get_hart_id();
+	core0.iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
 	if (opt.use_debug_runner) {
-		new DebugCoreRunner<ISS, RV64>(core.iss, &dbg_if, opt.debug_port);
+		new DebugCoreRunner<ISS, RV64>(core0.iss, &dbg_if, opt.debug_port);
 	} else {
-		new DirectCoreRunner(core.iss);
+		new DirectCoreRunner(core0.iss);
 	}
 
 	sc_core::sc_start();
 
-	core.iss.show();
+	core0.iss.show();
 
 	return 0;
 }
