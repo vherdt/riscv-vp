@@ -7,7 +7,6 @@
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
-#include "plic.h"
 #include "syscall.h"
 
 #include "htif.h"
