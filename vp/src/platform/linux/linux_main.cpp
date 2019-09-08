@@ -79,6 +79,14 @@ class Core {
 		return;
 	}
 
+	void init(bool use_data_dmi, bool use_instr_dmi, clint_if *clint, uint64_t entry, uint64_t addr) {
+		if (use_data_dmi)
+			memif.dmi_ranges.emplace_back(imemif.dmi);
+
+		iss.init(get_instr_memory_if(use_instr_dmi), &memif, clint, entry, addr);
+	}
+
+   private:
 	instr_memory_if *get_instr_memory_if(bool use_instr_dmi) {
 		if (use_instr_dmi)
 			return &imemif;
@@ -166,17 +174,12 @@ int sc_main(int argc, char **argv) {
 	core0.memif.bus_lock = bus_lock;
 	core0.mmu.mem = &core0.memif;
 
-	data_memory_if *data_mem_if = &core0.memif;
-	if (opt.use_data_dmi) {
-		core0.memif.dmi_ranges.emplace_back(dmi);
-	}
-
 	uint64_t entry_point = loader.get_entrypoint();
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core0.iss.init(core0.get_instr_memory_if(opt.use_instr_dmi), data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+	core0.init(opt.use_data_dmi, opt.use_instr_dmi, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core0.iss);
 
