@@ -22,6 +22,10 @@
 #include <termios.h>
 #include <unistd.h>
 
+enum {
+	NUM_CORES = 1,
+};
+
 using namespace rv64;
 
 struct Options {
@@ -159,32 +163,37 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 7> bus("SimpleBus");
+	SimpleBus<NUM_CORES + 1, 7> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
-	PLIC<1, 511, 16, 7> plic("PLIC", SupervisorMode);
-	CLINT<1> clint("CLINT");
+	PLIC<NUM_CORES, 511, 16, 7> plic("PLIC", SupervisorMode);
+	CLINT<NUM_CORES> clint("CLINT");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	Core core0(0, dmi);
+	Core *cores[NUM_CORES] = {&core0};
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
-	core0.memif.bus_lock = bus_lock;
-	core0.mmu.mem = &core0.memif;
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		cores[i]->memif.bus_lock = bus_lock;
+		cores[i]->mmu.mem = &cores[i]->memif;
+	}
 
 	uint64_t entry_point = loader.get_entrypoint();
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
 
 	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core0.init(opt.use_data_dmi, opt.use_instr_dmi, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
-	sys.register_core(&core0.iss);
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
 
-	if (opt.intercept_syscalls)
-		core0.iss.sys = &sys;
+		sys.register_core(&cores[i]->iss);
+		if (opt.intercept_syscalls)
+			cores[i]->iss.sys = &sys;
+	}
 
 	// setup port mapping
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
@@ -196,8 +205,10 @@ int sc_main(int argc, char **argv) {
 	bus.ports[6] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
 
 	// connect TLM sockets
-	core0.memif.isock.bind(bus.tsocks[0]);
-	dbg_if.isock.bind(bus.tsocks[1]);
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		cores[i]->memif.isock.bind(bus.tsocks[i]);
+	}
+	dbg_if.isock.bind(bus.tsocks[NUM_CORES]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(sys.tsock);
@@ -207,34 +218,38 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[6].bind(slip.tsock);
 
 	// connect interrupt signals/communication
-	plic.target_harts[0] = &core0.iss;
-	clint.target_harts[0] = &core0.iss;
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		plic.target_harts[i] = &cores[i]->iss;
+		clint.target_harts[i] = &cores[i]->iss;
+	}
 	uart0.plic = &plic;
 	slip.plic = &plic;
 
-	// switch for printing instructions
-	core0.iss.trace = opt.trace_mode;
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		// switch for printing instructions
+		cores[i]->iss.trace = opt.trace_mode;
 
-	// ignore WFI instructions (handle them as a NOP, which is ok according to the RISC-V ISA) to avoid running too fast
-	// ahead with simulation time when the CPU is idle
-	core0.iss.ignore_wfi = true;
+		// ignore WFI instructions (handle them as a NOP, which is ok according to the RISC-V ISA) to avoid running too
+		// fast ahead with simulation time when the CPU is idle
+		cores[i]->iss.ignore_wfi = true;
 
-	// emulate RISC-V core0 boot loader
-	core0.iss.regs[RegFile::a0] = core0.iss.get_hart_id();
-	core0.iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
+		// emulate RISC-V core boot loader
+		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
+		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
+	}
 
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	if (opt.use_debug_runner) {
-		new DebugCoreRunner<ISS, RV64>(core0.iss, &dbg_if, opt.debug_port);
-	} else {
-		new DirectCoreRunner(core0.iss);
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		// TODO: Readd debung support (opt.use_debug_runner)
+		new DirectCoreRunner(cores[i]->iss);
 	}
 
 	sc_core::sc_start();
-
-	core0.iss.show();
+	for (size_t i = 0; i < NUM_CORES; i++) {
+		cores[i]->iss.show();
+	}
 
 	return 0;
 }
