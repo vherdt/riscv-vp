@@ -3,7 +3,7 @@
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
-#include "fe310_plic.h"
+#include "fu540_plic.h"
 #include "gdb_stub.h"
 #include "iss.h"
 #include "mem.h"
@@ -165,7 +165,7 @@ int sc_main(int argc, char **argv) {
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<NUM_CORES + 1, 7> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
-	FE310_PLIC<NUM_CORES, 511, 16, 7> plic("PLIC", SupervisorMode);
+	FU540_PLIC plic("PLIC");
 	CLINT<NUM_CORES> clint("CLINT");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
