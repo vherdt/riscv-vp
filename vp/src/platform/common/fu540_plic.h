@@ -17,6 +17,7 @@ public:
 	void gateway_trigger_interrupt(uint32_t);
 
 private:
+	void check_memory_layout(void);
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 
 	struct __attribute__((__packed__)) HartConfig {
