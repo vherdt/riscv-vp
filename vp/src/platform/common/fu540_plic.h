@@ -17,14 +17,26 @@ public:
 	void gateway_trigger_interrupt(uint32_t);
 
 private:
-	void check_memory_layout(void);
-	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
+	class FU540_HartConfig {
+	  public:
+		ArrayView<uint32_t> s_mode;
+		ArrayView<uint32_t> m_mode;
 
-	struct __attribute__((__packed__)) HartConfig {
-		uint32_t priority_threshold;
-		uint32_t claim_response;
-		uint32_t padding[2048];
+		FU540_HartConfig(RegisterRange &r1, RegisterRange &r2) : s_mode(r1), m_mode(r2) {
+			return;
+		}
 	};
+
+	/* hart_id (0..4) → hart_config */
+	std::map<unsigned int, FU540_HartConfig*> enabled_irqs;
+	std::map<unsigned int, FU540_HartConfig*> irq_priority;
+
+	std::vector<RegisterRange*> register_ranges;
+
+	void create_enabled_regs(void);
+	void create_priority_regs(void);
+
+	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 
 	/* See Section 10.3 */
 	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * (FU540_PLIC_NUMIRQ + 1)};
@@ -33,14 +45,6 @@ private:
 	/* See Section 10.4 */
 	RegisterRange regs_pending_interrupts{0x1000, sizeof(uint32_t) * 2};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
-
-	/* See Section 10.5 */
-	RegisterRange regs_hart_enabled_interrupts{0x2000, ((2 * FU540_PLIC_HARTS) - 1) * 128};
-	ArrayView<uint32_t> hart_enabled_interrupts{regs_hart_enabled_interrupts};
-
-	/* See Section 10.6 and Section 10.7 */
-	RegisterRange regs_hart_config{0x200000, sizeof(HartConfig) * FU540_PLIC_HARTS};
-	ArrayView<HartConfig> hart_config{regs_hart_config};
 };
 
 #endif
