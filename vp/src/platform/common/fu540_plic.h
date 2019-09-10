@@ -28,14 +28,14 @@ private:
 	};
 
 	/* hart_id (0..4) → hart_config */
-	std::map<unsigned int, FU540_HartConfig*> enabled_irqs;
-	std::map<unsigned int, FU540_HartConfig*> irq_priority;
-
-	std::vector<RegisterRange*> register_ranges;
-
-	void create_hart_regs(uint64_t addr, uint64_t inc, std::map<unsigned int, FU540_HartConfig*> &map);
+	typedef std::map<unsigned int, FU540_HartConfig*> hartmap;
+	hartmap enabled_irqs;
+	hartmap irq_priority;
+	void create_hart_regs(uint64_t, uint64_t, hartmap&);
 
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
+
+	std::vector<RegisterRange*> register_ranges;
 
 	/* See Section 10.3 */
 	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * (FU540_PLIC_NUMIRQ + 1)};

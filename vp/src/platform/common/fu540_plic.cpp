@@ -26,7 +26,7 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 	tsock.register_b_transport(this, &FU540_PLIC::transport);
 };
 
-void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, std::map<unsigned int, FU540_HartConfig*> &map) {
+void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 	uint64_t size = 2 * sizeof(uint32_t);
 	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
 		RegisterRange *mreg, *sreg;
