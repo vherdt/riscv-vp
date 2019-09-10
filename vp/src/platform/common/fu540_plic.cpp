@@ -9,6 +9,16 @@
 #include "util/tlm_map.h"
 #include "fu540_plic.h"
 
+enum {
+	ENABLE_BASE = 0x2000,
+	ENABLE_PER_HART = 0x80,
+
+	CONTEXT_BASE = 0x200000,
+	CONTEXT_PER_HART = 0x1000,
+
+	HART_REG_SIZE = 2 * sizeof(uint32_t),
+};
+
 static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 	assert(range->start == start && range->end + 1 == end + 0x4);
 }
@@ -20,23 +30,23 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 	register_ranges.push_back(&regs_interrupt_priorities);
 	register_ranges.push_back(&regs_pending_interrupts);
 
-	create_hart_regs(0x2000, 0x80, enabled_irqs); /* Section 10.5 */
-	create_hart_regs(0x200000, 0x1000, irq_priority); /* Section 10.6 and 10.7 */
+	/* create IRQ enable and context registers */
+	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs);
+	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, irq_priority);
 
 	tsock.register_b_transport(this, &FU540_PLIC::transport);
 };
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
-	uint64_t size = 2 * sizeof(uint32_t);
 	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
 		RegisterRange *mreg, *sreg;
 
-		mreg = new RegisterRange(addr, size);
+		mreg = new RegisterRange(addr, HART_REG_SIZE);
 		register_ranges.push_back(mreg);
 
 		if (i != 0) { /* hart 0 only supports m-mode interrupts */
 			addr += inc;
-			sreg = new RegisterRange(addr, size);
+			sreg = new RegisterRange(addr, HART_REG_SIZE);
 			register_ranges.push_back(sreg);
 		} else {
 			sreg = mreg;
