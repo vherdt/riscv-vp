@@ -9,11 +9,6 @@
 #include "util/tlm_map.h"
 #include "fu540_plic.h"
 
-enum {
-	FU540_IRQ_EN = 0x2000,
-	FU540_PRIO   = 0x200000,
-};
-
 static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 	assert(range->start == start && range->end + 1 == end + 0x4);
 }
@@ -25,16 +20,14 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 	register_ranges.push_back(&regs_interrupt_priorities);
 	register_ranges.push_back(&regs_pending_interrupts);
 
-	create_enabled_regs();
-	create_priority_regs();
+	create_hart_regs(0x2000, 0x80, enabled_irqs); /* Section 10.5 */
+	create_hart_regs(0x200000, 0x1000, irq_priority); /* Section 10.6 and 10.7 */
 
 	tsock.register_b_transport(this, &FU540_PLIC::transport);
 };
 
-void FU540_PLIC::create_enabled_regs(void) {
-	uint64_t addr = FU540_IRQ_EN;
+void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, std::map<unsigned int, FU540_HartConfig*> &map) {
 	uint64_t size = 2 * sizeof(uint32_t);
-
 	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
 		RegisterRange *mreg, *sreg;
 
@@ -42,38 +35,15 @@ void FU540_PLIC::create_enabled_regs(void) {
 		register_ranges.push_back(mreg);
 
 		if (i != 0) { /* hart 0 only supports m-mode interrupts */
-			addr += 0x80;
+			addr += inc;
 			sreg = new RegisterRange(addr, size);
 			register_ranges.push_back(sreg);
 		} else {
 			sreg = mreg;
 		}
 
-		enabled_irqs[i] = new FU540_HartConfig(*mreg, *sreg);
-		addr += 0x80;
-	}
-}
-
-void FU540_PLIC::create_priority_regs(void) {
-	uint64_t addr = FU540_PRIO;
-	uint64_t size = 2 * sizeof(uint32_t);
-
-	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
-		RegisterRange *mreg, *sreg;
-
-		mreg = new RegisterRange(addr, size);
-		register_ranges.push_back(mreg);
-
-		if (i != 0) { /* hart 0 only supports m-mode interrupts */
-			addr += 0x1000;
-			sreg = new RegisterRange(addr, size);
-			register_ranges.push_back(sreg);
-		} else {
-			sreg = mreg;
-		}
-
-		irq_priority[i] = new FU540_HartConfig(*mreg, *sreg);
-		addr += 0x1000;
+		map[i] = new FU540_HartConfig(*mreg, *sreg);
+		addr += inc;
 	}
 }
 

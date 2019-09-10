@@ -33,8 +33,7 @@ private:
 
 	std::vector<RegisterRange*> register_ranges;
 
-	void create_enabled_regs(void);
-	void create_priority_regs(void);
+	void create_hart_regs(uint64_t addr, uint64_t inc, std::map<unsigned int, FU540_HartConfig*> &map);
 
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 
