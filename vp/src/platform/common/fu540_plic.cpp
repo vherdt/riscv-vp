@@ -42,7 +42,7 @@ void FU540_PLIC::create_enabled_regs(void) {
 		register_ranges.push_back(mreg);
 
 		if (i != 0) { /* hart 0 only supports m-mode interrupts */
-			addr += 0x20;
+			addr += 0x80;
 			sreg = new RegisterRange(addr, size);
 			register_ranges.push_back(sreg);
 		} else {
