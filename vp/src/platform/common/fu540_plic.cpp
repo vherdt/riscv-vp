@@ -78,9 +78,7 @@ void FU540_PLIC::create_priority_regs(void) {
 }
 
 void FU540_PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-	(void)trans;
-	(void)delay;
-	return;
+	vp::mm::route("FU540_PLIC", register_ranges, trans, delay);
 };
 
 void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
