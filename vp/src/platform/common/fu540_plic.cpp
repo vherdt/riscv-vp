@@ -38,18 +38,21 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 };
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
+	auto add_reg = [this] (uint64_t a) {
+		RegisterRange *r = new RegisterRange(a, HART_REG_SIZE);
+		register_ranges.push_back(r);
+		return r;
+	};
+
 	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
 		RegisterRange *mreg, *sreg;
 
-		mreg = new RegisterRange(addr, HART_REG_SIZE);
-		register_ranges.push_back(mreg);
+		mreg = add_reg(addr);
+		sreg = mreg; /* for hart0 */
 
 		if (i != 0) { /* hart 0 only supports m-mode interrupts */
 			addr += inc;
-			sreg = new RegisterRange(addr, HART_REG_SIZE);
-			register_ranges.push_back(sreg);
-		} else {
-			sreg = mreg;
+			sreg = add_reg(addr);
 		}
 
 		map[i] = new HartConfig(*mreg, *sreg);
