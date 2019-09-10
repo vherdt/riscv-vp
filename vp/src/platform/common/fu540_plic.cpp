@@ -42,7 +42,7 @@ void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 			sreg = mreg;
 		}
 
-		map[i] = new FU540_HartConfig(*mreg, *sreg);
+		map[i] = new HartConfig(*mreg, *sreg);
 		addr += inc;
 	}
 }

@@ -17,18 +17,18 @@ public:
 	void gateway_trigger_interrupt(uint32_t);
 
 private:
-	class FU540_HartConfig {
+	class HartConfig {
 	  public:
 		ArrayView<uint32_t> s_mode;
 		ArrayView<uint32_t> m_mode;
 
-		FU540_HartConfig(RegisterRange &r1, RegisterRange &r2) : s_mode(r1), m_mode(r2) {
+		HartConfig(RegisterRange &r1, RegisterRange &r2) : s_mode(r1), m_mode(r2) {
 			return;
 		}
 	};
 
 	/* hart_id (0..4) → hart_config */
-	typedef std::map<unsigned int, FU540_HartConfig*> hartmap;
+	typedef std::map<unsigned int, HartConfig*> hartmap;
 	hartmap enabled_irqs;
 	hartmap irq_priority;
 	void create_hart_regs(uint64_t, uint64_t, hartmap&);
