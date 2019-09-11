@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
@@ -24,6 +25,16 @@ static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 }
 
 FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
+	/* Values copied from FE310_PLIC */
+	clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+
+	create_registers();
+	tsock.register_b_transport(this, &FU540_PLIC::transport);
+
+	SC_THREAD(run);
+};
+
+void FU540_PLIC::create_registers(void) {
 	assert_addr(0x4, 0xD8, &regs_interrupt_priorities);
 	assert_addr(0x1000, 0x1004, &regs_pending_interrupts);
 
@@ -33,9 +44,7 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 	/* create IRQ enable and context registers */
 	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs);
 	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, irq_priority);
-
-	tsock.register_b_transport(this, &FU540_PLIC::transport);
-};
+}
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 	auto add_reg = [this] (uint64_t a) {
@@ -72,4 +81,15 @@ void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 	size_t off = irq % 32;
 
 	pending_interrupts[idx] |= 1 << off;
+	e_run.notify(clock_cycle);
 };
+
+void FU540_PLIC::run(void) {
+	for (;;) {
+		sc_core::wait(e_run);
+
+		for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
+			// TODO
+		}
+	}
+}

@@ -16,6 +16,8 @@ public:
 	FU540_PLIC(sc_core::sc_module_name);
 	void gateway_trigger_interrupt(uint32_t);
 
+	SC_HAS_PROCESS(FU540_PLIC);
+
 private:
 	class HartConfig {
 	  public:
@@ -27,15 +29,15 @@ private:
 		}
 	};
 
+	sc_core::sc_event e_run;
+	sc_core::sc_time clock_cycle;
+
+	std::vector<RegisterRange*> register_ranges;
+
 	/* hart_id (0..4) → hart_config */
 	typedef std::map<unsigned int, HartConfig*> hartmap;
 	hartmap enabled_irqs;
 	hartmap irq_priority;
-	void create_hart_regs(uint64_t, uint64_t, hartmap&);
-
-	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
-
-	std::vector<RegisterRange*> register_ranges;
 
 	/* See Section 10.3 */
 	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * (FU540_PLIC_NUMIRQ + 1)};
@@ -44,6 +46,11 @@ private:
 	/* See Section 10.4 */
 	RegisterRange regs_pending_interrupts{0x1000, sizeof(uint32_t) * 2};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
+	
+	void create_registers(void);
+	void create_hart_regs(uint64_t, uint64_t, hartmap&);
+	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
+	void run(void);
 };
 
 #endif
