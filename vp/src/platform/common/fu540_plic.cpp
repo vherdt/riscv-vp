@@ -95,6 +95,29 @@ void FU540_PLIC::run(void) {
 	}
 }
 
+/* Returns next enabled pending interrupt with highest priority */
+unsigned int FU540_PLIC::next_pending_irq(unsigned int hart) {
+	HartConfig *conf = enabled_irqs[hart];
+	unsigned int selirq = 0, maxpri = 0;
+
+	for (unsigned irq = 1; irq <= FU540_PLIC_NUMIRQ; irq++) {
+		if (!conf->is_enabled(irq) || !is_pending(irq))
+			continue;
+
+		uint32_t prio = interrupt_priorities[irq];
+		if (prio >= maxpri) {
+			maxpri = prio;
+			selirq = irq;
+		}
+	}
+
+	return selirq;
+}
+
+bool FU540_PLIC::is_pending(unsigned int irq) {
+	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
+}
+
 bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level) {
 	unsigned int idx = GET_IDX(irq);
 	unsigned int off = GET_OFF(irq);
