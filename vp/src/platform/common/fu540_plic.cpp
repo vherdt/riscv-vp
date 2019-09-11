@@ -95,7 +95,7 @@ void FU540_PLIC::run(void) {
 	}
 }
 
-bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level = NULL) {
+bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level) {
 	unsigned int idx = GET_IDX(irq);
 	unsigned int off = GET_OFF(irq);
 

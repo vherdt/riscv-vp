@@ -28,7 +28,7 @@ private:
 			return;
 		}
 
-		bool is_enabled(unsigned int, PrivilegeLevel*);
+		bool is_enabled(unsigned int, PrivilegeLevel* = NULL);
 	};
 
 	sc_core::sc_event e_run;
