@@ -21,10 +21,10 @@ public:
 private:
 	class HartConfig {
 	  public:
-		ArrayView<uint32_t> s_mode;
 		ArrayView<uint32_t> m_mode;
+		ArrayView<uint32_t> s_mode; /* same as m_mode for hart0 */
 
-		HartConfig(RegisterRange &r1, RegisterRange &r2) : s_mode(r1), m_mode(r2) {
+		HartConfig(RegisterRange &r1, RegisterRange &r2) : m_mode(r1), s_mode(r2) {
 			return;
 		}
 	};
