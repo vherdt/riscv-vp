@@ -94,3 +94,21 @@ void FU540_PLIC::run(void) {
 		}
 	}
 }
+
+bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level = NULL) {
+	unsigned int idx = GET_IDX(irq);
+	unsigned int off = GET_OFF(irq);
+
+	PrivilegeLevel r = NULL;
+	if (m_mode[idx] & off) {
+		r = MachineMode;
+	} else if (s_mode[idx] & off) {
+		r = SupervisorMode;
+	} else {
+		return false;
+	}
+
+	if (level)
+		*level = r;
+	return true;
+}

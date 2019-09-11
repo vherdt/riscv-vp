@@ -27,6 +27,8 @@ private:
 		HartConfig(RegisterRange &r1, RegisterRange &r2) : m_mode(r1), s_mode(r2) {
 			return;
 		}
+
+		bool is_enabled(unsigned int, PrivilegeLevel*);
 	};
 
 	sc_core::sc_event e_run;
