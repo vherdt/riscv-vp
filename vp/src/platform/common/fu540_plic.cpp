@@ -70,6 +70,7 @@ void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 }
 
 void FU540_PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+	delay += 4 * clock_cycle; /* copied from FE310_PLIC */
 	vp::mm::route("FU540_PLIC", register_ranges, trans, delay);
 };
 
