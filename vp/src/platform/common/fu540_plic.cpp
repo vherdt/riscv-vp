@@ -10,6 +10,9 @@
 #include "util/tlm_map.h"
 #include "fu540_plic.h"
 
+#define GET_IDX(IRQ) ((IRQ) / 32)
+#define GET_OFF(IRQ) (1 << (IRQ) % 32)
+
 enum {
 	ENABLE_BASE = 0x2000,
 	ENABLE_PER_HART = 0x80,
@@ -78,10 +81,7 @@ void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 	if (irq > FU540_PLIC_NUMIRQ)
 		throw std::invalid_argument("IRQ value is invalid");
 
-	size_t idx = irq / 32;
-	size_t off = irq % 32;
-
-	pending_interrupts[idx] |= 1 << off;
+	pending_interrupts[GET_IDX(irq)] |= GET_OFF(irq);
 	e_run.notify(clock_cycle);
 };
 
