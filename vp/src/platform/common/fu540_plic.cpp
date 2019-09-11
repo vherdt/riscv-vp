@@ -65,6 +65,11 @@ void FU540_PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &de
 };
 
 void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
-	(void)irq;
-	return;
+	if (irq > FU540_PLIC_NUMIRQ)
+		throw std::invalid_argument("IRQ value is invalid");
+
+	size_t idx = irq / 32;
+	size_t off = irq % 32;
+
+	pending_interrupts[idx] |= 1 << off;
 };
