@@ -52,7 +52,7 @@ private:
 	void create_registers(void);
 	void create_hart_regs(uint64_t, uint64_t, hartmap&);
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
-	void read_hartconf(RegisterRange::ReadInfo, unsigned int, PrivilegeLevel);
+	bool read_hartctx(RegisterRange::ReadInfo, unsigned int, PrivilegeLevel);
 	void run(void);
 	unsigned int next_pending_irq(unsigned int, PrivilegeLevel, bool);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);

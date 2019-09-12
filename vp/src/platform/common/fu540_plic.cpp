@@ -50,8 +50,11 @@ void FU540_PLIC::create_registers(void) {
 }
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
-	auto add_reg = [this] (uint64_t a) {
+	auto add_reg = [this, map] (unsigned int h, PrivilegeLevel l, uint64_t a) {
 		RegisterRange *r = new RegisterRange(a, HART_REG_SIZE);
+		if (map == hart_context)
+			r->pre_read_callback = std::bind(&FU540_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
+
 		register_ranges.push_back(r);
 		return r;
 	};
@@ -59,12 +62,12 @@ void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
 		RegisterRange *mreg, *sreg;
 
-		mreg = add_reg(addr);
+		mreg = add_reg(i, MachineMode, addr);
 		sreg = mreg; /* for hart0 */
 
 		if (i != 0) { /* hart 0 only supports m-mode interrupts */
 			addr += inc;
-			sreg = add_reg(addr);
+			sreg = add_reg(i, SupervisorMode, addr);
 		}
 
 		map[i] = new HartConfig(*mreg, *sreg);
@@ -85,7 +88,7 @@ void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 	e_run.notify(clock_cycle);
 };
 
-void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t, unsigned int hart, PrivilegeLevel level) {
+bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, PrivilegeLevel level) {
 	assert(t.addr % sizeof(uint32_t) == 0);
 	assert(t.size == sizeof(uint32_t));
 
@@ -104,6 +107,8 @@ void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t, unsigned int hart, Pri
 			break;
 		}
 	}
+
+	return true;
 }
 
 void FU540_PLIC::run(void) {
