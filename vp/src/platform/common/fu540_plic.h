@@ -52,10 +52,12 @@ private:
 	void create_registers(void);
 	void create_hart_regs(uint64_t, uint64_t, hartmap&);
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
+	void read_hartconf(RegisterRange::ReadInfo);
 	void run(void);
 	std::tuple<unsigned int, PrivilegeLevel> next_pending_irq(unsigned int, bool);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
 	bool is_pending(unsigned int);
+	unsigned int addr2hart(uint64_t);
 };
 
 #endif
