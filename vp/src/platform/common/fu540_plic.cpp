@@ -96,12 +96,12 @@ void FU540_PLIC::run(void) {
 }
 
 /* Returns next enabled pending interrupt with highest priority */
-unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
+std::tuple<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
+	PrivilegeLevel level;
 	HartConfig *conf = enabled_irqs[hart];
 	unsigned int selirq = 0, maxpri = 0;
 
 	for (unsigned irq = 1; irq <= FU540_PLIC_NUMIRQ; irq++) {
-		PrivilegeLevel level;
 		if (!conf->is_enabled(irq, &level) || !is_pending(irq))
 			continue;
 
@@ -115,12 +115,12 @@ unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
 		}
 	}
 
-	return selirq;
+	return std::make_tuple(hart, level);
 }
 
 uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 	if (hart == 0 && level == SupervisorMode)
-		throw std::invalid_argument "hart0 doesn't support SupervisorMode");
+		throw std::invalid_argument("hart0 doesn't support SupervisorMode");
 
 	HartConfig *conf = hart_context[hart];
 	switch (level) {

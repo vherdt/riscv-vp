@@ -53,7 +53,7 @@ private:
 	void create_hart_regs(uint64_t, uint64_t, hartmap&);
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 	void run(void);
-	unsigned int next_pending_irq(unsigned int, bool);
+	std::tuple<unsigned int, PrivilegeLevel> next_pending_irq(unsigned int, bool);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
 	bool is_pending(unsigned int);
 };
