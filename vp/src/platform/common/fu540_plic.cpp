@@ -85,17 +85,14 @@ void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 	e_run.notify(clock_cycle);
 };
 
-void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t, unsigned int hart) {
+void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t, unsigned int hart, PrivilegeLevel level) {
 	assert(t.addr % sizeof(uint32_t) == 0);
 	assert(t.size == sizeof(uint32_t));
 
 	unsigned idx = t.addr / sizeof(uint32_t);
 	if ((idx % 2) == 1) { /* access to claim register */
-		unsigned int irq;
-		PrivilegeLevel lvl;
-
-		std::tie(irq, lvl) = next_pending_irq(hart, false);
-		switch (lvl) {
+		unsigned int irq = next_pending_irq(hart, level, false);
+		switch (level) {
 		case MachineMode:
 			hart_context[hart]->m_mode[1] = irq;
 			break;
@@ -120,17 +117,16 @@ void FU540_PLIC::run(void) {
 }
 
 /* Returns next enabled pending interrupt with highest priority */
-std::pair<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
-	PrivilegeLevel level;
+unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl, bool ignth) {
 	HartConfig *conf = enabled_irqs[hart];
 	unsigned int selirq = 0, maxpri = 0;
 
 	for (unsigned irq = 1; irq <= FU540_PLIC_NUMIRQ; irq++) {
-		if (!conf->is_enabled(irq, &level) || !is_pending(irq))
+		if (!conf->is_enabled(irq, lvl) || !is_pending(irq))
 			continue;
 
 		uint32_t prio = interrupt_priorities[irq];
-		if (!ignth && prio < get_threshold(hart, level))
+		if (!ignth && prio < get_threshold(hart, lvl))
 			continue;
 
 		if (prio > maxpri) {
@@ -139,7 +135,7 @@ std::pair<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned in
 		}
 	}
 
-	return std::make_pair(hart, level);
+	return selirq;
 }
 
 uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
@@ -163,20 +159,18 @@ bool FU540_PLIC::is_pending(unsigned int irq) {
 	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
 }
 
-bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level) {
+bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel level) {
 	unsigned int idx = GET_IDX(irq);
 	unsigned int off = GET_OFF(irq);
 
-	PrivilegeLevel r = NULL;
-	if (m_mode[idx] & off) {
-		r = MachineMode;
-	} else if (s_mode[idx] & off) {
-		r = SupervisorMode;
-	} else {
-		return false;
+	switch (level) {
+	case MachineMode:
+		return m_mode[idx] & off;
+	case SupervisorMode:
+		return s_mode[idx] & off;
+	default:
+		assert(0);
 	}
 
-	if (level)
-		*level = r;
-	return true;
+	return false;
 }
