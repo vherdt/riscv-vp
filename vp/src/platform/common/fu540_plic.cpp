@@ -85,19 +85,16 @@ void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 	e_run.notify(clock_cycle);
 };
 
-void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t) {
+void FU540_PLIC::read_hartconf(RegisterRange::ReadInfo t, unsigned int hart) {
 	assert(t.addr % sizeof(uint32_t) == 0);
 	assert(t.size == sizeof(uint32_t));
 
-	unsigned hart = addr2hart(t.addr);
 	unsigned idx = t.addr / sizeof(uint32_t);
-
 	if ((idx % 2) == 1) { /* access to claim register */
 		unsigned int irq;
 		PrivilegeLevel lvl;
 
 		std::tie(irq, lvl) = next_pending_irq(hart, false);
-
 		switch (lvl) {
 		case MachineMode:
 			hart_context[hart]->m_mode[1] = irq;
@@ -123,7 +120,7 @@ void FU540_PLIC::run(void) {
 }
 
 /* Returns next enabled pending interrupt with highest priority */
-std::tuple<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
+std::pair<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned int hart, bool ignth) {
 	PrivilegeLevel level;
 	HartConfig *conf = enabled_irqs[hart];
 	unsigned int selirq = 0, maxpri = 0;
@@ -142,7 +139,7 @@ std::tuple<unsigned int, PrivilegeLevel> FU540_PLIC::next_pending_irq(unsigned i
 		}
 	}
 
-	return std::make_tuple(hart, level);
+	return std::make_pair(hart, level);
 }
 
 uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
@@ -164,12 +161,6 @@ uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 
 bool FU540_PLIC::is_pending(unsigned int irq) {
 	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
-}
-
-unsigned int FU540_PLIC::addr2hart(uint64_t addr) {
-	std::cout << "addr2hart: " << addr << std::endl;
-	// TODO
-	return 0;
 }
 
 bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel *level) {
