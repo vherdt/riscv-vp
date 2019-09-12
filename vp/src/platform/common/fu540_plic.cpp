@@ -118,6 +118,8 @@ void FU540_PLIC::run(void) {
 
 /* Returns next enabled pending interrupt with highest priority */
 unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl, bool ignth) {
+	assert(!(hart == 0 && lvl == SupervisorMode));
+
 	HartConfig *conf = enabled_irqs[hart];
 	unsigned int selirq = 0, maxpri = 0;
 
