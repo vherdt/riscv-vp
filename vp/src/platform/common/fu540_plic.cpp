@@ -46,7 +46,7 @@ void FU540_PLIC::create_registers(void) {
 
 	/* create IRQ enable and context registers */
 	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs);
-	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, irq_priority);
+	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, hart_context);
 }
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {

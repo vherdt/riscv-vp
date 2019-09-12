@@ -39,7 +39,7 @@ private:
 	/* hart_id (0..4) → hart_config */
 	typedef std::map<unsigned int, HartConfig*> hartmap;
 	hartmap enabled_irqs;
-	hartmap irq_priority;
+	hartmap hart_context;
 
 	/* See Section 10.3 */
 	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * (FU540_PLIC_NUMIRQ + 1)};
