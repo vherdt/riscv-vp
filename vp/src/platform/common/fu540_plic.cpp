@@ -124,6 +124,22 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 
 	if (is_claim_access(t.addr)) {
 		target_harts[hart]->clear_external_interrupt(level);
+	} else { /* access to priority threshold */
+		uint32_t *thr;
+
+		switch (level) {
+		case MachineMode:
+			thr = &hart_context[hart]->m_mode[0];
+			break;
+		case SupervisorMode:
+			thr = &hart_context[hart]->s_mode[0];
+			break;
+		default:
+			assert(0);
+			break;
+		}
+
+		*thr = std::min(*thr, (uint32_t)FU540_PLIC_MAX_THR);
 	}
 }
 

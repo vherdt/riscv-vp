@@ -6,6 +6,9 @@
 enum {
 	FU540_PLIC_HARTS  = 5,
 	FU540_PLIC_NUMIRQ = 53,
+
+	FU540_PLIC_MAX_THR  = 7,
+	FU540_PLIC_MAX_PRIO = 7,
 };
 
 struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
