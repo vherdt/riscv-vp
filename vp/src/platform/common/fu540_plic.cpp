@@ -94,7 +94,7 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 
 	unsigned idx = t.addr / sizeof(uint32_t);
 	if ((idx % 2) == 1) { /* access to claim register */
-		unsigned int irq = next_pending_irq(hart, level, false);
+		unsigned int irq = next_pending_irq(hart, level, true);
 		if (irq == 0)
 			return true;
 
