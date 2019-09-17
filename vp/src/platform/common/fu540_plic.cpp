@@ -179,6 +179,8 @@ bool FU540_PLIC::is_pending(unsigned int irq) {
 }
 
 bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel level) {
+	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
+
 	unsigned int idx = GET_IDX(irq);
 	unsigned int off = GET_OFF(irq);
 
