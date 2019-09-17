@@ -13,6 +13,13 @@
 #define GET_IDX(IRQ) ((IRQ) / 32)
 #define GET_OFF(IRQ) (1 << ((IRQ) % 32))
 
+/**
+ * TODO: Why is handling_irq needed?
+ * TODO: Ensure that irq 0 is hardwired to zero
+ * TODO: FE310 raises external interrupt during interrupt completion
+ * TODO: Set RegisterRange alignment
+ */
+
 enum {
 	ENABLE_BASE = 0x2000,
 	ENABLE_PER_HART = 0x80,
