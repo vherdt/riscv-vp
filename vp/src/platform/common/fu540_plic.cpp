@@ -191,10 +191,10 @@ unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl,
 }
 
 bool FU540_PLIC::has_pending_irq(unsigned int hart, PrivilegeLevel *level) {
-	if (next_pending_irq(hart, MachineMode, false)) {
+	if (next_pending_irq(hart, MachineMode, false) > 0) {
 		*level = MachineMode;
 		return true;
-	} else if (next_pending_irq(hart, SupervisorMode, false)) {
+	} else if (next_pending_irq(hart, SupervisorMode, false) > 0) {
 		*level = SupervisorMode;
 		return true;
 	} else {
