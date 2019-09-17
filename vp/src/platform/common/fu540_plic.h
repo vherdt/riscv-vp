@@ -37,6 +37,7 @@ private:
 	sc_core::sc_event e_run;
 	sc_core::sc_time clock_cycle;
 
+	bool handling_irq[FU540_PLIC_HARTS];
 	std::vector<RegisterRange*> register_ranges;
 
 	/* hart_id (0..4) → hart_config */

@@ -196,5 +196,5 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 				}
 			}
 		}
-	}
+}
 };
