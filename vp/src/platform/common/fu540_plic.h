@@ -56,6 +56,7 @@ private:
 	void run(void);
 	unsigned int next_pending_irq(unsigned int, PrivilegeLevel, bool);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
+	void clear_pending(unsigned int);
 	bool is_pending(unsigned int);
 };
 

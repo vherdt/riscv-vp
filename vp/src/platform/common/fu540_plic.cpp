@@ -11,7 +11,7 @@
 #include "fu540_plic.h"
 
 #define GET_IDX(IRQ) ((IRQ) / 32)
-#define GET_OFF(IRQ) (1 << (IRQ) % 32)
+#define GET_OFF(IRQ) (1 << ((IRQ) % 32))
 
 enum {
 	ENABLE_BASE = 0x2000,
@@ -95,6 +95,9 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 	unsigned idx = t.addr / sizeof(uint32_t);
 	if ((idx % 2) == 1) { /* access to claim register */
 		unsigned int irq = next_pending_irq(hart, level, false);
+		if (irq == 0)
+			return true;
+
 		switch (level) {
 		case MachineMode:
 			hart_context[hart]->m_mode[1] = irq;
@@ -106,6 +109,9 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 			assert(0);
 			break;
 		}
+
+		/* successful claim also clears the pending bit */
+		clear_pending(irq);
 	}
 
 	return true;
@@ -162,7 +168,13 @@ uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 	}
 }
 
+void FU540_PLIC::clear_pending(unsigned int irq) {
+	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
+	pending_interrupts[GET_IDX(irq)] |= ~(GET_OFF(irq));
+}
+
 bool FU540_PLIC::is_pending(unsigned int irq) {
+	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
 	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
 }
 
