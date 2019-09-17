@@ -122,7 +122,10 @@ void FU540_PLIC::run(void) {
 		sc_core::wait(e_run);
 
 		for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
-			// TODO
+			PrivilegeLevel lvl;
+			if (has_pending_irq(i, &lvl)) {
+				target_harts[i]->trigger_external_interrupt(lvl);
+			}
 		}
 	}
 }
@@ -149,6 +152,18 @@ unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl,
 	}
 
 	return selirq;
+}
+
+bool FU540_PLIC::has_pending_irq(unsigned int hart, PrivilegeLevel *level) {
+	if (next_pending_irq(hart, MachineMode, false)) {
+		*level = MachineMode;
+		return true;
+	} else if (next_pending_irq(hart, SupervisorMode, false)) {
+		*level = SupervisorMode;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
