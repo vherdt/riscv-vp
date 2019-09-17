@@ -38,6 +38,9 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 };
 
 void FU540_PLIC::create_registers(void) {
+	regs_interrupt_priorities.post_write_callback =
+		std::bind(&FU540_PLIC::write_irq_prios, this, std::placeholders::_1);
+
 	assert_addr(0x4, 0xD8, &regs_interrupt_priorities);
 	assert_addr(0x1000, 0x1004, &regs_pending_interrupts);
 
@@ -141,6 +144,13 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 
 		*thr = std::min(*thr, (uint32_t)FU540_PLIC_MAX_THR);
 	}
+}
+
+void FU540_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
+	(void)t;
+	
+	/* TODO: Make this O(1) instead of O(n) */
+	for (auto &x : interrupt_priorities) x = std::min(x, (uint32_t)FU540_PLIC_MAX_PRIO);
 }
 
 void FU540_PLIC::run(void) {

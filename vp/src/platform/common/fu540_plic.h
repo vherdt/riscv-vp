@@ -57,6 +57,7 @@ private:
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 	bool read_hartctx(RegisterRange::ReadInfo, unsigned int, PrivilegeLevel);
 	void write_hartctx(RegisterRange::WriteInfo, unsigned int, PrivilegeLevel);
+	void write_irq_prios(RegisterRange::WriteInfo);
 	void run(void);
 	unsigned int next_pending_irq(unsigned int, PrivilegeLevel, bool);
 	bool has_pending_irq(unsigned int, PrivilegeLevel*);
