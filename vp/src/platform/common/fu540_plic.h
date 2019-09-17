@@ -59,6 +59,7 @@ private:
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
 	void clear_pending(unsigned int);
 	bool is_pending(unsigned int);
+	bool is_claim_access(uint64_t addr);
 };
 
 #endif

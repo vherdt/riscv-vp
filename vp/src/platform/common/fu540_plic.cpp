@@ -92,8 +92,7 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 	assert(t.addr % sizeof(uint32_t) == 0);
 	assert(t.size == sizeof(uint32_t));
 
-	unsigned idx = t.addr / sizeof(uint32_t);
-	if ((idx % 2) == 1) { /* access to claim register */
+	if (is_claim_access(t.addr)) {
 		unsigned int irq = next_pending_irq(hart, level, true);
 		if (irq == 0)
 			return true;
@@ -191,6 +190,11 @@ void FU540_PLIC::clear_pending(unsigned int irq) {
 bool FU540_PLIC::is_pending(unsigned int irq) {
 	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
 	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
+}
+
+bool FU540_PLIC::is_claim_access(uint64_t addr) {
+	unsigned idx = addr / sizeof(uint32_t);
+	return (idx % 2) == 1;
 }
 
 bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel level) {
