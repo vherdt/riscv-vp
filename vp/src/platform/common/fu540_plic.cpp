@@ -52,8 +52,10 @@ void FU540_PLIC::create_registers(void) {
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 	auto add_reg = [this, map] (unsigned int h, PrivilegeLevel l, uint64_t a) {
 		RegisterRange *r = new RegisterRange(a, HART_REG_SIZE);
-		if (map == hart_context)
+		if (map == hart_context) {
 			r->pre_read_callback = std::bind(&FU540_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
+			r->post_write_callback = std::bind(&FU540_PLIC::write_hartctx, this, std::placeholders::_1, h, l);
+		}
 
 		register_ranges.push_back(r);
 		return r;
@@ -114,6 +116,15 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 	}
 
 	return true;
+}
+
+void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, PrivilegeLevel level) {
+	assert(t.addr % sizeof(uint32_t) == 0);
+	assert(t.size == sizeof(uint32_t));
+
+	if (is_claim_access(t.addr)) {
+		target_harts[hart]->clear_external_interrupt(level);
+	}
 }
 
 void FU540_PLIC::run(void) {
