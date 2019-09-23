@@ -20,6 +20,7 @@ std::vector<std::string> splitString(std::string str, char sep = ',');
 
 #define DECLARE_ENUM_WITH_TYPE(E, T, ...)                                         \
 	enum class E : T { __VA_ARGS__ };                                             \
+	typedef T E##_underlying_type;                                                \
 	static std::map<T, std::string> E##MapName(generateEnumMap<T>(#__VA_ARGS__)); \
 	std::ostream &operator<<(std::ostream &os, E enumTmp);                        \
 	size_t operator*(E enumTmp);                                                  \
@@ -28,7 +29,12 @@ std::vector<std::string> splitString(std::string str, char sep = ',');
 	std::string operator+(E enumTmp, std::string &&str);                          \
 	std::string &operator+=(std::string &str, E enumTmp);                         \
 	E operator++(E &enumTmp);                                                     \
-	bool valid##E(T value);
+	bool valid##E(T value);                                                       \
+	bool operator==(E left, E right);                                             \
+	template<typename Other>                                                      \
+	bool operator<(E left, Other right) {                                         \
+		return static_cast<T>(left) < right;                                      \
+	}
 
 #define DECLARE_ENUM(E, ...) DECLARE_ENUM_WITH_TYPE(E, uint16_t, __VA_ARGS__)
 
@@ -66,7 +72,11 @@ std::vector<std::string> splitString(std::string str, char sep = ',');
 	}                                                                        \
 	bool valid##E(T value) {                                                 \
 		return (E##MapName.find(value) != E##MapName.end());                 \
+	}                                                                        \
+	bool operator==(E left, E right) {                                       \
+		return static_cast<T>(left) == static_cast<T>(right);                \
 	}
+
 
 #define IMPL_ENUM(E) IMPL_ENUM_WITH_TYPE(E, int32_t)
 
@@ -83,7 +93,7 @@ std::map<T, std::string> generateEnumMap(std::string strMap) {
 	for (auto iter = enumTokens.begin(); iter != enumTokens.end(); ++iter) {
 		// Token: [EnumName | EnumName=EnumValue]
 		std::string enumName;
-		T enumValue;
+		//T enumValue;
 		if (iter->find('=') == std::string::npos) {
 			enumName = *iter;
 		} else {

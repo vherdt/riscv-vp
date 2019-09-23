@@ -22,7 +22,7 @@ typedef uint32_t Pin;
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
-	// assumption: all elements come from same chip select :o FIXME
+	//single queue for all targets
 	std::queue<uint8_t> rxqueue;
 	std::map<Pin, SpiInterface *> targets;
 
@@ -130,6 +130,11 @@ struct SPI : public sc_core::sc_module {
 	}
 
 	void connect(Pin cs, SpiInterface &interface) {
+		if(cs == 1 || cs > 3)
+		{
+			std::cerr << "SPI: Unsupported chip select " << cs  << std::endl;
+			return;
+		}
 		targets.insert(std::pair<const Pin, SpiInterface *>(cs, &interface));
 	}
 };

@@ -17,6 +17,7 @@
 #include "slip.h"
 #include "spi.h"
 #include "uart.h"
+#include "oled.hpp"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -167,14 +168,16 @@ int sc_main(int argc, char **argv) {
 	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");
+	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	SPI spi0("SPI0");
 	SPI spi1("SPI1");
 	CAN can;
+	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		//pin 16 is offset 10
 	spi1.connect(0, can);
+	spi1.connect(2, oled);
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
-	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
