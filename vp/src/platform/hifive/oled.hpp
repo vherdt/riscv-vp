@@ -84,7 +84,7 @@ private:
 		uint8_t multiplex_whatever:6;
 		uint8_t display_on:1;
 		uint8_t frame[(height / 8)][width];
-	} state = {0};
+	} state;
 
 	ss1106::Command last_cmd = ss1106::Command{ss1106::Operator::NOP, 0};
 

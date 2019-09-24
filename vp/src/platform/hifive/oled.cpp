@@ -91,7 +91,10 @@ Command SS1106::match(uint8_t cmd)
 
 void SS1106::createSM(){};
 
-SS1106::SS1106(std::function<bool()> getDCPin) : getDCPin(getDCPin){};
+SS1106::SS1106(std::function<bool()> getDCPin) : getDCPin(getDCPin)
+{
+	memset(&state, 0, sizeof(State));
+};
 SS1106::~SS1106(){};
 
 
