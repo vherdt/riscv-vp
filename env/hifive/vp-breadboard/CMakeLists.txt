@@ -13,7 +13,10 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 
-include_directories(../../../vp/src/platform/hifive/)
+include_directories(
+    ../../../vp/src/platform/hifive/
+    ../../../vp/src/
+)
 
 set(HEADERS mainwindow.h)
 
@@ -26,6 +29,8 @@ set(SOURCES
     mainwindow.cpp
     ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
+    ../../../vp/src/util/elegantEnums.cpp
+    ../../../vp/src/platform/hifive/oled/common.cpp
 )
 
 add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${RESOURCES} ${UI})

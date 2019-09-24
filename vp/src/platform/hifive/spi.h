@@ -23,6 +23,7 @@ struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
 	//single queue for all targets
+	static constexpr uint_fast8_t queue_size   = 16;
 	std::queue<uint8_t> rxqueue;
 	std::map<Pin, SpiInterface *> targets;
 
@@ -60,8 +61,12 @@ struct SPI : public sc_core::sc_module {
 		FCTRL_REG_ADDR = 0x60,
 		FFMT_REG_ADDR = 0x64,
 		IE_REG_ADDR = 0x70,
-		EP_REG_ADDR = 0x74,
+		IP_REG_ADDR = 0x74,
 	};
+
+	static constexpr uint_fast8_t SPI_IP_TXWM = 0x1;
+	static constexpr uint_fast8_t SPI_IP_RXWM = 0x2;
+
 
 	vp::map::LocalRouter router = {"SPI"};
 
@@ -85,7 +90,7 @@ struct SPI : public sc_core::sc_module {
 		        {FCTRL_REG_ADDR, &fctrl},
 		        {FFMT_REG_ADDR, &ffmt},
 		        {IE_REG_ADDR, &ie},
-		        {EP_REG_ADDR, &ip},
+		        {IP_REG_ADDR, &ip},
 		    })
 		    .register_handler(this, &SPI::register_access_callback);
 	}
@@ -117,6 +122,14 @@ struct SPI : public sc_core::sc_module {
 				auto target = targets.find(csid);
 				if (target != targets.end()) {
 					rxqueue.push(target->second->write(txdata));
+
+					//TODO: Model RX-Watermark IP
+					if(rxqueue.size() > queue_size)
+						rxqueue.pop();
+
+					//TODO: Model latency.
+					if(txmark > 0 && (ie & SPI_IP_TXWM))
+						ip |= SPI_IP_TXWM;
 				} else {
 					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
 				}

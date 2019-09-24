@@ -6,6 +6,7 @@ add_executable(hifive-vp
         gpio/gpiocommon.cpp
         gpio/gpio-server.cpp
         ../../util/elegantEnums.cpp #sorry :(
+        oled/common.cpp
         ${HEADERS})
 
 target_link_libraries(hifive-vp rv32 platform-common ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)

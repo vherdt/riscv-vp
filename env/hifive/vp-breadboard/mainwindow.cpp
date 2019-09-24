@@ -68,12 +68,35 @@ void RGBLed::draw(QPainter& p) {
 	p.restore();
 }
 
+void OLED::draw(QPainter& p)
+{
+	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) + margin.x()*2, ss1106::height+margin.y()*2)), Qt::SolidPattern);
+
+	if(state->display_on)
+	{
+		uchar* map = image.bits();
+		for(unsigned page = 0; page < ss1106::height/8; page++)
+		{
+			for(unsigned column = 0; column < (ss1106::width - 2 * ss1106::padding_lr); column++)
+			{
+				for(unsigned page_pixel = 0; page_pixel < 8; page_pixel++)
+				{
+					map[((page * 8 + page_pixel) * (ss1106::width - 2 * ss1106::padding_lr)) + column] = state->frame[page][column+ss1106::padding_lr] & (1 << page_pixel) ? state->contrast : 0;
+				}
+			}
+		}
+
+		p.drawImage(offs + margin, image);
+	}
+}
+
 VPBreadboard::VPBreadboard(const char* host, const char* port, QWidget* mparent)
     : QWidget(mparent),
       host(host),
       port(port),
       sevensegment(QPoint(312, 353), QPoint(36, 50), 7),
       rgbLed(QPoint(89, 161), 15),
+      oled(QPoint(450, 343)),
       button(QPoint(373, 343), QSize(55, 55)) {
 	// resize(800, 600);
 
@@ -166,6 +189,8 @@ void printBin(char* buf, uint8_t len) {
 
 void VPBreadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
+
+	oled.draw(painter);
 
 	if (!inited || !gpio.update()) {
 		inited = gpio.setupConnection(host, port);

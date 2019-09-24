@@ -5,41 +5,40 @@
  *      Author: dwd
  */
 
+
+#include "oled.hpp"
+
 #include <bits/stdint-uintn.h>
-#include <platform/hifive/oled.hpp>
 #include <cstdio>
 
-namespace ss1106
-{
+using namespace ss1106;
 
-IMPL_ENUM(Operator);
-
-std::map<Operator, uint8_t> opcode =
+const std::map<ss1106::Operator, uint8_t> SS1106::opcode =
 {
-	{Operator::COL_LOW, 0x00},
-	{Operator::COL_HIGH, 0x10},
-	{Operator::PUMP_VOLTAGE, 0b00110000},
-	{Operator::DISPLAY_START_LINE, 0b01000000},
-	{Operator::CONTRAST_MODE_SET, 0b10000001},
-	{Operator::SEGMENT_REMAP, 0xA0},
-	{Operator::ENTIRE_DISPLAY, 0xA4},
-	{Operator::NORMAL_INVERSE, 0xA6},
-	{Operator::MULTIPLEX_RATIO, 0b10101000},
-	{Operator::DC_DC_VOLTAGE, 0x8B},
-	{Operator::DISPLAY_ON, 0xAE},
-	{Operator::PAGE_ADDR, 0xB0},
-	{Operator::COMMON_OUTPUT_DIR, 0xC0},
-	{Operator::DISPLAY_OFFSET, 0b11010011},
-	{Operator::DISPLAY_DIVIDE_RATIO, 0b11010101},
-	{Operator::DIS_PRE_CHARGE_PERIOD, 0b11011001},
-	{Operator::COMMON_PADS_STUFF, 0b11011010},
-	{Operator::VCOM_DESELECT, 0b11011011},
-	{Operator::RMW, 0b11100000},
-	{Operator::RMW_END, 0b11101110},
-	{Operator::NOP, 0b11100011},
+	{ss1106::Operator::COL_LOW, 0x00},
+	{ss1106::Operator::COL_HIGH, 0x10},
+	{ss1106::Operator::PUMP_VOLTAGE, 0b00110000},
+	{ss1106::Operator::DISPLAY_START_LINE, 0b01000000},
+	{ss1106::Operator::CONTRAST_MODE_SET, 0b10000001},
+	{ss1106::Operator::SEGMENT_REMAP, 0xA0},
+	{ss1106::Operator::ENTIRE_DISPLAY, 0xA4},
+	{ss1106::Operator::NORMAL_INVERSE, 0xA6},
+	{ss1106::Operator::MULTIPLEX_RATIO, 0b10101000},
+	{ss1106::Operator::DC_DC_VOLTAGE, 0x8B},
+	{ss1106::Operator::DISPLAY_ON, 0xAE},
+	{ss1106::Operator::PAGE_ADDR, 0xB0},
+	{ss1106::Operator::COMMON_OUTPUT_DIR, 0xC0},
+	{ss1106::Operator::DISPLAY_OFFSET, 0b11010011},
+	{ss1106::Operator::DISPLAY_DIVIDE_RATIO, 0b11010101},
+	{ss1106::Operator::DIS_PRE_CHARGE_PERIOD, 0b11011001},
+	{ss1106::Operator::COMMON_PADS_STUFF, 0b11011010},
+	{ss1106::Operator::VCOM_DESELECT, 0b11011011},
+	{ss1106::Operator::RMW, 0b11100000},
+	{ss1106::Operator::RMW_END, 0b11101110},
+	{ss1106::Operator::NOP, 0b11100011},
 };
 
-uint8_t mask(Operator op)
+uint8_t SS1106::mask(Operator op)
 {
 	switch(op)
 	{
@@ -73,27 +72,24 @@ uint8_t mask(Operator op)
 
 	return 0xff;
 }
-};
-using namespace ss1106;
 
-Command SS1106::match(uint8_t cmd)
+SS1106::Command SS1106::match(uint8_t cmd)
 {
 	//printf("CMD: %02X\n", cmd);
 	for(uint16_t opu = 0; opu < *Operator(); opu++)
 	{
 		Operator op = static_cast<Operator>(opu);		//Bwah, ugly
 		//printf("%d: \tMask %02X, opcode %02X %s\n", opu, mask(op), opcode[op], (~Operator(op)).c_str());
-		if(((cmd ^ opcode[op]) & mask(op)) == 0)
+		if(((cmd ^ opcode.at(op)) & mask(op)) == 0)
 			return Command{op, static_cast<uint8_t>(cmd & ~mask(op))};
 	}
 	return Command{Operator::NOP, 0};
 }
 
-void SS1106::createSM(){};
-
 SS1106::SS1106(std::function<bool()> getDCPin) : getDCPin(getDCPin)
 {
-	memset(&state, 0, sizeof(State));
+	state = ss1106::getSharedState();
+	memset(state, 0, sizeof(State));
 };
 SS1106::~SS1106(){};
 
@@ -103,19 +99,19 @@ uint8_t SS1106::write(uint8_t byte)
 	if(getDCPin())
 	{
 		//Data
-		std::cout << "Got Data " << std::hex << (unsigned) byte << std::endl;
-		if(state.column > width)
+		//std::cout << "Got Data " << std::hex << (unsigned) byte << std::endl;
+		if(state->column > width)
 		{
-			std::cerr << "OLED: Warning, exceeding column width (" << state.column << " of " << width << ")" << std::endl;
+			std::cerr << "OLED: Warning, exceeding column width (" << state->column << " of " << width << ")" << std::endl;
 			return -1;		//this is not in spec.
 		}
-		if(state.page > height/8)
+		if(state->page > height/8)
 		{
-			std::cerr << "OLED: Warning, exceeding page (" << state.page << " of " << height/8 << ")" << std::endl;
+			std::cerr << "OLED: Warning, exceeding page (" << state->page << " of " << height/8 << ")" << std::endl;
 			return -1;		//this is not in spec.
 		}
-		state.frame[state.page][state.column] = byte;
-		state.column++;
+		state->frame[state->page][state->column] = byte;
+		state->column++;
 	}
 	else
 	{	//Command
@@ -123,36 +119,41 @@ uint8_t SS1106::write(uint8_t byte)
 		{
 		case Mode::normal:
 			last_cmd = match(byte);
-			std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)last_cmd.payload << std::endl;
+			//std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)last_cmd.payload << std::endl;
 			switch(last_cmd.op)
 			{
 			case Operator::COL_LOW:
-				state.column = (state.column & 0xf0) | last_cmd.payload;
+				state->column = (state->column & 0xf0) | last_cmd.payload;
 				break;
 			case Operator::COL_HIGH:
-				state.column = (state.column & 0x0f) | (last_cmd.payload << 4);
+				state->column = (state->column & 0x0f) | (last_cmd.payload << 4);
 				break;
-			//pump voltage
+			case Operator::PUMP_VOLTAGE:
+				state->pump_voltage = last_cmd.payload;
+				break;
 			case Operator::CONTRAST_MODE_SET:
 				mode = Mode::second_arg;
 				break;
+			case Operator::NORMAL_INVERSE:
+				state->invert_color = last_cmd.payload;
+				break;
 			//stuff inbetween...
 			case Operator::DISPLAY_ON:
-				state.display_on = last_cmd.payload;
+				state->display_on = last_cmd.payload;
 				break;
 			case Operator::PAGE_ADDR:
-				state.page = last_cmd.payload;
+				state->page = last_cmd.payload;
 				break;
 			default:
 				std::cerr << "OLED: Unhandled Operator " << ~last_cmd.op << std::endl;
 			}
 			break;
 		case Mode::second_arg:
-			std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)byte << std::endl;
+			//std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)byte << std::endl;
 			switch(last_cmd.op)
 			{
 			case Operator::CONTRAST_MODE_SET:
-				state.contrast = byte;
+				state->contrast = byte;
 				break;
 			default:
 				std::cerr << "OLED: Unhandled Dual-command-Operator " << ~last_cmd.op << std::endl;
@@ -161,6 +162,7 @@ uint8_t SS1106::write(uint8_t byte)
 			break;
 		}
 	}
+	state->changed = 1;		//This may be optimizable
 	return 0;
 }
 

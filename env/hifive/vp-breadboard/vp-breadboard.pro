@@ -28,7 +28,9 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp \
-        ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
+        ../../../vp/src/platform/hifive/gpio/gpio-client.cpp \
+        ../../../vp/src/util/elegantEnums.cpp \
+        ../../../vp/src/platform/hifive/oled/common.cpp \
 
 HEADERS += \
         mainwindow.h

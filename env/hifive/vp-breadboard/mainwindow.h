@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include <gpio/gpio-client.hpp>
+#include <oled/common.hpp>
 
 namespace Ui {
 class VPBreadboard;
@@ -27,11 +28,27 @@ struct RGBLed {
 	RGBLed(QPoint offs, uint8_t linewidth) : offs(offs), linewidth(linewidth){};
 };
 
+struct OLED
+{
+	ss1106::State* state;
+	QPoint offs;
+	QPoint margin;
+	QImage image;
+	void draw(QPainter& p);
+	OLED(QPoint offs) : offs(offs),
+			margin(QPoint(10, 10)),
+			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
+	{
+		state = ss1106::getSharedState();
+	};
+};
+
 class VPBreadboard : public QWidget {
 	Q_OBJECT
 	GpioClient gpio;
 	Sevensegment sevensegment;
 	RGBLed rgbLed;
+	OLED oled;
 	QRect button;
 	const char* host;
 	const char* port;
