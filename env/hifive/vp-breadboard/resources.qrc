@@ -1,5 +1,8 @@
 <RCC>
-    <qresource prefix="/img">
-        <file>breadboard.jpg</file>
+    <qresource>
+        <file>img/sevensegment.jpg</file>
+        <file>img/oled_layout.jpg</file>
+        <file>conf/sevensegment.json</file>
+        <file>conf/oled.json</file>
     </qresource>
 </RCC>

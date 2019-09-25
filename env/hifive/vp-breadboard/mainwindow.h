@@ -9,6 +9,8 @@ namespace Ui {
 class VPBreadboard;
 }
 
+static constexpr unsigned max_num_buttons = 5;
+
 struct Sevensegment {
 	QPoint offs;
 	QPoint extent;
@@ -35,21 +37,27 @@ struct OLED
 	QPoint margin;
 	QImage image;
 	void draw(QPainter& p);
-	OLED(QPoint offs) : offs(offs),
-			margin(QPoint(10, 10)),
+	OLED(QPoint offs, unsigned margin) : offs(offs),
+			margin(QPoint(margin, margin)),
 			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
 	{
 		state = ss1106::getSharedState();
 	};
 };
 
+struct Button
+{
+	QRect area;
+	uint8_t pin;
+};
+
 class VPBreadboard : public QWidget {
 	Q_OBJECT
 	GpioClient gpio;
-	Sevensegment sevensegment;
-	RGBLed rgbLed;
-	OLED oled;
-	QRect button;
+	Sevensegment* sevensegment;
+	RGBLed* rgbLed;
+	OLED* oled;
+	Button* buttons[max_num_buttons];
 	const char* host;
 	const char* port;
 
@@ -60,10 +68,9 @@ class VPBreadboard : public QWidget {
 	uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
 	uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
 	uint8_t translatePinToGpioOffs(uint8_t pin);
-	uint8_t getPinnumberOfButton();
 
    public:
-	VPBreadboard(const char* host, const char* port, QWidget* mparent = 0);
+	VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent = 0);
 	~VPBreadboard();
 	void showConnectionErrorOverlay(QPainter& p);
 	void paintEvent(QPaintEvent*) override;
