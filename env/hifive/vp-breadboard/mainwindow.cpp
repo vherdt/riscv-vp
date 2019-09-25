@@ -312,9 +312,15 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	}
 
 	if (debugmode) {
-		// painter.setBrush(QBrush(QColor("black")));
-		//painter.drawRect(button);
-		painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
+		painter.setBrush(QBrush(QColor("black")));
+		for(unsigned i = 0; i < max_num_buttons; i++)
+		{
+			if(!buttons[i])
+				break;
+			painter.drawRect(buttons[i]->area);
+		}
+		if(sevensegment)
+			painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
 	}
 	painter.end();
 	// intentional slow down
