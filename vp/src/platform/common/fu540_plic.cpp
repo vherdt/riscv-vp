@@ -109,8 +109,10 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 
 	if (is_claim_access(t.addr)) {
 		unsigned int irq = next_pending_irq(hart, level, true);
-		if (irq == 0)
-			return true;
+
+		/* if there is no pending irq zero needs to be written
+		 * to the claim register. next_pending_irq returns 0 in
+		 * this case so no special handling required. */
 
 		switch (level) {
 		case MachineMode:
@@ -125,7 +127,8 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 		}
 
 		/* successful claim also clears the pending bit */
-		clear_pending(irq);
+		if (irq != 0)
+			clear_pending(irq);
 	}
 
 	return true;
