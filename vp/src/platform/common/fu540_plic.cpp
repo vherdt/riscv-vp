@@ -239,7 +239,7 @@ uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 
 void FU540_PLIC::clear_pending(unsigned int irq) {
 	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
-	pending_interrupts[GET_IDX(irq)] |= ~(GET_OFF(irq));
+	pending_interrupts[GET_IDX(irq)] &= ~(GET_OFF(irq));
 }
 
 bool FU540_PLIC::is_pending(unsigned int irq) {
