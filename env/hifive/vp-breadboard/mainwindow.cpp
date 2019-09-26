@@ -108,10 +108,6 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
         std::cerr << "Could not open config file " << configfile << std::endl;
         exit(-4);
     }
-    else
-    {
-    	std::cout << "Loading configfile '" << configfile << "'" << endl;
-    }
 
     QByteArray  raw_file = confFile.readAll();
     /*
