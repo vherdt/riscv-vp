@@ -1,0 +1,23 @@
+{
+  "background" : ":/img/sevensegment.jpg",
+  "windowsize" : [640, 480],
+  "buttons" :
+  [
+    {
+      "pin" : 3,
+      "pos" : [373, 343],
+      "dim":[55, 55]
+    }
+  ],
+  "sevensegment" :
+  {
+    "offs" : [312, 353],
+    "extent" : [36, 50],
+    "linewidth" : 7
+  },
+  "rgb" :
+  {
+    "offs" : [89, 161],
+    "linewidth" : 15
+  }
+}

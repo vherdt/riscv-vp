@@ -1,0 +1,33 @@
+{
+  "background" : ":/img/oled_layout.jpg",
+  "original_img_size" : [3795, 2643],
+  "windowsize" : [750, 522],
+  "buttons" :
+  [
+    {
+      "pin" : 7,
+      "pos" : [373, 343],
+      "dim":[55, 55]
+    },
+    {
+      "pin" : 6,
+      "pos" : [420, 343],
+      "dim":[55, 55]
+    },
+    {
+      "pin" : 5,
+      "pos" : [470, 343],
+      "dim":[55, 55]
+    }
+  ],
+  "rgb" :
+  {
+    "offs" : [650, 110],
+    "linewidth" : 15
+  },
+  "oled" :
+  {
+    "offs" : [535, 395],
+    "margin" : 10
+  }
+}
