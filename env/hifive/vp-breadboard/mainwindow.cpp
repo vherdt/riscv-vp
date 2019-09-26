@@ -187,7 +187,7 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
 				QRect{
 					QPoint{butt["pos"].toArray().at(0).toInt(), butt["pos"].toArray().at(1).toInt()},
 					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()},
-				}, butt["pin"].toInt()
+				}, static_cast<uint8_t>(butt["pin"].toInt())
 			};
 		}
 	}
@@ -211,11 +211,13 @@ VPBreadboard::~VPBreadboard()
 void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.save();
 	p.setBrush(QBrush(QColor("black")));
-	p.drawRect(QRect(QPoint(150, 100), QSize(350, 200)));
+	QPoint shitfuck = QPoint(this->size().width(), this->size().height());
+	QRect sign(shitfuck/4, this->size()/2);
+	p.drawRect(sign);
 	p.setFont(QFont("Arial", 25, QFont::Bold));
 	QPen penHText(QColor("red"));
 	p.setPen(penHText);
-	p.drawText(QPoint(210, 210), QString("No connection"));
+	p.drawText(sign, QString("No connection"), Qt::AlignHCenter | Qt::AlignVCenter);
 	p.restore();
 }
 
@@ -445,8 +447,8 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 				//cout << "button " << i << " release!" << endl;
 				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 1);
 			}
-			// cout << "released summin elz" << endl;
 		}
+		// cout << "released summin elz" << endl;
 	} else {
 		cout << "Whatcha doin' there?" << endl;
 	}
