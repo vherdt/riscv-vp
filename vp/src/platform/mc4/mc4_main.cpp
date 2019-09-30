@@ -53,17 +53,19 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")("memory-start", po::value<unsigned int>(&opt.mem_start_addr),
-		                                                   "set memory start address")(
-		    "memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")(
-		    "intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),
-		    "directly intercept and handle syscalls in the ISS")("trace-mode", po::bool_switch(&opt.trace_mode),
-		                                                         "enable instruction tracing")(
-		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
-		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
+        // clang-format off
+		desc.add_options()
+		("help", "produce help message")
+		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
+		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
+		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
+		("trace-mode", po::bool_switch(&opt.trace_mode),"enable instruction tracing")
+		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
+		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
+		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
+		("use-dmi", po::bool_switch(), "use instr and data dmi")
+		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
+        // clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);

@@ -77,24 +77,24 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")("memory-start", po::value<unsigned int>(&opt.mem_start_addr),
-		                                                   "set memory start address")(
-		    "memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")(
-		    "intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),
-		    "directly intercept and handle syscalls in the ISS")(
-		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
-		    "start execution in debugger (using gdb rsp interface)")(
-		    "debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")(
-		    "entry-point", po::value<std::string>(&opt.entry_point.option),
-		    "set entry point address (ISS program counter)")("trace-mode", po::bool_switch(&opt.trace_mode),
-		                                                     "enable instruction tracing")(
-		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
-		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
-		    "dtb-file", po::value<std::string>(&opt.dtb_file)->required(), "dtb file for boot loading")(
-		    "tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
+        // clang-format off
+		desc.add_options()
+		("help", "produce help message")
+		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
+		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
+		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
+		("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using gdb rsp interface)")
+		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
+		("entry-point", po::value<std::string>(&opt.entry_point.option),"set entry point address (ISS program counter)")
+		("trace-mode", po::bool_switch(&opt.trace_mode),"enable instruction tracing")
+		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
+		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
+		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
+		("use-dmi", po::bool_switch(), "use instr and data dmi")
+		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
+		("dtb-file", po::value<std::string>(&opt.dtb_file)->required(), "dtb file for boot loading")
+		("tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
+        // clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
