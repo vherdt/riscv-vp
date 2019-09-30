@@ -15,7 +15,7 @@ namespace ss1106
 static constexpr uint8_t width  = 132;
 static constexpr uint8_t padding_lr  = 2;
 static constexpr uint8_t height = 64;
-static_assert(height%8 == 0);
+static_assert(height%8 == 0, "invalid height");
 static constexpr uint16_t shm_key = 1339;
 
 struct State
