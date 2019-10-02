@@ -32,7 +32,7 @@ struct RGBLed {
 
 struct OLED
 {
-	const ss1106::State* state;
+	ss1106::State* state;
 	QPoint offs;
 	QPoint margin;
 	QImage image;
@@ -42,6 +42,7 @@ struct OLED
 			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
 	{
 		state = ss1106::getSharedState();
+		state->changed = 1;
 	};
 };
 

@@ -111,6 +111,7 @@ uint8_t SS1106::write(uint8_t byte)
 			return -1;		//this is not in spec.
 		}
 		state->frame[state->page][state->column] = byte;
+		state->changed = 1;
 		state->column++;
 	}
 	else
@@ -154,6 +155,7 @@ uint8_t SS1106::write(uint8_t byte)
 			{
 			case Operator::CONTRAST_MODE_SET:
 				state->contrast = byte;
+				state->changed = 1;
 				break;
 			default:
 				std::cerr << "OLED: Unhandled Dual-command-Operator " << ~last_cmd.op << std::endl;

@@ -75,8 +75,9 @@ void OLED::draw(QPainter& p)
 {
 	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) + margin.x()*2, ss1106::height+margin.y()*2)), Qt::SolidPattern);
 
-	if(state->display_on)
+	if(state->display_on && state->changed)
 	{
+		state->changed = 0;	//We ignore this small race-condition
 		uchar* map = image.bits();
 		for(unsigned page = 0; page < ss1106::height/8; page++)
 		{
@@ -89,8 +90,10 @@ void OLED::draw(QPainter& p)
 			}
 		}
 
-		p.drawImage(offs + margin, image);
+
 	}
+	if(state->display_on)
+		p.drawImage(offs + margin, image);
 }
 
 VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent)
@@ -430,6 +433,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 	} else {
 		cout << "Whatcha doin' there?" << endl;
 	}
+	this->update();
 	e->accept();
 }
 
@@ -448,5 +452,6 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 	} else {
 		cout << "Whatcha doin' there?" << endl;
 	}
+	this->update();
 	e->accept();
 }
