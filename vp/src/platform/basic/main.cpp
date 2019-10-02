@@ -105,32 +105,28 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		desc.add_options()("help", "produce help message")("memory-start", po::value<unsigned int>(&opt.mem_start_addr),
-		                                                   "set memory start address")(
-		    "memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")(
-		    "use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")(
-		    "intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),
-		    "directly intercept and handle syscalls in the ISS")(
-		    "debug-mode", po::bool_switch(&opt.use_debug_runner),
-		    "start execution in debugger (using GDB RSP interface)")(
-		    "debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")(
-		    "trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")(
-		    "tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")(
-		    "use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")(
-		    "use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")(
-		    "use-dmi", po::bool_switch(), "use instr and data dmi")(
-		    "input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")(
-		    "entry-point", po::value<std::string>(&opt.entry_point.option),
-		    "set entry point address (ISS program counter)")("mram-image",
-		                                                     po::value<std::string>(&opt.mram_image)->default_value(""),
-		                                                     "MRAM image file for persistency")(
-		    "mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")(
-		    "flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),
-		    "blockdevice for flash emulation")("network-device",
-		                                       po::value<std::string>(&opt.network_device)->default_value(""),
-		                                       "name of the tap network adapter, e.g. /dev/tap6")(
-		    "signature", po::value<std::string>(&opt.test_signature)->default_value(""),
-		    "output filename for the test execution signature");
+        // clang-format off
+        desc.add_options()
+        ("help", "produce help message")
+        ("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
+        ("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
+        ("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
+        ("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
+        ("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using GDB RSP interface)")
+        ("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
+        ("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
+        ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum),"set global tlm quantum (in NS)")
+        ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
+        ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
+        ("use-dmi", po::bool_switch(), "use instr and data dmi")
+        ("input-file", po::value<std::string>(&opt.input_program)->required(),"input file to use for execution")
+        ("entry-point", po::value<std::string>(&opt.entry_point.option),"set entry point address (ISS program counter)")
+        ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""),"MRAM image file for persistency")
+        ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
+        ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),"blockdevice for flash emulation")
+        ("network-device", po::value<std::string>(&opt.network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
+        ("signature", po::value<std::string>(&opt.test_signature)->default_value(""),"output filename for the test execution signature");
+        // clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);

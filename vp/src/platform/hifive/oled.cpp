@@ -8,7 +8,7 @@
 
 #include "oled.hpp"
 
-#include <bits/stdint-uintn.h>
+//#include <bits/stdint-uintn.h>
 #include <cstdio>
 
 using namespace ss1106;
