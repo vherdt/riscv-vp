@@ -10,10 +10,12 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+
 void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
 
 struct GpioCommon {
+	static constexpr unsigned default_port = 1400;
 	typedef uint64_t Reg;
 	typedef uint8_t Tristate;
 

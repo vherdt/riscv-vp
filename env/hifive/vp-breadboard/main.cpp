@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 	QApplication a(argc, argv);
 	std::string configfile = ":/conf/oled.json";
 	std::string host = "localhost";
-	std::string port = "1339";
+	std::string port = "1400";
 
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help")){

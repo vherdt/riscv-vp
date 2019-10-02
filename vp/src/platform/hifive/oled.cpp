@@ -162,7 +162,7 @@ uint8_t SS1106::write(uint8_t byte)
 			break;
 		}
 	}
-	state->changed = 1;		//This may be optimizable
+	//state->changed = 1;		//This may be optimizable
 	return 0;
 }
 

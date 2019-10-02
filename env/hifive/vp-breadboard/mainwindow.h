@@ -32,7 +32,7 @@ struct RGBLed {
 
 struct OLED
 {
-	ss1106::State* state;
+	const ss1106::State* state;
 	QPoint offs;
 	QPoint margin;
 	QImage image;

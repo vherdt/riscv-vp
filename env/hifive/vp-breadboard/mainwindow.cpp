@@ -282,9 +282,6 @@ void printBin(char* buf, uint8_t len) {
 void VPBreadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 
-	if(oled)
-		oled->draw(painter);
-
 	if (!inited || !gpio.update()) {
 		inited = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
@@ -296,6 +293,9 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 
 	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setRenderHint(QPainter::HighQualityAntialiasing);
+
+	if(oled)
+		oled->draw(painter);
 
 	if(sevensegment)
 	{
@@ -323,7 +323,7 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	painter.end();
 	// intentional slow down
 	// TODO: update at fixed rate, async between redraw and gpioserver
-	usleep(5000);
+	usleep(10000);
 	this->update();
 }
 
