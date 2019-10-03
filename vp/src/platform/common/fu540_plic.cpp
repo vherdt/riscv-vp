@@ -38,9 +38,6 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
 	/* Values copied from FE310_PLIC */
 	clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 
-	for (unsigned int i = 0; i < FU540_PLIC_HARTS; i++)
-		handling_irq[i] = false;
-
 	create_registers();
 	tsock.register_b_transport(this, &FU540_PLIC::transport);
 
@@ -139,7 +136,6 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 	assert(t.size == sizeof(uint32_t));
 
 	if (is_claim_access(t.addr)) {
-		handling_irq[hart] = false;
 		target_harts[hart]->clear_external_interrupt(level);
 	} else { /* access to priority threshold */
 		uint32_t *thr;
@@ -172,12 +168,8 @@ void FU540_PLIC::run(void) {
 		sc_core::wait(e_run);
 
 		for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
-			if (handling_irq[i])
-				continue;
-
 			PrivilegeLevel lvl;
 			if (has_pending_irq(i, &lvl)) {
-				handling_irq[i] = true;
 				target_harts[i]->trigger_external_interrupt(lvl);
 			}
 		}
