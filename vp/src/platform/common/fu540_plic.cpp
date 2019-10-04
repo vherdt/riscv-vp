@@ -14,7 +14,6 @@
 #define GET_OFF(IRQ) (1 << ((IRQ) % 32))
 
 /**
- * TODO: Why is handling_irq needed?
  * TODO: Ensure that irq 0 is hardwired to zero
  * TODO: FE310 raises external interrupt during interrupt completion
  * TODO: Set RegisterRange alignment
