@@ -16,7 +16,6 @@
 /**
  * TODO: Ensure that irq 0 is hardwired to zero
  * TODO: FE310 raises external interrupt during interrupt completion
- * TODO: Set RegisterRange alignment
  */
 
 enum {
@@ -56,6 +55,10 @@ void FU540_PLIC::create_registers(void) {
 	/* create IRQ enable and context registers */
 	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs, false);
 	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, hart_context, true);
+
+	/* only supports "naturally aligned 32-bit memory accesses" */
+	for (size_t i = 0; i < register_ranges.size(); i++)
+		register_ranges[i]->alignment = sizeof(uint32_t);
 }
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map, bool callbacks) {
