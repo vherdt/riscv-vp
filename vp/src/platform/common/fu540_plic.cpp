@@ -30,7 +30,7 @@ enum {
 };
 
 static void assert_addr(size_t start, size_t end, RegisterRange *range) {
-	assert(range->start == start && range->end + 1 == end + 0x4);
+	assert(range->start == start && range->end + 1 == end + sizeof(uint32_t));
 }
 
 FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
