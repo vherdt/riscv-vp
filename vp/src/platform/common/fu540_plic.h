@@ -11,6 +11,10 @@ enum {
 	FU540_PLIC_MAX_PRIO = 7,
 };
 
+/**
+ * This class implements a Platform-Level Interrupt Controller (PLIC) as
+ * defined in chapter 10 of the SiFive FU540-C000 manual.
+ */
 struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
 public:
 	tlm_utils::simple_target_socket<FU540_PLIC> tsock;
