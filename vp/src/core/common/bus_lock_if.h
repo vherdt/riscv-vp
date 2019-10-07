@@ -1,6 +1,8 @@
 #pragma once
 
 struct bus_lock_if {
+    virtual ~bus_lock_if() {}
+
 	virtual void lock(unsigned hart_id) = 0;
 
 	virtual void unlock(unsigned hart_id) = 0;
