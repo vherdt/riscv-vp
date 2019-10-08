@@ -9,6 +9,10 @@ using namespace rv32;
 
 #define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
+#define REQUIRE_ISA(X)          \
+    if (!(csrs.misa.reg & X))   \
+        RAISE_ILLEGAL_INSTRUCTION()
+
 #define RD instr.rd()
 #define RS1 instr.rs1()
 #define RS2 instr.rs2()
@@ -125,7 +129,9 @@ void ISS::exec_step() {
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed(RV32);
 		pc += 2;
-	} else {
+        if (op != Opcode::UNDEF)
+            REQUIRE_ISA(C_ISA_EXT);
+    } else {
 		op = instr.decode_normal(RV32);
 		pc += 4;
 	}
@@ -478,26 +484,31 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::MUL: {
+            REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = ans & 0xFFFFFFFF;
 		} break;
 
 		case Opcode::MULH: {
+            REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHU: {
+            REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHSU: {
+            REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::DIV: {
+            REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -510,6 +521,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::DIVU: {
+            REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -520,6 +532,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::REM: {
+            REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -532,6 +545,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::REMU: {
+            REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -542,6 +556,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::LR_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
@@ -550,6 +565,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::SC_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, false>(addr);
 			uint32_t val = regs[instr.rs2()];
@@ -560,6 +576,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::AMOSWAP_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				(void)a;
 				return b;
@@ -567,52 +584,63 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::AMOADD_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a + b; });
 		} break;
 
 		case Opcode::AMOXOR_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a ^ b; });
 		} break;
 
 		case Opcode::AMOAND_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a & b; });
 		} break;
 
 		case Opcode::AMOOR_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a | b; });
 		} break;
 
 		case Opcode::AMOMIN_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::min(a, b); });
 		} break;
 
 		case Opcode::AMOMINU_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::min((uint32_t)a, (uint32_t)b); });
 		} break;
 
 		case Opcode::AMOMAX_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::max(a, b); });
 		} break;
 
 		case Opcode::AMOMAXU_W: {
+            REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::max((uint32_t)a, (uint32_t)b); });
 		} break;
 
 			// RV32F Extension
 
 		case Opcode::FLW: {
+            REQUIRE_ISA(F_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
 			fp_regs.write(RD, float32_t{(uint32_t)mem->load_word(addr)});
 		} break;
 
 		case Opcode::FSW: {
+            REQUIRE_ISA(F_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, fp_regs.f32(RS2).v);
 		} break;
 
 		case Opcode::FADD_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_add(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -620,6 +648,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSUB_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_sub(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -627,6 +656,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMUL_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mul(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -634,6 +664,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FDIV_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_div(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -641,6 +672,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSQRT_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_sqrt(fp_regs.f32(RS1)));
@@ -648,6 +680,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMIN_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 
 			bool rs1_smaller = f32_lt_quiet(fp_regs.f32(RS1), fp_regs.f32(RS2)) ||
@@ -666,6 +699,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMAX_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 
 			bool rs1_greater = f32_lt_quiet(fp_regs.f32(RS2), fp_regs.f32(RS1)) ||
@@ -684,6 +718,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMADD_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), fp_regs.f32(RS3)));
@@ -691,6 +726,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMSUB_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
@@ -698,6 +734,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FNMADD_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
@@ -705,6 +742,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FNMSUB_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), fp_regs.f32(RS3)));
@@ -712,6 +750,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_W_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			regs[RD] = f32_to_i32(fp_regs.f32(RS1), softfloat_roundingMode, true);
@@ -719,6 +758,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_WU_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			regs[RD] = f32_to_ui32(fp_regs.f32(RS1), softfloat_roundingMode, true);
@@ -726,6 +766,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_S_W: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, i32_to_f32(regs[RS1]));
@@ -733,6 +774,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_S_WU: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, ui32_to_f32(regs[RS1]));
@@ -740,6 +782,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJ_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -748,6 +791,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJN_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -756,6 +800,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJX_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -764,35 +809,41 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMV_W_X: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_regs.write(RD, float32_t{(uint32_t)regs[RS1]});
 			fp_set_dirty();
 		} break;
 
 		case Opcode::FMV_X_W: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = fp_regs.u32(RS1);
 		} break;
 
 		case Opcode::FEQ_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FLT_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_lt(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FLE_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_le(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FCLASS_S: {
+            REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_classify(fp_regs.f32(RS1));
 		} break;
@@ -859,6 +910,10 @@ void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 
 		if (u_mode() && (!csr::is_bitset(csrs.mcounteren, cnt) || !csr::is_bitset(csrs.scounteren, cnt)))
 			RAISE_ILLEGAL_INSTRUCTION();
+	}
+
+	if (addr == csr::FFLAGS_ADDR || addr == csr::FRM_ADDR || addr == csr::FCSR_ADDR) {
+        REQUIRE_ISA(F_ISA_EXT);
 	}
 }
 
@@ -935,6 +990,18 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 
 		case FRM_ADDR:
 			return csrs.fcsr.frm;
+
+        // debug CSRs not supported, thus hardwired
+        case TSELECT_ADDR:
+            return 1; // if a zero write by SW is preserved, then debug mode is supported (thus hardwire to non-zero)
+        case TDATA1_ADDR:
+        case TDATA2_ADDR:
+        case TDATA3_ADDR:
+        case DCSR_ADDR:
+        case DPC_ADDR:
+        case DSCRATCH0_ADDR:
+        case DSCRATCH1_ADDR:
+            return 0;
 	}
 
 	if (!csrs.is_valid_csr32_addr(addr))
@@ -1382,6 +1449,8 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 }
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
+    ++total_num_instr;
+
 	if (!csrs.mcountinhibit.IR)
 		++csrs.instret.reg;
 

@@ -79,6 +79,12 @@ struct csr_misa {
 	}
 };
 
+constexpr unsigned M_ISA_EXT = csr_misa::M;
+constexpr unsigned A_ISA_EXT = csr_misa::A;
+constexpr unsigned F_ISA_EXT = csr_misa::F;
+constexpr unsigned D_ISA_EXT = csr_misa::D;
+constexpr unsigned C_ISA_EXT = csr_misa::C;
+
 struct csr_mvendorid {
 	union {
 		uint32_t reg = 0;
@@ -339,6 +345,16 @@ constexpr unsigned MTIME_ADDR = 0xB01;
 constexpr unsigned MTIMEH_ADDR = 0xB81;
 constexpr unsigned MINSTRET_ADDR = 0xB02;
 constexpr unsigned MINSTRETH_ADDR = 0xB82;
+
+// debug CSRs
+constexpr unsigned TSELECT_ADDR = 0x7A0;
+constexpr unsigned TDATA1_ADDR = 0x7A1;
+constexpr unsigned TDATA2_ADDR = 0x7A2;
+constexpr unsigned TDATA3_ADDR = 0x7A3;
+constexpr unsigned DCSR_ADDR = 0x7B0;
+constexpr unsigned DPC_ADDR = 0x7B1;
+constexpr unsigned DSCRATCH0_ADDR = 0x7B2;
+constexpr unsigned DSCRATCH1_ADDR = 0x7B3;
 
 // 32 bit machine CSRs
 constexpr unsigned MVENDORID_ADDR = 0xF11;

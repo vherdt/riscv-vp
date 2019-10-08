@@ -133,6 +133,11 @@ struct GenericElfLoader {
 		return p->st_value;
 	}
 
+    addr_t get_to_host_address() {
+        auto p = get_symbol("tohost");
+        return p->st_value;
+    }
+
 	const Elf_Shdr *get_section(const char *section_name) {
 		if (hdr->e_shoff == 0) {
 			throw std::runtime_error("unable to find section address, section table not available: " +
