@@ -4,9 +4,7 @@
 #include <stdint.h>
 
 enum {
-	FU540_PLIC_HARTS  = 5,
-	FU540_PLIC_NUMIRQ = 53,
-
+	FU540_PLIC_NUMIRQ   = 53,
 	FU540_PLIC_MAX_THR  = 7,
 	FU540_PLIC_MAX_PRIO = 7,
 };
@@ -18,9 +16,9 @@ enum {
 struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
 public:
 	tlm_utils::simple_target_socket<FU540_PLIC> tsock;
-	std::array<external_interrupt_target *, FU540_PLIC_HARTS> target_harts{};
+	std::vector<external_interrupt_target *> target_harts{};
 
-	FU540_PLIC(sc_core::sc_module_name);
+	FU540_PLIC(sc_core::sc_module_name, unsigned harts = 5);
 	void gateway_trigger_interrupt(uint32_t);
 
 	SC_HAS_PROCESS(FU540_PLIC);

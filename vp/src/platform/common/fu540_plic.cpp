@@ -32,7 +32,9 @@ static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 	assert(range->start == start && range->end + 1 == end + sizeof(uint32_t));
 }
 
-FU540_PLIC::FU540_PLIC(sc_core::sc_module_name) {
+FU540_PLIC::FU540_PLIC(sc_core::sc_module_name, unsigned harts) {
+	target_harts = std::vector<external_interrupt_target *>(harts, NULL);
+
 	/* Values copied from FE310_PLIC */
 	clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 
@@ -77,7 +79,7 @@ void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 		return r;
 	};
 
-	for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
+	for (size_t i = 0; i < target_harts.size(); i++) {
 		RegisterRange *mreg, *sreg;
 
 		mreg = add_reg(i, MachineMode, addr);
@@ -174,7 +176,7 @@ void FU540_PLIC::run(void) {
 	for (;;) {
 		sc_core::wait(e_run);
 
-		for (size_t i = 0; i < FU540_PLIC_HARTS; i++) {
+		for (size_t i = 0; i < target_harts.size(); i++) {
 			PrivilegeLevel lvl;
 			if (has_pending_irq(i, &lvl)) {
 				target_harts[i]->trigger_external_interrupt(lvl);
