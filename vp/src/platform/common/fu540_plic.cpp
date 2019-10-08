@@ -57,18 +57,18 @@ void FU540_PLIC::create_registers(void) {
 	register_ranges.push_back(&regs_pending_interrupts);
 
 	/* create IRQ enable and context registers */
-	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs, false);
-	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, hart_context, true);
+	create_hart_regs(ENABLE_BASE, ENABLE_PER_HART, enabled_irqs);
+	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, hart_context);
 
 	/* only supports "naturally aligned 32-bit memory accesses" */
 	for (size_t i = 0; i < register_ranges.size(); i++)
 		register_ranges[i]->alignment = sizeof(uint32_t);
 }
 
-void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map, bool callbacks) {
-	auto add_reg = [this, callbacks] (unsigned int h, PrivilegeLevel l, uint64_t a) {
+void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
+	auto add_reg = [this, addr] (unsigned int h, PrivilegeLevel l, uint64_t a) {
 		RegisterRange *r = new RegisterRange(a, HART_REG_SIZE);
-		if (callbacks) {
+		if (addr == CONTEXT_BASE) {
 			r->pre_read_callback = std::bind(&FU540_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
 			r->post_write_callback = std::bind(&FU540_PLIC::write_hartctx, this, std::placeholders::_1, h, l);
 		}

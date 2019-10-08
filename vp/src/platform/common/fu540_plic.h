@@ -57,7 +57,7 @@ private:
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
 	
 	void create_registers(void);
-	void create_hart_regs(uint64_t, uint64_t, hartmap&, bool);
+	void create_hart_regs(uint64_t, uint64_t, hartmap&);
 	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
 	bool read_hartctx(RegisterRange::ReadInfo, unsigned int, PrivilegeLevel);
 	void write_hartctx(RegisterRange::WriteInfo, unsigned int, PrivilegeLevel);
