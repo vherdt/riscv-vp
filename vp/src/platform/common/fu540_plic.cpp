@@ -46,6 +46,10 @@ void FU540_PLIC::create_registers(void) {
 	regs_interrupt_priorities.post_write_callback =
 		std::bind(&FU540_PLIC::write_irq_prios, this, std::placeholders::_1);
 
+	/* make pending interrupts read-only */
+	regs_pending_interrupts.pre_write_callback =
+		[] (RegisterRange::WriteInfo) { return false; };
+
 	assert_addr(0x4, 0xD8, &regs_interrupt_priorities);
 	assert_addr(0x1000, 0x1004, &regs_pending_interrupts);
 
