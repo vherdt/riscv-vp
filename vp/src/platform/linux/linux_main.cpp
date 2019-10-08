@@ -165,7 +165,7 @@ int sc_main(int argc, char **argv) {
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<NUM_CORES + 1, 7> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
-	FU540_PLIC plic("PLIC");
+	FU540_PLIC plic("PLIC", NUM_CORES);
 	CLINT<NUM_CORES> clint("CLINT");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
