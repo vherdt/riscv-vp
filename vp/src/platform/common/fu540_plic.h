@@ -47,7 +47,7 @@ private:
 	hartmap hart_context;
 
 	/* See Section 10.3 */
-	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * (FU540_PLIC_NUMIRQ + 1)};
+	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * FU540_PLIC_NUMIRQ};
 	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
 
 	/* See Section 10.4 */

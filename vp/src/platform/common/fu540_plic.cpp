@@ -52,7 +52,9 @@ void FU540_PLIC::create_registers(void) {
 	regs_pending_interrupts.pre_write_callback =
 		[] (RegisterRange::WriteInfo) { return false; };
 
-	assert_addr(0x4, 0xD8, &regs_interrupt_priorities);
+	/* The priorities end address, as documented in the FU540-C000
+	 * manual, is incorrect <https://github.com/riscv/opensbi/pull/138> */
+	assert_addr(0x4, 0xD4, &regs_interrupt_priorities);
 	assert_addr(0x1000, 0x1004, &regs_pending_interrupts);
 
 	register_ranges.push_back(&regs_interrupt_priorities);
