@@ -170,14 +170,12 @@ int sc_main(int argc, char **argv) {
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
-	Core core0(0, dmi);
-	Core core1(1, dmi);
-	Core core2(2, dmi);
-	Core core3(3, dmi);
-	Core core4(4, dmi);
-	Core *cores[NUM_CORES] = {&core0, &core1, &core2, &core3, &core4};
+
+	Core *cores[NUM_CORES];
+	for (unsigned i = 0; i < NUM_CORES; i++) {
+		cores[i] = new Core(i, dmi);
+	}
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	for (size_t i = 0; i < NUM_CORES; i++) {
