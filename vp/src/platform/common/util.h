@@ -13,7 +13,7 @@ struct BlankDevice : public sc_core::sc_module {
 	uint8_t *data;
 
 	BlankDevice(sc_core::sc_module_name, unsigned size) : size(size), data(new uint8_t[size]) {
-		tsock.register_b_transport(this, &Blank::transport);
+		tsock.register_b_transport(this, &BlankDevice::transport);
 	}
 
 	~BlankDevice() {
