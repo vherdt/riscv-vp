@@ -521,7 +521,7 @@ void ISS::exec_step() {
 			auto addr = instr.csr();
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
-			if (is_invalid_csr_access(addr, true)) {
+			if (is_invalid_csr_access(addr, write)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto csr_val = get_csr_value(addr);
@@ -537,7 +537,7 @@ void ISS::exec_step() {
 			auto addr = instr.csr();
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
-			if (is_invalid_csr_access(addr, true)) {
+			if (is_invalid_csr_access(addr, write)) {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto csr_val = get_csr_value(addr);
