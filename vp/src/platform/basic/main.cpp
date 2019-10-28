@@ -7,13 +7,13 @@
 #include "dma.h"
 #include "elf_loader.h"
 #include "ethernet.h"
+#include "fe310_plic.h"
 #include "flash.h"
 #include "gdb_stub.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "mram.h"
-#include "plic.h"
 #include "sensor.h"
 #include "sensor2.h"
 #include "syscall.h"
@@ -167,7 +167,7 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<3, 12> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
-	PLIC<1, 64, 96, 32> plic("PLIC");
+	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	SimpleSensor sensor("SimpleSensor", 2);
 	SimpleSensor2 sensor2("SimpleSensor2", 5);

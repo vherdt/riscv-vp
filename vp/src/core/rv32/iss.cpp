@@ -1467,8 +1467,7 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
-		if (lr_sc_counter == 0)  // only an optimization, to avoid (SystemC) context switching while the bus is locked
-			quantum_keeper.sync();
+		quantum_keeper.sync();
 	}
 }
 
