@@ -50,9 +50,9 @@ struct Options {
 	addr_t dtb_rom_start_addr = 0x00001000;
 	addr_t dtb_rom_size = 0x2000;
 	addr_t dtb_rom_end_addr = dtb_rom_start_addr + dtb_rom_size - 1;
-	addr_t uart0_start_addr = 0x10013000;
+	addr_t uart0_start_addr = 0x10010000;
 	addr_t uart0_end_addr = 0x10013fff;
-	addr_t uart1_start_addr = 0x10023000;
+	addr_t uart1_start_addr = 0x10011000;
 	addr_t uart1_end_addr = 0x10023fff;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
