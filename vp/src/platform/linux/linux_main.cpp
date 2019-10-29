@@ -11,6 +11,7 @@
 #include "mmu.h"
 #include "platform/common/slip.h"
 #include "platform/common/uart.h"
+#include "prci.h"
 #include "syscall.h"
 #include "util/options.h"
 
@@ -56,6 +57,8 @@ struct Options {
 	addr_t uart1_end_addr = 0x10023fff;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
+	addr_t prci_start_addr = 0x10000000;
+	addr_t prci_end_addr = 0x1000FFFF;
 
 	bool use_debug_runner = false;
 	bool use_instr_dmi = false;
@@ -163,10 +166,11 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<NUM_CORES + 1, 7> bus("SimpleBus");
+	SimpleBus<NUM_CORES + 1, 8> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	FU540_PLIC plic("PLIC", NUM_CORES);
 	CLINT<NUM_CORES> clint("CLINT");
+	PRCI prci("PRCI");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -205,6 +209,7 @@ int sc_main(int argc, char **argv) {
 	bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
 	bus.ports[5] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
 	bus.ports[6] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[7] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
 
 	// connect TLM sockets
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -218,6 +223,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[4].bind(uart0.tsock);
 	bus.isocks[5].bind(plic.tsock);
 	bus.isocks[6].bind(slip.tsock);
+	bus.isocks[7].bind(prci.tsock);
 
 	// connect interrupt signals/communication
 	for (size_t i = 0; i < NUM_CORES; i++) {
