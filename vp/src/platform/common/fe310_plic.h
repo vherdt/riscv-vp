@@ -7,12 +7,17 @@
 #include "util/memory_map.h"
 #include "util/tlm_map.h"
 
+/**
+ * This class is supposed to implement the PLIC defined in Chapter 10
+ * of the FE310-G000 manual. Currently, it still has various difference
+ * from the version documented in the manual.
+ */
 template <unsigned NumberCores, unsigned NumberInterrupts, unsigned NumberInterruptEntries, uint32_t MaxPriority>
-struct PLIC : public sc_core::sc_module, public interrupt_gateway {
+struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
 	static_assert(NumberCores <= 15360, "out of bound");
 
-	tlm_utils::simple_target_socket<PLIC> tsock;
+	tlm_utils::simple_target_socket<FE310_PLIC> tsock;
 
 	std::array<external_interrupt_target *, NumberCores> target_harts{};
 
@@ -45,19 +50,19 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	sc_core::sc_event e_run;
 	sc_core::sc_time clock_cycle;
 
-	SC_HAS_PROCESS(PLIC);
+	SC_HAS_PROCESS(FE310_PLIC);
 
-	PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
+	FE310_PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
 		clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-		tsock.register_b_transport(this, &PLIC::transport);
+		tsock.register_b_transport(this, &FE310_PLIC::transport);
 
 		regs_pending_interrupts.readonly = true;
 		regs_hart_config.alignment = 4;
 
 		regs_interrupt_priorities.post_write_callback =
-		    std::bind(&PLIC::post_write_interrupt_priorities, this, std::placeholders::_1);
-		regs_hart_config.post_write_callback = std::bind(&PLIC::post_write_hart_config, this, std::placeholders::_1);
-		regs_hart_config.pre_read_callback = std::bind(&PLIC::pre_read_hart_config, this, std::placeholders::_1);
+		    std::bind(&FE310_PLIC::post_write_interrupt_priorities, this, std::placeholders::_1);
+		regs_hart_config.post_write_callback = std::bind(&FE310_PLIC::post_write_hart_config, this, std::placeholders::_1);
+		regs_hart_config.pre_read_callback = std::bind(&FE310_PLIC::pre_read_hart_config, this, std::placeholders::_1);
 
 		for (unsigned i = 0; i < NumberInterrupts; ++i) {
 			interrupt_priorities[i] = 1;
@@ -126,7 +131,7 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		delay += 4 * clock_cycle;
 
-		vp::mm::route("PLIC", register_ranges, trans, delay);
+		vp::mm::route("FE310_PLIC", register_ranges, trans, delay);
 	}
 
 	void post_write_interrupt_priorities(RegisterRange::WriteInfo t) {
@@ -191,5 +196,5 @@ struct PLIC : public sc_core::sc_module, public interrupt_gateway {
 				}
 			}
 		}
-	}
+}
 };

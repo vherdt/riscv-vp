@@ -6,13 +6,13 @@
 #include "core/common/clint.h"
 #include "core/rv32/syscall.h"
 #include "elf_loader.h"
+#include "fe310_plic.h"
 #include "gdb_stub.h"
 #include "gpio.h"
 #include "iss.h"
 #include "maskROM.h"
 #include "mem.h"
 #include "memory.h"
-#include "plic.h"
 #include "prci.h"
 #include "slip.h"
 #include "spi.h"
@@ -165,7 +165,7 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
-	PLIC<1, 53, 64, 7> plic("PLIC");
+	FE310_PLIC<1, 53, 64, 7> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	AON aon("AON");
 	PRCI prci("PRCI");

@@ -136,16 +136,22 @@ class AbstractUART : public sc_core::sc_module {
 					spost(&rxempty);
 				}
 
-				if (rx_fifo.empty() || rx_fifo.size() < UART_CTRL_CNT(rxctrl))
-					ip &= ~UART_RXWM;
 				rcvmtx.unlock();
 			} else if (r.vptr == &txctrl) {
 				// std::cout << "TXctl";
 			} else if (r.vptr == &rxctrl) {
 				// std::cout << "RXctrl";
-			} else if (r.vptr == &ie || r.vptr == &ip) {
-				/* ie = 0;  // no interrupts enabled */
-				/* ip = 0;  // no interrupts pending */
+			} else if (r.vptr == &ip) {
+				uint32_t ret = 0;
+				if (tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
+					ret |= UART_TXWM;
+				}
+				if (rx_fifo.size() > UART_CTRL_CNT(rxctrl)) {
+					ret |= UART_RXWM;
+				}
+				ip = ret;
+			} else if (r.vptr == &ie) {
+				// do nothing
 			} else if (r.vptr == &div) {
 				// just return the last set value
 			} else {
@@ -174,8 +180,6 @@ class AbstractUART : public sc_core::sc_module {
 			}
 
 			tx_fifo.push(txdata);
-			if (tx_fifo.size() >= UART_CTRL_CNT(txctrl))
-				ip &= ~UART_TXWM;
 			txmtx.unlock();
 			spost(&txfull);
 		}
@@ -215,19 +219,15 @@ class AbstractUART : public sc_core::sc_module {
 
 		if (ie & UART_RXWM) {
 			rcvmtx.lock();
-			if (rx_fifo.size() > UART_CTRL_CNT(rxctrl)) {
-				ip |= UART_RXWM;
+			if (rx_fifo.size() > UART_CTRL_CNT(rxctrl))
 				trigger = true;
-			}
 			rcvmtx.unlock();
 		}
 
 		if (ie & UART_TXWM) {
 			txmtx.lock();
-			if (tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
-				ip |= UART_TXWM;
+			if (tx_fifo.size() < UART_CTRL_CNT(txctrl))
 				trigger = true;
-			}
 			txmtx.unlock();
 		}
 
