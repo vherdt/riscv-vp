@@ -393,7 +393,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRW: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[instr.rs1()];
@@ -409,7 +409,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -426,7 +426,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -441,7 +441,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRWI: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				if (rd != RegFile::zero) {
@@ -456,7 +456,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -472,7 +472,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+                RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -900,6 +900,19 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
+
+bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
+    if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
+        REQUIRE_ISA(F_ISA_EXT);
+    }
+    PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
+    bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+    bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
+    bool u_invalid = (csr_prv == UserMode) && !csrs.misa.has_user_mode_extension();
+    return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
+}
+
+
 void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F) || (addr >= 0xC80 && addr <= 0xC9F)) {
@@ -910,10 +923,6 @@ void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 
 		if (u_mode() && (!csr::is_bitset(csrs.mcounteren, cnt) || !csr::is_bitset(csrs.scounteren, cnt)))
 			RAISE_ILLEGAL_INSTRUCTION();
-	}
-
-	if (addr == csr::FFLAGS_ADDR || addr == csr::FRM_ADDR || addr == csr::FCSR_ADDR) {
-        REQUIRE_ISA(F_ISA_EXT);
 	}
 }
 
@@ -1114,6 +1123,17 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case FRM_ADDR:
 			csrs.fcsr.frm = value;
 			break;
+
+        // debug CSRs not supported, thus hardwired
+        case TSELECT_ADDR:
+        case TDATA1_ADDR:
+        case TDATA2_ADDR:
+        case TDATA3_ADDR:
+        case DCSR_ADDR:
+        case DPC_ADDR:
+        case DSCRATCH0_ADDR:
+        case DSCRATCH1_ADDR:
+            break;
 
 		default:
 			if (!csrs.is_valid_csr32_addr(addr))
