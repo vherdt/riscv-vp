@@ -907,7 +907,8 @@ bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
     }
     PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
     bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-    bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
+    //TODO: the last condition "!(csr_addr == csr::SATP_ADDR)" is only there to support the riscv-testenv which just assumes availability of the SATP register (without SATP register signature may be incorrect) ...
+    bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension() && !(csr_addr == csr::SATP_ADDR);
     bool u_invalid = (csr_prv == UserMode) && !csrs.misa.has_user_mode_extension();
     return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
 }
