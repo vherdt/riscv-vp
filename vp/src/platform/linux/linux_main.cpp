@@ -246,6 +246,15 @@ int sc_main(int argc, char **argv) {
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 	}
 
+	// OpenSBI boots all harts except hart 0 by default.
+	//
+	// To prevent this hart from being scheduled when stuck in
+	// the OpenSBI `sbi_hart_hang()` function do not ignore WFI on
+	// this hart.
+	//
+	// See: https://github.com/riscv/opensbi/commit/d70f8aab45d1e449b3b9be26e050b20ed76e12e9
+	cores[0]->iss.ignore_wfi = false;
+
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
