@@ -1,5 +1,6 @@
 /* Copied from linenoise <https://github.com/antirez/linenoise> with slight modifications.
  *
+ * Copyright (c) 2019, Sören Tempel <tempel at uni-bremen dot de>
  * Copyright (c) 2010-2014, Salvatore Sanfilippo <antirez at gmail dot com>
  * Copyright (c) 2010-2013, Pieter Noordhuis <pcnoordhuis at gmail dot com>
  *
@@ -29,11 +30,42 @@
 
 #include <system_error>
 
+#include <assert.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stddef.h>
 
+#include "rawmode.h"
+
+static int rawfd = -1;
 static struct termios orig_termios;
+
+static void sighandler(int num) {
+	(void)num;
+	assert(rawfd >= 0);
+
+	disableRawMode(rawfd);
+	exit(EXIT_FAILURE);
+}
+
+static void sethandler(void) {
+	size_t i;
+	struct sigaction act;
+	int signals[] = {SIGINT, SIGTERM, SIGQUIT, SIGHUP};
+
+	act.sa_flags = 0;
+	act.sa_handler = sighandler;
+	if (sigemptyset(&act.sa_mask) == -1)
+		throw std::system_error(errno, std::generic_category());
+
+	for (i = 0; i < (sizeof(signals) / sizeof(signals[0])); i++) {
+		if (sigaction(signals[i], &act, NULL))
+			throw std::system_error(errno, std::generic_category());
+	}
+}
 
 void enableRawMode(int fd) {
 	struct termios raw;
@@ -63,12 +95,21 @@ void enableRawMode(int fd) {
 	/* put terminal in raw mode after flushing */
 	if (tcsetattr(fd, TCSAFLUSH, &raw) < 0)
 		goto fatal;
+
+	rawfd = fd;
+	sethandler();
+
 	return;
 fatal:
 	throw std::system_error(errno, std::generic_category());
 }
 
 void disableRawMode(int fd) {
+	if (rawfd < 0)
+		return;
+
 	if (tcsetattr(fd, TCSAFLUSH, &orig_termios) == -1)
 		throw std::system_error(errno, std::generic_category());
+
+	rawfd = -1;
 }
