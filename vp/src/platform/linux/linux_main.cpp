@@ -52,9 +52,9 @@ struct Options {
 	addr_t dtb_rom_size = 0x2000;
 	addr_t dtb_rom_end_addr = dtb_rom_start_addr + dtb_rom_size - 1;
 	addr_t uart0_start_addr = 0x10010000;
-	addr_t uart0_end_addr = 0x10013fff;
+	addr_t uart0_end_addr = 0x10010fff;
 	addr_t uart1_start_addr = 0x10011000;
-	addr_t uart1_end_addr = 0x10023fff;
+	addr_t uart1_end_addr = 0x10011fff;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
 	addr_t prci_start_addr = 0x10000000;
@@ -207,8 +207,8 @@ int sc_main(int argc, char **argv) {
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 	bus.ports[3] = new PortMapping(opt.dtb_rom_start_addr, opt.dtb_rom_end_addr);
 	bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-	bus.ports[5] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[6] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[5] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[6] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
 	bus.ports[7] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
 
 	// connect TLM sockets
@@ -221,8 +221,8 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[2].bind(sys.tsock);
 	bus.isocks[3].bind(dtb_rom.tsock);
 	bus.isocks[4].bind(uart0.tsock);
-	bus.isocks[5].bind(plic.tsock);
-	bus.isocks[6].bind(slip.tsock);
+	bus.isocks[5].bind(slip.tsock);
+	bus.isocks[6].bind(plic.tsock);
 	bus.isocks[7].bind(prci.tsock);
 
 	// connect interrupt signals/communication
