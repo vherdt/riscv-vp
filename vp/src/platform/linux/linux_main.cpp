@@ -14,6 +14,7 @@
 #include "prci.h"
 #include "syscall.h"
 #include "util/options.h"
+#include "gdb-mc/gdb_server.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -261,6 +262,11 @@ int sc_main(int argc, char **argv) {
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		// TODO: Readd debung support (opt.use_debug_runner)
 		new DirectCoreRunner(cores[i]->iss);
+	}
+
+	if (opt.use_debug_runner) {
+		std::vector<debugable*> dharts;
+		GDBServer gdbserv("GDBServer", dharts, NULL, opt.debug_port);
 	}
 
 	sc_core::sc_start();
