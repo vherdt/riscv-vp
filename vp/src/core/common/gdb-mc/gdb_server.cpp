@@ -61,6 +61,9 @@ void GDBServer::dispatch(FILE *stream) {
 		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
 		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
+		if (!gdb_is_valid(pkt))
+			printf("\tchecksum is invalid\n");
+
 		gdb_free_packet(pkt);
 	}
 }

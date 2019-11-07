@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #define GDB_CSUM_LEN 2
 
@@ -24,6 +25,7 @@ typedef struct {
 
 void gdb_free_packet(gdb_packet_t *);
 gdb_packet_t *gdb_parse(FILE *);
+bool gdb_is_valid(gdb_packet_t *);
 
 #ifdef __cplusplus
 }
