@@ -61,6 +61,12 @@ void GDBServer::dispatch(FILE *stream) {
 		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
 		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
+		/* Acknowledgments over TCP are useless (disabled later) */
+		if (pkt->kind == GDB_KIND_ACK || pkt->kind == GDB_KIND_ACK) {
+			printf("%s: received acknowledgments, ignoring\n", __func__);
+			continue;
+		}
+
 		if (!gdb_is_valid(pkt))
 			printf("\tchecksum is invalid\n");
 
