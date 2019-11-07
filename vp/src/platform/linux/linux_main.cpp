@@ -264,10 +264,12 @@ int sc_main(int argc, char **argv) {
 		new DirectCoreRunner(cores[i]->iss);
 	}
 
+#ifdef GDB_MULTICORE
 	if (opt.use_debug_runner) {
 		std::vector<debugable*> dharts;
 		GDBServer gdbserv("GDBServer", dharts, NULL, opt.debug_port);
 	}
+#endif
 
 	sc_core::sc_start();
 	for (size_t i = 0; i < NUM_CORES; i++) {
