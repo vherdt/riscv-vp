@@ -58,7 +58,7 @@ void GDBServer::dispatch(FILE *stream) {
 	gdb_packet_t *pkt;
 
 	while ((pkt = gdb_parse(stream))) {
-		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%x%x }\n",
+		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
 		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
 		gdb_free_packet(pkt);
