@@ -11,12 +11,7 @@
 #include <systemc>
 
 #include "gdb_server.h"
-
-/* Character used to introduce new packets */
-#define GDB_DELIM '$'
-
-/* Characters used for acknowledgments */
-#define GDB_ACKS "+-"
+#include "parser/parser.h"
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
                      std::vector<debugable*> harts,
@@ -60,26 +55,14 @@ err:
 }
 
 void GDBServer::dispatch(FILE *stream) {
-	char *ptr, *line;
-	size_t llen;
+	gdb_packet_t *pkt;
 
-	line = NULL;
-	llen = 0;
+	while ((pkt = gdb_parse(stream))) {
+		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%x%x }\n",
+		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
-	while (getdelim(&line, &llen, GDB_DELIM, stream) != -1) {
-		if ((ptr = strchr(line, GDB_DELIM)))
-			*ptr = '\0';
-
-		/* Acknowledgments are useless over TCP (disabled later) */
-		if (strlen(line) == 1 && strchr(GDB_ACKS, *line))
-			continue;
-
-		printf("%s: received command: %s\n", __func__, line);
+		gdb_free_packet(pkt);
 	}
-
-	free(line);
-	if (ferror(stream))
-		err(1, "getdelim failed");
 }
 
 void GDBServer::serve(void) {
