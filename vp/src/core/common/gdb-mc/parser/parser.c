@@ -139,7 +139,7 @@ gdb_parse(FILE *stream)
 	mpc_result_t r;
 
 	pkt = NULL;
-	par = gdb_parser();
+	par = mpc_predictive(gdb_parser());
 
 	if (mpc_parse_pipe("<stream>", stream, par, &r)) {
 		pkt = (gdb_packet_t *)r.output;
