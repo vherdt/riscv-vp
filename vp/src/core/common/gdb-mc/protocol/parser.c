@@ -1,24 +1,11 @@
-#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <stddef.h>
 
 #include "mpc.h"
 #include "parser.h"
-
-static void *
-xmalloc(size_t size)
-{
-	void *r;
-
-	if (!(r = malloc(size)))
-		err(EXIT_FAILURE, "malloc failed");
-
-	return r;
-}
+#include "fns.h"
 
 static mpc_val_t *
 gdbf_packet(int n, mpc_val_t** xs)
@@ -121,14 +108,6 @@ gdb_parser(void)
 	return mpc_or(3, gdb_acknowledge(),
 	              gdb_packet(),
 	              gdb_notification());
-}
-
-void
-gdb_free_packet(gdb_packet_t *pkt)
-{
-	if (pkt->data)
-		free(pkt->data);
-	free(pkt);
 }
 
 gdb_packet_t *
