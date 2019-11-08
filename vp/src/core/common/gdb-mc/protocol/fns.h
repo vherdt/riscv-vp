@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+void *xrealloc(void *, size_t);
 void *xmalloc(size_t);
 
 #endif

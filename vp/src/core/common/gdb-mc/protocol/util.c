@@ -39,6 +39,17 @@ gdb_is_valid(gdb_packet_t *pkt)
 }
 
 void *
+xrealloc(void *ptr, size_t size)
+{
+	void *r;
+
+	if (!(r = realloc(ptr, size)))
+		err(EXIT_FAILURE, "realloc failed");
+
+	return r;
+}
+
+void *
 xmalloc(size_t size)
 {
 	void *r;
