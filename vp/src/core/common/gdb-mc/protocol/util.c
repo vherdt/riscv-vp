@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "parser.h"
+#include "protocol.h"
 #include "fns.h"
 
 #define GDB_ESCAPE_CHAR '}'

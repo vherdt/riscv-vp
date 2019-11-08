@@ -11,7 +11,7 @@
 #include <systemc>
 
 #include "gdb_server.h"
-#include "protocol/parser.h"
+#include "protocol/protocol.h"
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
                      std::vector<debugable*> harts,
