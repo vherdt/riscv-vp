@@ -3,11 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include "parser.h"
 #include "fns.h"
+
+#define GDB_ESCAPE_CHAR '}'
+#define GDB_ESCAPE_BYTE 0x20
 
 static int
 calc_csum(char *data)
@@ -19,6 +23,33 @@ calc_csum(char *data)
 		csum += (int)data[i];
 
 	return csum % 256;
+}
+
+char *
+gdb_unescape(char *data)
+{
+	size_t i, nlen;
+	char *ndat;
+	bool esc;
+
+	ndat = xmalloc(strlen(data));
+	nlen = 0;
+
+	for (esc = false, i = 0; i < strlen(data); i++) {
+		if (data[i] == GDB_ESCAPE_CHAR) {
+			esc = true;
+			continue;
+		}
+
+		ndat[nlen++] = (esc) ? data[i] ^ GDB_ESCAPE_BYTE : data[i];
+		esc = false;
+	}
+
+	/* shrink to actual size */
+	ndat = xrealloc(ndat, nlen + 1);
+	ndat[nlen] = '\0';
+
+	return ndat;
 }
 
 bool
