@@ -28,6 +28,7 @@ gdb_packet_t *gdb_parse(FILE *);
 
 bool gdb_is_valid(gdb_packet_t *);
 char *gdb_unescape(char *);
+char *gdb_decode_runlen(char *);
 
 #ifdef __cplusplus
 }

@@ -10,6 +10,9 @@
 #include "protocol.h"
 #include "fns.h"
 
+#define GDB_RUNLEN_CHAR '*'
+#define GDB_RUNLEN_OFF 29
+#define GDB_RUNLEN_STEP 32
 #define GDB_ESCAPE_CHAR '}'
 #define GDB_ESCAPE_BYTE 0x20
 
@@ -23,6 +26,56 @@ calc_csum(char *data)
 		csum += (int)data[i];
 
 	return csum % 256;
+}
+
+char *
+gdb_decode_runlen(char *data)
+{
+	int rcount, j;
+	size_t i, nlen, nrem;
+	int runlen;
+	char *ndat;
+
+	nlen = 0;
+	nrem = strlen(data);
+	ndat = xmalloc(nrem);
+
+	for (runlen = -1, i = 0; i < strlen(data); i++) {
+		if (data[i] == GDB_RUNLEN_CHAR) {
+			if (i <= 0)
+				goto err;
+			runlen = data[i - 1];
+			continue;
+		}
+
+		if (runlen == -1) {
+			runlen = data[i];
+			rcount = 1;
+		} else {
+			rcount = (int)data[i] - GDB_RUNLEN_OFF;
+			if (rcount <= 0)
+				goto err;
+		}
+
+		for (j = 0; j < rcount; j++) {
+			if (nrem-- == 0) {
+				ndat = xrealloc(ndat, nlen + GDB_RUNLEN_STEP);
+				nrem += GDB_RUNLEN_STEP;
+			}
+			ndat[nlen++] = runlen;
+		}
+
+		runlen = -1;
+	}
+
+	/* shrink to actual size */
+	ndat = xrealloc(ndat, nlen + 1);
+	ndat[nlen] = '\0';
+
+	return ndat;
+err:
+	free(ndat);
+	return NULL;
 }
 
 char *
