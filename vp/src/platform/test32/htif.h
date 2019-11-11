@@ -19,7 +19,7 @@ struct HTIF : public sc_core::sc_module {
 
     void run() {
         while (true) {
-            sc_core::wait(10, sc_core::SC_MS);
+            sc_core::wait(10, sc_core::SC_US);
             auto x = *to_host;
             to_host_callback(x);
             x = *num_instr;
