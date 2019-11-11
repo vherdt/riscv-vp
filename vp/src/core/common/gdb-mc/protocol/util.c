@@ -17,7 +17,7 @@
 #define GDB_ESCAPE_BYTE 0x20
 
 static int
-calc_csum(char *data)
+calc_csum(const char *data)
 {
 	size_t i;
 	int csum = 0;
@@ -46,7 +46,7 @@ kind_to_char(gdb_kind_t kind)
 }
 
 char *
-gdb_serialize(gdb_kind_t kind, char *data)
+gdb_serialize(gdb_kind_t kind, const char *data)
 {
 	size_t pktlen;
 	char *serialized;
