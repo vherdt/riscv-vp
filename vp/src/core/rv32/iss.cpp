@@ -886,6 +886,73 @@ void ISS::exec_step() {
 			return_from_trap_handler(MachineMode);
 			break;
 
+			// instructions accepted by decoder but not by this RV32IMACF ISS -> do normal trap
+        case Opcode::FLD:
+        case Opcode::FSD:
+        case Opcode::FMADD_D:
+        case Opcode::FMSUB_D:
+        case Opcode::FNMSUB_D:
+        case Opcode::FNMADD_D:
+        case Opcode::FADD_D:
+        case Opcode::FSUB_D:
+        case Opcode::FMUL_D:
+        case Opcode::FDIV_D:
+        case Opcode::FSQRT_D:
+        case Opcode::FSGNJ_D:
+        case Opcode::FSGNJN_D:
+        case Opcode::FSGNJX_D:
+        case Opcode::FMIN_D:
+        case Opcode::FMAX_D:
+        case Opcode::FCVT_S_D:
+        case Opcode::FCVT_D_S:
+        case Opcode::FEQ_D:
+        case Opcode::FLT_D:
+        case Opcode::FLE_D:
+        case Opcode::FCLASS_D:
+        case Opcode::FCVT_W_D:
+        case Opcode::FCVT_WU_D:
+        case Opcode::FCVT_D_W:
+        case Opcode::FCVT_D_WU:
+        case Opcode::LWU:
+        case Opcode::LD:
+        case Opcode::SD:
+        case Opcode::ADDIW:
+        case Opcode::SLLIW:
+        case Opcode::SRLIW:
+        case Opcode::SRAIW:
+        case Opcode::ADDW:
+        case Opcode::SUBW:
+        case Opcode::SLLW:
+        case Opcode::SRLW:
+        case Opcode::SRAW:
+        case Opcode::MULW:
+        case Opcode::DIVW:
+        case Opcode::DIVUW:
+        case Opcode::REMW:
+        case Opcode::REMUW:
+        case Opcode::LR_D:
+        case Opcode::SC_D:
+        case Opcode::AMOSWAP_D:
+        case Opcode::AMOADD_D:
+        case Opcode::AMOXOR_D:
+        case Opcode::AMOAND_D:
+        case Opcode::AMOOR_D:
+        case Opcode::AMOMIN_D:
+        case Opcode::AMOMAX_D:
+        case Opcode::AMOMINU_D:
+        case Opcode::AMOMAXU_D:
+        case Opcode::FCVT_L_S:
+        case Opcode::FCVT_LU_S:
+        case Opcode::FCVT_S_L:
+        case Opcode::FCVT_S_LU:
+        case Opcode::FCVT_L_D:
+        case Opcode::FCVT_LU_D:
+        case Opcode::FMV_X_D:
+        case Opcode::FCVT_D_L:
+        case Opcode::FCVT_D_LU:
+        case Opcode::FMV_D_X:
+            RAISE_ILLEGAL_INSTRUCTION();
+
 		default:
 			throw std::runtime_error("unknown opcode");
 	}
