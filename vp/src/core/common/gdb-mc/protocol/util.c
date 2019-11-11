@@ -28,6 +28,57 @@ calc_csum(char *data)
 	return csum % 256;
 }
 
+static char
+kind_to_char(gdb_kind_t kind)
+{
+	switch (kind) {
+	case GDB_KIND_NOTIFY:
+		return '#';
+	case GDB_KIND_PACKET:
+		return '$';
+	case GDB_KIND_NACK:
+		return '-';
+	case GDB_KIND_ACK:
+		return '+';
+	default:
+		assert(0);
+	}
+}
+
+char *
+gdb_serialize(gdb_kind_t kind, char *data)
+{
+	size_t pktlen;
+	char *serialized;
+	char pktkind;
+	int csum, ret;
+
+	pktkind = kind_to_char(kind);
+	if (pktkind == GDB_KIND_NACK || pktkind == GDB_KIND_ACK) {
+		assert(data == NULL);
+		serialized = xmalloc(2); /* kind + nullbyte */
+
+		serialized[0] = pktkind;
+		serialized[1] = '\0';
+
+		return serialized;
+	}
+
+	csum = calc_csum(data);
+
+	/* + 3 → nullbyte, checksum delimiter, kind */
+	pktlen = strlen(data) + GDB_CSUM_LEN + 3;
+	serialized = xmalloc(pktlen);
+
+	ret = snprintf(serialized, pktlen, "%c%s#%x", pktkind, data, csum);
+	if (ret < 0)
+		err(EXIT_FAILURE, "snprintf failed");
+	else if ((size_t)ret >= pktlen)
+		errx(EXIT_FAILURE, "insufficient snprintf buffer size");
+
+	return serialized;
+}
+
 char *
 gdb_decode_runlen(char *data)
 {
