@@ -24,6 +24,7 @@ private:
 	int sockfd;
 
 	void create_sock(uint16_t);
+	void send_packet(int, std::string);
 	void dispatch(FILE *);
 	void serve(void);
 };

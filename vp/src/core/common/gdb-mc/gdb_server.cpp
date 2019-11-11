@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -52,6 +53,30 @@ void GDBServer::create_sock(uint16_t port) {
 err:
 	close(sockfd);
 	throw std::system_error(errno, std::generic_category());
+}
+
+void GDBServer::send_packet(int conn, std::string data) {
+	size_t len;
+	ssize_t ret, w;
+	char *serialized;
+
+	serialized = gdb_serialize(GDB_KIND_PACKET, data.c_str());
+	len = strlen(serialized);
+
+	w = 0;
+	do {
+		assert(len >= (size_t)w);
+		ret = write(conn, &serialized[w], len - (size_t)w);
+		if (ret < 0) {
+			warn("write failed");
+			goto ret;
+		}
+
+		w += ret;
+	} while ((size_t)w < len);
+
+ret:
+	free(serialized);
 }
 
 void GDBServer::dispatch(FILE *stream) {
