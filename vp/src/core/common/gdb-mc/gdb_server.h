@@ -17,6 +17,7 @@ public:
 	typedef void (GDBServer::*packet_handler)(int, gdb_packet_t *);
 
 	void qSupported(int, gdb_packet_t *);
+	void vMustReplyEmpty(int, gdb_packet_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 
