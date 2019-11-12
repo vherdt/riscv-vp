@@ -14,6 +14,8 @@
 #include "gdb_server.h"
 #include "protocol/protocol.h"
 
+extern std::map<std::string, GDBServer::packet_handler> handlers;
+
 GDBServer::GDBServer(sc_core::sc_module_name name,
                      std::vector<debugable*> harts,
                      DebugMemoryInterface *mm,
@@ -111,6 +113,26 @@ void GDBServer::retransmit(int conn) {
 	 * packet transmit in the send_packet function */
 }
 
+void GDBServer::handle(int conn, gdb_packet_t *pkt) {
+	size_t pos;
+	packet_handler handler;
+	std::string data, cmd;
+
+	data = std::string(pkt->data);
+
+	pos = data.find(":");
+	cmd = data.substr(0, pos);
+
+	try {
+		handler = handlers.at(cmd);
+	} catch (const std::out_of_range&) {
+		printf("%s: unknown command '%s'\n", __func__, cmd.c_str());
+		return;
+	}
+
+	(this->*handler)(conn, pkt);
+}
+
 void GDBServer::dispatch(int conn) {
 	FILE *stream;
 	gdb_packet_t *pkt;
@@ -133,6 +155,7 @@ void GDBServer::dispatch(int conn) {
 		/* Acknowledge retrival of current packet */
 		send_packet(conn, NULL, (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
 
+		handle(conn, pkt);
 next:
 		gdb_free_packet(pkt);
 	}

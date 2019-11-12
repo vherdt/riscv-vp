@@ -2,7 +2,8 @@ add_library(gdb-mc
 	protocol/mpc/mpc.c
 	protocol/parser.c
 	protocol/util.c
-	gdb_server.cpp)
+	gdb_server.cpp
+	handler.cpp)
 
 set_source_files_properties(protocol/mpc/mpc.c
 	PROPERTIES COMPILE_FLAGS "-w -ansi")

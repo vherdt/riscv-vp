@@ -6,6 +6,7 @@
 
 #include <systemc>
 #include <thread>
+#include <map>
 
 #include "debug.h"
 #include "gdb_stub.h" // DebugMemoryInterface
@@ -13,6 +14,10 @@
 
 SC_MODULE(GDBServer) {
 public:
+	typedef void (GDBServer::*packet_handler)(int, gdb_packet_t *);
+
+	void qSupported(int, gdb_packet_t *);
+
 	SC_HAS_PROCESS(GDBServer);
 
 	GDBServer(sc_core::sc_module_name,
@@ -29,6 +34,7 @@ private:
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
+	void handle(int, gdb_packet_t *);
 	void dispatch(int conn);
 	void serve(void);
 };
