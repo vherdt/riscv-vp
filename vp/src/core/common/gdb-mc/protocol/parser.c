@@ -111,7 +111,7 @@ gdb_parser(void)
 }
 
 gdb_packet_t *
-gdb_parse(FILE *stream)
+gdb_parse_pkt(FILE *stream)
 {
 	gdb_packet_t *pkt;
 	mpc_parser_t *par;

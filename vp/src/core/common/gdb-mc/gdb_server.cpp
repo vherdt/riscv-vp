@@ -123,7 +123,7 @@ void GDBServer::dispatch(int conn) {
 	if (!(stream = fdopen(conn, "r")))
 		throw std::system_error(errno, std::generic_category());
 
-	while ((pkt = gdb_parse(stream))) {
+	while ((pkt = gdb_parse_pkt(stream))) {
 		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
 		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 

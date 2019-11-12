@@ -24,7 +24,7 @@ typedef struct {
 } gdb_packet_t;
 
 void gdb_free_packet(gdb_packet_t *);
-gdb_packet_t *gdb_parse(FILE *);
+gdb_packet_t *gdb_parse_pkt(FILE *);
 
 enum {
 	GDB_THREAD_UNSET = -2,
