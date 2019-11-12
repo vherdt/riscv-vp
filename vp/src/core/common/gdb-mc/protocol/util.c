@@ -195,6 +195,17 @@ xmalloc(size_t size)
 	return r;
 }
 
+char *
+xstrdup(char *s)
+{
+	char *r;
+
+	if (!(r = strdup(s)))
+		err(EXIT_FAILURE, "strdup failed");
+
+	return r;
+}
+
 void
 gdb_free_packet(gdb_packet_t *pkt)
 {

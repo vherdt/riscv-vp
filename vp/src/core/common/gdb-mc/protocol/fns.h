@@ -5,5 +5,6 @@
 
 void *xrealloc(void *, size_t);
 void *xmalloc(size_t);
+char *xstrdup(char *);
 
 #endif
