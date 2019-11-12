@@ -111,8 +111,12 @@ void GDBServer::retransmit(int conn) {
 	 * packet transmit in the send_packet function */
 }
 
-void GDBServer::dispatch(FILE *stream) {
+void GDBServer::dispatch(int conn) {
+	FILE *stream;
 	gdb_packet_t *pkt;
+
+	if (!(stream = fdopen(conn, "r+")))
+		throw std::system_error(errno, std::generic_category());
 
 	while ((pkt = gdb_parse(stream))) {
 		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
@@ -120,19 +124,20 @@ void GDBServer::dispatch(FILE *stream) {
 
 		switch (pkt->kind) {
 		case GDB_KIND_NACK:
-			retransmit(fileno(stream));
+			retransmit(conn);
 			/* fall through */
 		case GDB_KIND_ACK:
 			goto next;
 		}
 
 		/* Acknowledge retrival of current packet */
-		send_packet(fileno(stream), NULL,
-		            (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
+		send_packet(conn, NULL, (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
 
 next:
 		gdb_free_packet(pkt);
 	}
+
+	fclose(stream);
 }
 
 void GDBServer::serve(void) {
@@ -145,10 +150,6 @@ void GDBServer::serve(void) {
 			continue;
 		}
 
-		if (!(stream = fdopen(conn, "r+")))
-			throw std::system_error(errno, std::generic_category());
-
-		dispatch(stream);
-		fclose(stream);
+		dispatch(conn);
 	}
 }

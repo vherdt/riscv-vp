@@ -1,7 +1,6 @@
 #ifndef RISCV_GDB_NG
 #define RISCV_GDB_NG
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -30,7 +29,7 @@ private:
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
-	void dispatch(FILE *);
+	void dispatch(int conn);
 	void serve(void);
 };
 
