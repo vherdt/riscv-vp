@@ -6,11 +6,11 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "vMustReplyEmpty", &GDBServer::vMustReplyEmpty },
 };
 
-void GDBServer::qSupported(int conn, gdb_packet_t *pkt) {
+void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 	send_packet(conn, "stubfeature;multiprocess+");
 };
 
-void GDBServer::vMustReplyEmpty(int conn, gdb_packet_t *pkt) {
+void GDBServer::vMustReplyEmpty(int conn, gdb_command_t *cmd) {
 	/* The correct reply to an unknown ‘v’ packet
 	 * is to return the empty strings […] */
 	send_packet(conn, "");

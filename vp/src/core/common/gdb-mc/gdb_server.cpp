@@ -77,6 +77,7 @@ void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 	char *serialized;
 
 	serialized = gdb_serialize(kind, data);
+
 	try {
 		writeall(conn, serialized, strlen(serialized));
 	} catch (const std::system_error& e) {
@@ -113,29 +114,11 @@ void GDBServer::retransmit(int conn) {
 	 * packet transmit in the send_packet function */
 }
 
-void GDBServer::handle(int conn, gdb_packet_t *pkt) {
-	size_t pos;
-	packet_handler handler;
-	std::string data, cmd;
-
-	data = std::string(pkt->data);
-
-	pos = data.find(":");
-	cmd = data.substr(0, pos);
-
-	try {
-		handler = handlers.at(cmd);
-	} catch (const std::out_of_range&) {
-		printf("%s: unknown command '%s'\n", __func__, cmd.c_str());
-		return;
-	}
-
-	(this->*handler)(conn, pkt);
-}
-
 void GDBServer::dispatch(int conn) {
 	FILE *stream;
 	gdb_packet_t *pkt;
+	gdb_command_t *cmd;
+	packet_handler handler;
 
 	if (!(stream = fdopen(conn, "r")))
 		throw std::system_error(errno, std::generic_category());
@@ -149,14 +132,28 @@ void GDBServer::dispatch(int conn) {
 			retransmit(conn);
 			/* fall through */
 		case GDB_KIND_ACK:
-			goto next;
+			goto next1;
 		}
 
 		/* Acknowledge retrival of current packet */
 		send_packet(conn, NULL, (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
 
-		handle(conn, pkt);
-next:
+		if (!(cmd = gdb_parse_cmd(pkt)))
+			goto next1;
+
+		try {
+			handler = handlers.at(cmd->name);
+		} catch (const std::out_of_range&) {
+			// For any command not supported by the stub, an
+			// empty response (‘$#00’) should be returned.
+			send_packet(conn, "");
+			goto next2;
+		}
+
+		(this->*handler)(conn, cmd);
+next2:
+		gdb_free_cmd(cmd);
+next1:
 		gdb_free_packet(pkt);
 	}
 
