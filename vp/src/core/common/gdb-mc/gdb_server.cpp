@@ -71,16 +71,20 @@ void GDBServer::writeall(int fd, char *data, size_t len) {
 	} while ((size_t)w < len);
 }
 
-void GDBServer::send_packet(int conn, std::string data) {
+void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 	char *serialized;
 
-	serialized = gdb_serialize(GDB_KIND_PACKET, data.c_str());
+	serialized = gdb_serialize(kind, data);
 	try {
 		writeall(conn, serialized, strlen(serialized));
 	} catch (const std::system_error& e) {
 		warnx("writeall failed: %s", e.what());
 		goto ret;
 	}
+
+	/* acknowledgment are only used for GDB packets */
+	if (kind != GDB_KIND_PACKET)
+		goto ret;
 
 	free(prevpkt);
 	if (!(prevpkt = strdup(serialized))) {
@@ -122,8 +126,9 @@ void GDBServer::dispatch(FILE *stream) {
 			goto next;
 		}
 
-		if (!gdb_is_valid(pkt))
-			printf("\tchecksum is invalid\n");
+		/* Acknowledge retrival of current packet */
+		send_packet(fileno(stream), NULL,
+		            (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
 
 next:
 		gdb_free_packet(pkt);

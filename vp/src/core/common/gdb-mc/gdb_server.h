@@ -10,6 +10,7 @@
 
 #include "debug.h"
 #include "gdb_stub.h" // DebugMemoryInterface
+#include "protocol/protocol.h"
 
 SC_MODULE(GDBServer) {
 public:
@@ -27,7 +28,7 @@ private:
 
 	void create_sock(uint16_t);
 	void writeall(int, char *, size_t);
-	void send_packet(int, std::string);
+	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
 	void dispatch(FILE *);
 	void serve(void);
