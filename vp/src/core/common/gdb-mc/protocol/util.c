@@ -70,7 +70,7 @@ gdb_serialize(gdb_kind_t kind, const char *data)
 	pktlen = strlen(data) + GDB_CSUM_LEN + 3;
 	serialized = xmalloc(pktlen);
 
-	ret = snprintf(serialized, pktlen, "%c%s#%x", pktkind, data, csum);
+	ret = snprintf(serialized, pktlen, "%c%s#%.2x", pktkind, data, csum);
 	if (ret < 0)
 		err(EXIT_FAILURE, "snprintf failed");
 	else if ((size_t)ret >= pktlen)
@@ -167,7 +167,7 @@ gdb_is_valid(gdb_packet_t *pkt)
 		return true;
 	expcsum = calc_csum(pkt->data);
 
-	ret = snprintf(strcsum, sizeof(strcsum), "%x", expcsum);
+	ret = snprintf(strcsum, sizeof(strcsum), "%.2x", expcsum);
 	assert(ret == GDB_CSUM_LEN);
 
 	return !strncmp(pkt->csum, strcsum, GDB_CSUM_LEN);
