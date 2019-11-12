@@ -115,7 +115,7 @@ void GDBServer::dispatch(int conn) {
 	FILE *stream;
 	gdb_packet_t *pkt;
 
-	if (!(stream = fdopen(conn, "r+")))
+	if (!(stream = fdopen(conn, "r")))
 		throw std::system_error(errno, std::generic_category());
 
 	while ((pkt = gdb_parse(stream))) {
