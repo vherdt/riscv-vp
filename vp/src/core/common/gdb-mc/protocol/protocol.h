@@ -26,6 +26,39 @@ typedef struct {
 void gdb_free_packet(gdb_packet_t *);
 gdb_packet_t *gdb_parse(FILE *);
 
+enum {
+	GDB_THREAD_UNSET = -2,
+	GDB_THREAD_ANY = -1,
+	GDB_THREAD_ALL = 0,
+};
+
+typedef struct {
+	int pid; /* requires multiprocess feature */
+	int tid;
+} gdb_thread_t;
+
+typedef struct {
+	char op;
+	gdb_thread_t id;
+} gdb_cmd_h_t;
+
+typedef enum {
+	GDB_ARG_NONE,
+	GDB_ARG_H,
+} gdb_argument_t;
+
+typedef struct {
+	char *name;
+	gdb_argument_t type;
+
+	union {
+		gdb_cmd_h_t hcmd;
+	} v;
+} gdb_command_t;
+
+void gdb_free_cmd(gdb_command_t *);
+gdb_command_t *gdb_parse_cmd(gdb_packet_t *);
+
 bool gdb_is_valid(gdb_packet_t *);
 char *gdb_unescape(char *);
 char *gdb_decode_runlen(char *);
