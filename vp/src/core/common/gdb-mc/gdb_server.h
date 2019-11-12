@@ -22,11 +22,13 @@ public:
 
 private:
 	std::thread thr;
+	char *prevpkt;
 	int sockfd;
 
 	void create_sock(uint16_t);
 	void writeall(int, char *, size_t);
 	void send_packet(int, std::string);
+	void retransmit(int);
 	void dispatch(FILE *);
 	void serve(void);
 };
