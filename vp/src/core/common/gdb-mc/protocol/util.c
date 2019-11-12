@@ -54,7 +54,7 @@ gdb_serialize(gdb_kind_t kind, const char *data)
 	int csum, ret;
 
 	pktkind = kind_to_char(kind);
-	if (pktkind == GDB_KIND_NACK || pktkind == GDB_KIND_ACK) {
+	if (kind == GDB_KIND_NACK || kind == GDB_KIND_ACK) {
 		assert(data == NULL);
 		serialized = xmalloc(2); /* kind + nullbyte */
 
