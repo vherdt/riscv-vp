@@ -55,27 +55,28 @@ err:
 	throw std::system_error(errno, std::generic_category());
 }
 
-void GDBServer::send_packet(int conn, std::string data) {
-	size_t len;
+void GDBServer::writeall(int fd, char *data, size_t len) {
 	ssize_t ret, w;
-	char *serialized;
-
-	serialized = gdb_serialize(GDB_KIND_PACKET, data.c_str());
-	len = strlen(serialized);
 
 	w = 0;
 	do {
 		assert(len >= (size_t)w);
-		ret = write(conn, &serialized[w], len - (size_t)w);
+		ret = write(fd, &data[w], len - (size_t)w);
 		if (ret < 0) {
 			warn("write failed");
-			goto ret;
+			return;
 		}
 
 		w += ret;
 	} while ((size_t)w < len);
+}
 
-ret:
+void GDBServer::send_packet(int conn, std::string data) {
+	char *serialized;
+
+	serialized = gdb_serialize(GDB_KIND_PACKET, data.c_str());
+	writeall(conn, serialized, strlen(serialized));
+
 	free(serialized);
 }
 

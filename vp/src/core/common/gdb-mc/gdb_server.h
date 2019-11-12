@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <systemc>
 #include <thread>
@@ -24,6 +25,7 @@ private:
 	int sockfd;
 
 	void create_sock(uint16_t);
+	void writeall(int, char *, size_t);
 	void send_packet(int, std::string);
 	void dispatch(FILE *);
 	void serve(void);
