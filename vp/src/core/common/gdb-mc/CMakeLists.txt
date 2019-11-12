@@ -1,6 +1,6 @@
 add_library(gdb-mc
 	protocol/mpc/mpc.c
-	protocol/parser.c
+	protocol/parser1.c
 	protocol/parser2.c
 	protocol/util.c
 	gdb_server.cpp
