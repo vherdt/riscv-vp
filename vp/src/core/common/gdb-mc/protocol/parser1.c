@@ -103,7 +103,7 @@ gdb_acknowledge(void)
 }
 
 static mpc_parser_t *
-gdb_parser(void)
+gdb_parse_stage1(void)
 {
 	return mpc_or(3, gdb_acknowledge(),
 	              gdb_packet(),
@@ -118,7 +118,7 @@ gdb_parse_pkt(FILE *stream)
 	mpc_result_t r;
 
 	pkt = NULL;
-	par = mpc_predictive(gdb_parser());
+	par = mpc_predictive(gdb_parse_stage1());
 
 	if (mpc_parse_pipe("<stream>", stream, par, &r)) {
 		pkt = (gdb_packet_t *)r.output;
