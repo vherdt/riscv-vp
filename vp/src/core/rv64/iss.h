@@ -11,6 +11,7 @@
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
+#include "debug.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -136,7 +137,7 @@ struct PendingInterrupts {
 	uint64_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
+struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, public debugable {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
