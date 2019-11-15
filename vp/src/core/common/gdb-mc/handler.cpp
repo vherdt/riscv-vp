@@ -7,8 +7,12 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 };
 
 void GDBServer::setThread(int conn, gdb_command_t *cmd) {
-	printf("setThread()\n");
-	printf("type: %d\n", cmd->type);
+	gdb_cmd_h_t *hcmd;
+
+	hcmd = &cmd->v.hcmd;
+	thread_ops[hcmd->op] = hcmd->id.tid;
+
+	send_packet(conn, "OK");
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {

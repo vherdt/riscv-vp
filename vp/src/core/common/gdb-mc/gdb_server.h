@@ -32,6 +32,9 @@ private:
 	char *prevpkt;
 	int sockfd;
 
+	/* operation → thread id */
+	std::map<char, int> thread_ops;
+
 	void create_sock(uint16_t);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
