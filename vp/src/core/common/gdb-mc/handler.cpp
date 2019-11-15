@@ -4,6 +4,7 @@
 std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
 	{ "H", &GDBServer::setThread },
+	{ "qAttached", &GDBServer::qAttached },
 	{ "qSupported", &GDBServer::qSupported },
 	{ "qfThreadInfo", &GDBServer::threadInfo },
 	{ "qsThreadInfo", &GDBServer::threadInfoEnd },
@@ -36,7 +37,6 @@ void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
 			thrlist += ",";
 	}
 
-	std::cout << "thrlist: " << thrlist << std::endl;
 	send_packet(conn, thrlist.c_str());
 }
 
@@ -48,6 +48,11 @@ void GDBServer::threadInfoEnd(int conn, gdb_command_t *cmd) {
 	// Since the GDBServer::threadInfo sends all threads in one
 	// response we always terminate the list here.
 	send_packet(conn, "l");
+}
+
+void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
+	// 0 process started, 1 attached to process
+	send_packet(conn, "0");
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {

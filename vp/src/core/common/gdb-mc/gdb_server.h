@@ -18,6 +18,7 @@ public:
 
 	void haltReason(int, gdb_command_t *);
 	void setThread(int, gdb_command_t *);
+	void qAttached(int, gdb_command_t *);
 	void qSupported(int, gdb_command_t *);
 	void threadInfo(int, gdb_command_t *);
 	void threadInfoEnd(int, gdb_command_t *);
