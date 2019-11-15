@@ -19,6 +19,8 @@ public:
 	void haltReason(int, gdb_command_t *);
 	void setThread(int, gdb_command_t *);
 	void qSupported(int, gdb_command_t *);
+	void threadInfo(int, gdb_command_t *);
+	void threadInfoEnd(int, gdb_command_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 
@@ -28,6 +30,7 @@ public:
 	          uint16_t);
 
 private:
+	std::vector<debugable*> harts;
 	std::thread thr;
 	char *prevpkt;
 	int sockfd;

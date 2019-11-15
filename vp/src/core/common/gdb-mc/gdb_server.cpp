@@ -17,9 +17,10 @@
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
-                     std::vector<debugable*> harts,
+                     std::vector<debugable*> dharts,
                      DebugMemoryInterface *mm,
                      uint16_t port) {
+	harts = dharts;
 	prevpkt = NULL;
 	create_sock(port);
 

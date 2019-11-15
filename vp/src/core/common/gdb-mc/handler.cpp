@@ -5,6 +5,8 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
 	{ "H", &GDBServer::setThread },
 	{ "qSupported", &GDBServer::qSupported },
+	{ "qfThreadInfo", &GDBServer::threadInfo },
+	{ "qsThreadInfo", &GDBServer::threadInfoEnd },
 };
 
 void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
@@ -25,6 +27,29 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 	send_packet(conn, "OK");
 }
 
+void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
+	std::string thrlist = "m";
+
+	for (size_t i = 0; i < harts.size(); i++) {
+		thrlist += std::to_string(i + 1);
+		if (i + 1 < harts.size())
+			thrlist += ",";
+	}
+
+	std::cout << "thrlist: " << thrlist << std::endl;
+	send_packet(conn, thrlist.c_str());
+}
+
+void GDBServer::threadInfoEnd(int conn, gdb_command_t *cmd) {
+	// GDB will respond to each reply with a request for more thread
+	// ids (using the ‘qs’ form of the query), until the target
+	// responds with ‘l’ (lower-case ell, for last).
+	//
+	// Since the GDBServer::threadInfo sends all threads in one
+	// response we always terminate the list here.
+	send_packet(conn, "l");
+}
+
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 	send_packet(conn, "multiprocess+");
-};
+}
