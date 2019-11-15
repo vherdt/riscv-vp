@@ -15,6 +15,7 @@ struct debugable {
 	virtual ~debugable() {}
 
 	uint64_t get_hart_id(void);
+	void run(void);
 };
 
 #endif

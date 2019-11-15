@@ -259,17 +259,21 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	for (size_t i = 0; i < NUM_CORES; i++) {
-		// TODO: Readd debung support (opt.use_debug_runner)
-		new DirectCoreRunner(cores[i]->iss);
-	}
-
-#ifdef GDB_MULTICORE
 	if (opt.use_debug_runner) {
+#ifdef GDB_MULTICORE
 		std::vector<debugable*> dharts;
+		for (size_t i = 0; i < NUM_CORES; i++)
+			dharts.push_back(&cores[i]->iss);
 		GDBServer gdbserv("GDBServer", dharts, NULL, opt.debug_port);
-	}
+#else
+		std::cerr << "GDB_MULTICORE is not supported" << std::endl;
+		return EXIT_FAILURE;
 #endif
+	} else {
+		for (size_t i = 0; i < NUM_CORES; i++) {
+			new DirectCoreRunner(cores[i]->iss);
+		}
+	}
 
 	sc_core::sc_start();
 	for (size_t i = 0; i < NUM_CORES; i++) {
