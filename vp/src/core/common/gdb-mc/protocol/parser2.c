@@ -85,7 +85,7 @@ gdb_hexid(void)
 	/* Positive numbers with a target-specific interpretation,
 	 * formatted as big-endian hex strings. Can also be a literal
 	 * '-1' to indicate all threads, or '0' to pick any thread. */
-	return mpc_or(2, mpc_hexdigits(),
+	return mpc_or(2, mpc_hex(),
 	              mpc_apply(mpc_string("-1"), gdbf_negative));
 }
 
