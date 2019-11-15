@@ -12,5 +12,5 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
-	send_packet(conn, "stubfeature;multiprocess+");
+	send_packet(conn, "multiprocess+");
 };
