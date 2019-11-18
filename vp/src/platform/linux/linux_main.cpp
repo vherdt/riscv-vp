@@ -11,6 +11,7 @@
 #include "mmu.h"
 #include "platform/common/slip.h"
 #include "platform/common/uart.h"
+#include "prci.h"
 #include "syscall.h"
 #include "util/options.h"
 
@@ -50,12 +51,14 @@ struct Options {
 	addr_t dtb_rom_start_addr = 0x00001000;
 	addr_t dtb_rom_size = 0x2000;
 	addr_t dtb_rom_end_addr = dtb_rom_start_addr + dtb_rom_size - 1;
-	addr_t uart0_start_addr = 0x10013000;
-	addr_t uart0_end_addr = 0x10013fff;
-	addr_t uart1_start_addr = 0x10023000;
-	addr_t uart1_end_addr = 0x10023fff;
+	addr_t uart0_start_addr = 0x10010000;
+	addr_t uart0_end_addr = 0x10010fff;
+	addr_t uart1_start_addr = 0x10011000;
+	addr_t uart1_end_addr = 0x10011fff;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
+	addr_t prci_start_addr = 0x10000000;
+	addr_t prci_end_addr = 0x1000FFFF;
 
 	bool use_debug_runner = false;
 	bool use_instr_dmi = false;
@@ -163,10 +166,11 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<NUM_CORES + 1, 7> bus("SimpleBus");
+	SimpleBus<NUM_CORES + 1, 8> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	FU540_PLIC plic("PLIC", NUM_CORES);
 	CLINT<NUM_CORES> clint("CLINT");
+	PRCI prci("PRCI");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -203,8 +207,9 @@ int sc_main(int argc, char **argv) {
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 	bus.ports[3] = new PortMapping(opt.dtb_rom_start_addr, opt.dtb_rom_end_addr);
 	bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-	bus.ports[5] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[6] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[5] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[6] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
+	bus.ports[7] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
 
 	// connect TLM sockets
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -216,8 +221,9 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[2].bind(sys.tsock);
 	bus.isocks[3].bind(dtb_rom.tsock);
 	bus.isocks[4].bind(uart0.tsock);
-	bus.isocks[5].bind(plic.tsock);
-	bus.isocks[6].bind(slip.tsock);
+	bus.isocks[5].bind(slip.tsock);
+	bus.isocks[6].bind(plic.tsock);
+	bus.isocks[7].bind(prci.tsock);
 
 	// connect interrupt signals/communication
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -239,6 +245,15 @@ int sc_main(int argc, char **argv) {
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 	}
+
+	// OpenSBI boots all harts except hart 0 by default.
+	//
+	// To prevent this hart from being scheduled when stuck in
+	// the OpenSBI `sbi_hart_hang()` function do not ignore WFI on
+	// this hart.
+	//
+	// See: https://github.com/riscv/opensbi/commit/d70f8aab45d1e449b3b9be26e050b20ed76e12e9
+	cores[0]->iss.ignore_wfi = false;
 
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
