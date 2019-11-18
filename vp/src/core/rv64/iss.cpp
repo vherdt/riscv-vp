@@ -1520,6 +1520,15 @@ uint64_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
 }
 
+std::vector<int64_t> ISS::get_registers(void) {
+	std::vector<int64_t> regvals;
+
+	for (int64_t v : regs.regs)
+		regvals.push_back(v);
+
+	return regvals;
+}
+
 void ISS::fp_finish_instr() {
 	fp_set_dirty();
 	fp_update_exception_flags();

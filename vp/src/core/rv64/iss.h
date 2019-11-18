@@ -197,6 +197,8 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	uint64_t get_hart_id();
 
+	std::vector<int64_t> get_registers(void);
+
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
 		mem->atomic_unlock();
