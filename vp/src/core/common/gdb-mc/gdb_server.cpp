@@ -157,6 +157,7 @@ void GDBServer::serve(void) {
 		}
 
 		dispatch(conn);
+		close(conn);
 	}
 }
 
