@@ -23,6 +23,7 @@ public:
 	typedef void (GDBServer::*packet_handler)(int, gdb_command_t *);
 
 	void haltReason(int, gdb_command_t *);
+	void getRegisters(int, gdb_command_t *);
 	void setThread(int, gdb_command_t *);
 	void qAttached(int, gdb_command_t *);
 	void qSupported(int, gdb_command_t *);

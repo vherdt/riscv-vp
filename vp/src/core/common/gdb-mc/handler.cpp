@@ -1,8 +1,12 @@
+#include <assert.h>
+
+#include "debug.h"
 #include "gdb_server.h"
 #include "protocol/protocol.h"
 
 std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
+	{ "g", &GDBServer::getRegisters },
 	{ "H", &GDBServer::setThread },
 	{ "qAttached", &GDBServer::qAttached },
 	{ "qSupported", &GDBServer::qSupported },
@@ -17,6 +21,40 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 
 	// TODO: Only send create conditionally.
 	send_packet(conn, "T05create:;");
+}
+
+
+void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
+	int thread;
+
+	try {
+		thread = thread_ops.at('g');
+	} catch (const std::system_error& e) {
+		thread = GDB_THREAD_ALL;
+	}
+
+	if (thread == GDB_THREAD_ANY)
+		thread = 1;
+
+	auto fn = [this, conn] (debugable *hart) {
+		std::ostringstream stream;
+
+		/* TODO: this is architecture specific */
+		stream << std::setfill('0') << std::hex;
+		for (int64_t v : hart->get_registers())
+			stream << std::setw(16) << bswap_64(v);
+
+		this->send_packet(conn, stream.str().c_str());
+	};
+
+	assert(thread >= 0);
+	if (thread == GDB_THREAD_ALL) {
+		for (debugable *hart : harts)
+			fn(hart);
+	} else {
+		assert(thread >= 1);
+		fn(harts.at(thread - 1));
+	}
 }
 
 void GDBServer::setThread(int conn, gdb_command_t *cmd) {
