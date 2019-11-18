@@ -4,13 +4,19 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <queue>
+#include <mutex>
 #include <systemc>
 #include <thread>
 #include <map>
+#include <tuple>
 
 #include "debug.h"
 #include "gdb_stub.h" // DebugMemoryInterface
 #include "protocol/protocol.h"
+
+/* TODO: move this header to common? */
+#include <platform/hifive/async_event.h>
 
 SC_MODULE(GDBServer) {
 public:
@@ -31,9 +37,14 @@ public:
 	          uint16_t);
 
 private:
+	typedef std::tuple<int, gdb_packet_t *> ctx;
+
+	AsyncEvent asyncEvent;
 	std::vector<debugable*> harts;
 	std::thread thr;
 	char *prevpkt;
+	std::queue<ctx> pktq;
+	std::mutex mtx;
 	int sockfd;
 
 	/* operation → thread id */
@@ -45,6 +56,7 @@ private:
 	void retransmit(int);
 	void dispatch(int conn);
 	void serve(void);
+	void run(void);
 };
 
 #endif

@@ -14,6 +14,9 @@
 #include "gdb_server.h"
 #include "protocol/protocol.h"
 
+/* TODO: move this header to common? */
+#include <platform/hifive/async_event.h>
+
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
@@ -23,6 +26,10 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	harts = dharts;
 	prevpkt = NULL;
 	create_sock(port);
+
+	SC_METHOD(run);
+	sensitive << asyncEvent;
+	dont_initialize();
 
 	thr = std::thread(&GDBServer::serve, this);
 	thr.detach();
@@ -118,44 +125,22 @@ void GDBServer::retransmit(int conn) {
 void GDBServer::dispatch(int conn) {
 	FILE *stream;
 	gdb_packet_t *pkt;
-	gdb_command_t *cmd;
-	packet_handler handler;
 
 	if (!(stream = fdopen(conn, "r")))
 		throw std::system_error(errno, std::generic_category());
 
-	while ((pkt = gdb_parse_pkt(stream))) {
+	for (;;) {
+		mtx.lock();
+		if (!(pkt = gdb_parse_pkt(stream))) {
+			mtx.unlock();
+			break;
+		}
+
 		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
 		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
-		switch (pkt->kind) {
-		case GDB_KIND_NACK:
-			retransmit(conn);
-			/* fall through */
-		case GDB_KIND_ACK:
-			goto next1;
-		}
-
-		/* Acknowledge retrival of current packet */
-		send_packet(conn, NULL, (gdb_is_valid(pkt)) ? GDB_KIND_ACK : GDB_KIND_NACK);
-
-		if (!(cmd = gdb_parse_cmd(pkt)))
-			goto next1;
-
-		try {
-			handler = handlers.at(cmd->name);
-		} catch (const std::out_of_range&) {
-			// For any command not supported by the stub, an
-			// empty response (‘$#00’) should be returned.
-			send_packet(conn, "");
-			goto next2;
-		}
-
-		(this->*handler)(conn, cmd);
-next2:
-		gdb_free_cmd(cmd);
-next1:
-		gdb_free_packet(pkt);
+		pktq.push(std::make_tuple(conn, pkt));
+		asyncEvent.notify();
 	}
 
 	fclose(stream);
@@ -173,4 +158,46 @@ void GDBServer::serve(void) {
 
 		dispatch(conn);
 	}
+}
+
+void GDBServer::run(void) {
+	int conn;
+	gdb_command_t *cmd;
+	gdb_packet_t *pkt;
+	packet_handler handler;
+
+	auto ctx = pktq.front();
+	std::tie (conn, pkt) = ctx;
+
+	switch (pkt->kind) {
+	case GDB_KIND_NACK:
+		retransmit(conn);
+		/* fall through */
+	case GDB_KIND_ACK:
+		goto next1;
+	}
+
+	if (!(cmd = gdb_parse_cmd(pkt))) {
+		send_packet(conn, NULL, GDB_KIND_NACK);
+		goto next1;
+	}
+
+	send_packet(conn, NULL, GDB_KIND_ACK);
+	try {
+		handler = handlers.at(cmd->name);
+	} catch (const std::out_of_range&) {
+		// For any command not supported by the stub, an
+		// empty response (‘$#00’) should be returned.
+		send_packet(conn, "");
+		goto next2;
+	}
+
+	(this->*handler)(conn, cmd);
+
+next2:
+	gdb_free_cmd(cmd);
+next1:
+	gdb_free_packet(pkt);
+	pktq.pop();
+	mtx.unlock();
 }
