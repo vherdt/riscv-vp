@@ -141,6 +141,10 @@ void GDBServer::dispatch(int conn) {
 
 		pktq.push(std::make_tuple(conn, pkt));
 		asyncEvent.notify();
+
+		/* further processing is performed in the SystemC run()
+		 * thread which interacts with the ISS objects and
+		 * unlocks the mutex after finishing all operations. */
 	}
 
 	fclose(stream);
