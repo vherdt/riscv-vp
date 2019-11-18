@@ -264,7 +264,7 @@ int sc_main(int argc, char **argv) {
 		std::vector<debugable*> dharts;
 		for (size_t i = 0; i < NUM_CORES; i++)
 			dharts.push_back(&cores[i]->iss);
-		GDBServer gdbserv("GDBServer", dharts, NULL, opt.debug_port);
+		new GDBServer("GDBServer", dharts, NULL, opt.debug_port);
 #else
 		std::cerr << "GDB_MULTICORE is not supported" << std::endl;
 		return EXIT_FAILURE;
