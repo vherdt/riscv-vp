@@ -6,10 +6,15 @@
 #include "register_format.h"
 #include "protocol/protocol.h"
 
+enum {
+	GDB_PC_REG = 32,
+};
+
 std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
 	{ "g", &GDBServer::getRegisters },
 	{ "H", &GDBServer::setThread },
+	{ "p", &GDBServer::readRegister },
 	{ "qAttached", &GDBServer::qAttached },
 	{ "qSupported", &GDBServer::qSupported },
 	{ "qfThreadInfo", &GDBServer::threadInfo },
@@ -24,7 +29,6 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 	// TODO: Only send create conditionally.
 	send_packet(conn, "T05create:;");
 }
-
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	int thread;
@@ -65,6 +69,30 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 	thread_ops[hcmd->op] = hcmd->id.tid;
 
 	send_packet(conn, "OK");
+}
+
+void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
+	int reg;
+	int64_t regval;
+	debugable *hart;
+	RegisterFormater formatter(RV64);
+
+	/* TODO: How should the hart be determined? */
+	hart = harts[0];
+
+	/* TODO: add get_register method to debugable */
+	std::vector<int64_t> regs = hart->get_registers();
+
+	reg = cmd->v.ival;
+	if (reg == GDB_PC_REG) {
+		regval = hart->get_program_counter();
+	} else {
+		regval = regs.at(reg); /* TODO: might be out-of-bounds */
+	}
+	/* TODO: handle CSRs? */
+
+	formatter.formatRegister(regval);
+	send_packet(conn, formatter.str().c_str());
 }
 
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
