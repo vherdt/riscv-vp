@@ -1,7 +1,9 @@
 #include <assert.h>
 
 #include "debug.h"
+#include "core_defs.h"
 #include "gdb_server.h"
+#include "register_format.h"
 #include "protocol/protocol.h"
 
 std::map<std::string, GDBServer::packet_handler> handlers {
@@ -37,14 +39,13 @@ void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 		thread = 1;
 
 	auto fn = [this, conn] (debugable *hart) {
-		std::ostringstream stream;
+		/* TODO: do not hardcore architecture */
+		RegisterFormater formatter(RV64);
 
-		/* TODO: this is architecture specific */
-		stream << std::setfill('0') << std::hex;
 		for (int64_t v : hart->get_registers())
-			stream << std::setw(16) << bswap_64(v);
+			formatter.formatRegister(v);
 
-		this->send_packet(conn, stream.str().c_str());
+		this->send_packet(conn, formatter.str().c_str());
 	};
 
 	assert(thread >= 0);

@@ -4,6 +4,7 @@ add_library(gdb-mc
 	protocol/parser2.c
 	protocol/util.c
 	gdb_server.cpp
+	register_format.cpp
 	handler.cpp)
 
 set_source_files_properties(protocol/mpc/mpc.c
