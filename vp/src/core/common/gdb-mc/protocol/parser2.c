@@ -139,7 +139,7 @@ gdbf_packet_p(int n, mpc_val_t** xs)
 	assert(*((char*)xs[0]) == 'p');
 
 	cmd = gdb_new_cmd((char *)xs[0], GDB_ARG_H);
-	cmd->v.ival = *((int*)xs[1]);
+	cmd->v.ival = *((int*)xs[1]); /* TODO: make this a uint */
 
 	free(xs[1]);
 
