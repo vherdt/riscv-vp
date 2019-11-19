@@ -45,6 +45,7 @@ typedef struct {
 typedef enum {
 	GDB_ARG_NONE,
 	GDB_ARG_H,
+	GDB_ARG_INT,
 } gdb_argument_t;
 
 typedef struct {
@@ -53,6 +54,7 @@ typedef struct {
 
 	union {
 		gdb_cmd_h_t hcmd;
+		int ival;
 	} v;
 } gdb_command_t;
 

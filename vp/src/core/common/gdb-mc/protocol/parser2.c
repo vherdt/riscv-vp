@@ -130,6 +130,28 @@ gdb_packet_h(void)
 	return mpc_and(3, gdbf_packet_h, mpc_char('H'), op, id, free, free);
 }
 
+static mpc_val_t *
+gdbf_packet_p(int n, mpc_val_t** xs)
+{
+	gdb_command_t *cmd;
+
+	assert(n == 2);
+	assert(*((char*)xs[0]) == 'p');
+
+	cmd = gdb_new_cmd((char *)xs[0], GDB_ARG_H);
+	cmd->v.ival = *((int*)xs[1]);
+
+	free(xs[1]);
+
+	return cmd;
+}
+
+static mpc_parser_t *
+gdb_packet_p(void)
+{
+	return mpc_and(2, gdbf_packet_p, mpc_char('p'), mpc_hex(), free);
+}
+
 mpc_parser_t *
 gdb_any(void)
 {
@@ -139,7 +161,7 @@ gdb_any(void)
 static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(2, gdb_packet_h(), gdb_any());
+	return mpc_or(3, gdb_packet_h(), gdb_packet_p(), gdb_any());
 }
 
 gdb_command_t *
