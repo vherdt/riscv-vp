@@ -197,6 +197,8 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	uint64_t get_hart_id();
 
+	uint64_t get_program_counter();
+
 	std::vector<int64_t> get_registers(void);
 
 	void release_lr_sc_reservation() {

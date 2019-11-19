@@ -16,6 +16,8 @@ struct debugable {
 	virtual ~debugable() {}
 
 	virtual uint64_t get_hart_id(void) = 0;
+	virtual uint64_t get_program_counter(void) = 0;
+
 	virtual std::vector<int64_t> get_registers(void) = 0;
 
 	virtual void run(void) = 0;
