@@ -7,6 +7,7 @@
 #include "protocol/protocol.h"
 
 enum {
+	GDB_PKTSIZ = 4096,
 	GDB_PC_REG = 32,
 };
 
@@ -98,8 +99,10 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
 	std::string thrlist = "m";
 
+	/* TODO: refactor this to make it always output hex digits,
+	 * preferablly move it to the protocol code/ */
 	for (size_t i = 0; i < harts.size(); i++) {
-		thrlist += std::to_string(i + 1);
+		thrlist += std::to_string(i);
 		if (i + 1 < harts.size())
 			thrlist += ",";
 	}
@@ -123,5 +126,5 @@ void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
-	send_packet(conn, "multiprocess+");
+	send_packet(conn, ("PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
 }
