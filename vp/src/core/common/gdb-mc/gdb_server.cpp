@@ -23,6 +23,10 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
                      std::vector<debugable*> dharts,
                      DebugMemoryInterface *mm,
                      uint16_t port) {
+	if (dharts.size() <= 0)
+		throw std::invalid_argument("no harts specified");
+
+	arch = dharts.at(0)->get_architecture(); // assuming all harts use the same
 	harts = dharts;
 	prevpkt = NULL;
 	create_sock(port);

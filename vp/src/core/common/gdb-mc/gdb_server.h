@@ -12,6 +12,7 @@
 #include <tuple>
 
 #include "debug.h"
+#include "core_defs.h"
 #include "gdb_stub.h" // DebugMemoryInterface
 #include "protocol/protocol.h"
 
@@ -42,6 +43,7 @@ private:
 	typedef std::tuple<int, gdb_packet_t *> ctx;
 
 	AsyncEvent asyncEvent;
+	Architecture arch;
 	std::vector<debugable*> harts;
 	std::thread thr;
 	char *prevpkt;

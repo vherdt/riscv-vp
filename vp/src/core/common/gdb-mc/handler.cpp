@@ -1,7 +1,6 @@
 #include <assert.h>
 
 #include "debug.h"
-#include "core_defs.h"
 #include "gdb_server.h"
 #include "register_format.h"
 #include "protocol/protocol.h"
@@ -45,7 +44,7 @@ void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 
 	auto fn = [this, conn] (debugable *hart) {
 		/* TODO: do not hardcore architecture */
-		RegisterFormater formatter(RV64);
+		RegisterFormater formatter(arch);
 
 		for (int64_t v : hart->get_registers())
 			formatter.formatRegister(v);
@@ -76,7 +75,7 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	int reg;
 	int64_t regval;
 	debugable *hart;
-	RegisterFormater formatter(RV64);
+	RegisterFormater formatter(arch);
 
 	/* TODO: How should the hart be determined? */
 	hart = harts[0];
