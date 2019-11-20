@@ -88,7 +88,12 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	if (reg == GDB_PC_REG) {
 		regval = hart->get_program_counter();
 	} else {
-		regval = regs.at(reg); /* TODO: might be out-of-bounds */
+		if (reg >= regs.size()) {
+			send_packet(conn, "E01");
+			return;
+		}
+
+		regval = regs.at(reg);
 	}
 	/* TODO: handle CSRs? */
 
