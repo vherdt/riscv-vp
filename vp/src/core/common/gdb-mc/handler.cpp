@@ -106,7 +106,7 @@ void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
 	/* TODO: refactor this to make it always output hex digits,
 	 * preferablly move it to the protocol code/ */
 	for (size_t i = 0; i < harts.size(); i++) {
-		thrlist += std::to_string(i);
+		thrlist += std::to_string(i + 1);
 		if (i + 1 < harts.size())
 			thrlist += ",";
 	}
