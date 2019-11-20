@@ -54,31 +54,32 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	int reg;
-	int64_t regval;
 	debugable *hart;
-	RegisterFormater formatter(arch);
-
-	/* TODO: How should the hart be determined? */
-	hart = harts[0];
-
-	/* TODO: add get_register method to debugable */
-	std::vector<int64_t> regs = hart->get_registers();
 
 	reg = cmd->v.ival;
-	if (reg == GDB_PC_REG) {
-		regval = hart->get_program_counter();
-	} else {
-		if (reg >= regs.size()) {
-			send_packet(conn, "E01");
-			return;
+	auto fn = [this, reg, conn] (debugable *hart) {
+		int64_t regval;
+		RegisterFormater formatter(arch);
+
+		if (reg == GDB_PC_REG) {
+			regval = hart->get_program_counter();
+		} else {
+			/* TODO: add get_register method to debugable */
+			std::vector<int64_t> regs = hart->get_registers();
+			if (reg >= regs.size()) {
+				send_packet(conn, "E01"); /* TODO: Only send error once */
+				return;
+			}
+			regval = regs.at(reg);
 		}
 
-		regval = regs.at(reg);
-	}
-	/* TODO: handle CSRs? */
+		/* TODO: handle CSRs? */
 
-	formatter.formatRegister(regval);
-	send_packet(conn, formatter.str().c_str());
+		formatter.formatRegister(regval);
+		send_packet(conn, formatter.str().c_str());
+	};
+
+	exec_thread(fn);
 }
 
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
