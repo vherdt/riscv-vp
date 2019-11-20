@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <vector>
 
+#include "core_defs.h"
+
 /* TODO: For now the debugable class can only be used with RV64, it is
  * howver intended as an abstract interface that should work with both
  * RV32 and RV64.
@@ -14,6 +16,8 @@
  */
 struct debugable {
 	virtual ~debugable() {}
+
+	virtual Architecture get_architecture(void) = 0;
 
 	virtual uint64_t get_hart_id(void) = 0;
 	virtual uint64_t get_program_counter(void) = 0;

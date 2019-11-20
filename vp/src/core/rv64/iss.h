@@ -175,6 +175,10 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	ISS(uint64_t hart_id);
 
+	Architecture get_architecture(void) {
+		return RV64;
+	}
+
 	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();

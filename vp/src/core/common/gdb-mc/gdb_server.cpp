@@ -86,6 +86,8 @@ void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 
 	serialized = gdb_serialize(kind, data);
 
+	printf("serialized '%s'\n", serialized);
+
 	try {
 		writeall(conn, serialized, strlen(serialized));
 	} catch (const std::system_error& e) {
