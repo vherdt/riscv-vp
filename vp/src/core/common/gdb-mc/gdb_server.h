@@ -40,6 +40,7 @@ public:
 	          uint16_t);
 
 private:
+	typedef std::function<void(debugable *)> thread_func;
 	typedef std::tuple<int, gdb_packet_t *> ctx;
 
 	AsyncEvent asyncEvent;
@@ -55,6 +56,7 @@ private:
 	std::map<char, int> thread_ops;
 
 	void create_sock(uint16_t);
+	void exec_thread(thread_func, char = 'g');
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);

@@ -31,19 +31,7 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
-	int thread;
-
-	try {
-		thread = thread_ops.at('g');
-	} catch (const std::system_error& e) {
-		thread = GDB_THREAD_ALL;
-	}
-
-	if (thread == GDB_THREAD_ANY)
-		thread = 1;
-
 	auto fn = [this, conn] (debugable *hart) {
-		/* TODO: do not hardcore architecture */
 		RegisterFormater formatter(arch);
 
 		for (int64_t v : hart->get_registers())
@@ -52,14 +40,7 @@ void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 		this->send_packet(conn, formatter.str().c_str());
 	};
 
-	assert(thread >= 0);
-	if (thread == GDB_THREAD_ALL) {
-		for (debugable *hart : harts)
-			fn(hart);
-	} else {
-		assert(thread >= 1);
-		fn(harts.at(thread - 1));
-	}
+	exec_thread(fn);
 }
 
 void GDBServer::setThread(int conn, gdb_command_t *cmd) {

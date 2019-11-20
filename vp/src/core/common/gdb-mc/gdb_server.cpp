@@ -71,6 +71,28 @@ err:
 	throw std::system_error(errno, std::generic_category());
 }
 
+void GDBServer::exec_thread(thread_func fn, char op) {
+	int thread;
+
+	try {
+		thread = thread_ops.at(op);
+	} catch (const std::system_error& e) {
+		thread = GDB_THREAD_ALL;
+	}
+
+	if (thread == GDB_THREAD_ANY)
+		thread = 1;
+
+	assert(thread >= 0);
+	if (thread == GDB_THREAD_ALL) {
+		for (debugable *hart : harts)
+			fn(hart);
+	} else {
+		assert(thread >= 1);
+		fn(harts.at(thread - 1));
+	}
+}
+
 void GDBServer::writeall(int fd, char *data, size_t len) {
 	ssize_t ret, w;
 
