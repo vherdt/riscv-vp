@@ -19,6 +19,7 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "qSupported", &GDBServer::qSupported },
 	{ "qfThreadInfo", &GDBServer::threadInfo },
 	{ "qsThreadInfo", &GDBServer::threadInfoEnd },
+	{ "vCont", &GDBServer::vCont },
 	{ "vCont?", &GDBServer::vContSupported },
 };
 
@@ -114,6 +115,17 @@ void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 	send_packet(conn, ("vContSupported+;PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
+}
+
+void GDBServer::vCont(int conn, gdb_command_t *cmd) {
+	_gdb_vcont_t *vcont;
+
+	vcont = cmd->v.vval;
+	for (vcont = cmd->v.vval; vcont; vcont = vcont->next)
+		printf("%s: vcont->action = %c\n", __func__, vcont->action);
+
+	/* TODO: implement the actual logic */
+	send_packet(conn, "S00");
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
