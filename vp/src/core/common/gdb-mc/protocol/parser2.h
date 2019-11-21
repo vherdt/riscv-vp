@@ -10,8 +10,6 @@
 				--n;                                           \
                                                                                \
 		assert(n > 0);                                                 \
-		assert(!strcmp(xs[0], #I));                                    \
-                                                                               \
 		cmd = gdb_new_cmd(xs[0], TYPE);                                \
 		FUNC;                                                          \
                                                                                \
@@ -35,4 +33,10 @@
 		                                                               \
 		cmd->v.ival = *((int*)xs[1]);                                  \
 		free(xs[1]);                                                   \
+	} while (0)
+
+#define GDBF_ARG_VCONT                                                         \
+	do {                                                                   \
+		assert(n == 2);                                                \
+		cmd->v.vval = (gdb_vcont_t *)xs[1];                            \
 	} while (0)

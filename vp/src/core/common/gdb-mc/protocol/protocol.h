@@ -42,8 +42,19 @@ typedef struct {
 	gdb_thread_t id;
 } gdb_cmd_h_t;
 
+typedef struct _gdb_vcont_t gdb_vcont_t;
+
+struct _gdb_vcont_t {
+	char action;
+	int sig; /* TODO: make this unsigned */
+	gdb_thread_t *thread;
+
+	gdb_vcont_t *next; /* NULL on end */
+};
+
 typedef enum {
 	GDB_ARG_NONE,
+	GDB_ARG_VCONT,
 	GDB_ARG_H,
 	GDB_ARG_INT,
 } gdb_argument_t;
@@ -53,6 +64,7 @@ typedef struct {
 	gdb_argument_t type;
 
 	union {
+		gdb_vcont_t *vval;
 		gdb_cmd_h_t hcmd;
 		int ival;
 	} v;

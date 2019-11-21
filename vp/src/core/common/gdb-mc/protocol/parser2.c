@@ -22,6 +22,17 @@ gdb_new_cmd(char *name, gdb_argument_t type)
 void
 gdb_free_cmd(gdb_command_t *cmd)
 {
+	gdb_vcont_t *parent, *next;
+
+	if (cmd->type == GDB_ARG_VCONT) {
+		parent = cmd->v.vval;
+		while (parent) {
+			next = parent->next;
+			free(parent);
+			parent = next;
+		}
+	}
+
 	free(cmd->name);
 	free(cmd);
 }
@@ -123,6 +134,73 @@ gdb_packet_p(void)
 	return mpc_and(2, gdbf_packet_p, mpc_char('p'), mpc_hex(), free);
 }
 
+static mpc_val_t *
+gdbf_vcont_action(int n, mpc_val_t **xs)
+{
+	char *op, *actstr;
+	size_t actlen;
+	gdb_vcont_t *vcont;
+
+	assert(n == 2);
+
+	actstr = (char *)xs[0];
+	actlen = strlen(actstr);
+
+	vcont = xmalloc(sizeof(*vcont));
+	vcont->action = *actstr;
+	vcont->next = NULL;
+
+	if (actlen == 1)
+		vcont->sig = -1;
+	else if (actlen == 3)
+		vcont->sig = strtol(actstr + 1, NULL, 16);
+	else
+		assert(0);
+
+	/* may be a null pointer */
+	vcont->thread = (gdb_thread_t *)xs[1];
+
+	free(xs[0]);
+	free(xs[1]);
+
+	return vcont;
+}
+
+static mpc_val_t *
+gdbf_vcont(int n, mpc_val_t **xs)
+{
+	size_t i;
+	gdb_vcont_t *vcont;
+
+	assert(n >= 1);
+
+	for (vcont = (gdb_vcont_t *)xs[0], i = 1; i < n; i++, vcont = vcont->next)
+		vcont->next = (gdb_vcont_t *)xs[i];
+	vcont->next = NULL;
+
+	return vcont;
+}
+
+gdbf_fold(vcont, GDB_ARG_VCONT, GDBF_ARG_VCONT)
+
+static mpc_parser_t *
+gdb_packet_vcont(void)
+{
+	mpc_parser_t *action0, *action1, *action, *args, *thread;
+
+	/* TODO: add support for r command */
+
+	action0 = mpc_oneof("cst");
+	action1 = mpc_and(2, mpcf_strfold, mpc_oneof("CS"), mpc_hexdigits());
+
+	thread = mpc_and(2, mpcf_snd_free, mpc_char(':'), gdb_thread_id(), free);
+	action = mpc_and(2, gdbf_vcont_action, mpc_or(2, action0, action1),
+	                 mpc_maybe(thread), free); /* destructor incorrect but unused */
+
+	args = mpc_many1(gdbf_vcont, mpc_and(2, mpcf_snd_free, mpc_char(';'), action, free));
+	return mpc_and(2, gdbf_packet_vcont, mpc_string("vCont"), args, free);
+}
+
 mpc_parser_t *
 gdb_any(void)
 {
@@ -132,7 +210,7 @@ gdb_any(void)
 static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(3, gdb_packet_h(), gdb_packet_p(), gdb_any());
+	return mpc_or(4, gdb_packet_h(), gdb_packet_p(), gdb_packet_vcont(), gdb_any());
 }
 
 gdb_command_t *
