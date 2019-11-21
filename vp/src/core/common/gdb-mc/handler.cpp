@@ -117,6 +117,7 @@ void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
-	// Continue, Step and Stop will be supported but not with signals
-	send_packet(conn, "vCont;cst");
+	// We need to support both c and C otherwise GDB doesn't use vCont
+	// This is documented in the remote_vcont_probe function in the GDB source.
+	send_packet(conn, "vCont;c;C;s;S;t");
 }
