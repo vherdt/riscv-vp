@@ -29,7 +29,7 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 	// present.
 
 	// TODO: Only send create conditionally.
-	send_packet(conn, "T05create:;");
+	send_packet(conn, "S05");
 }
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
