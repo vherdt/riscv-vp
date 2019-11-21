@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "mpc.h"
+#include "parser2.h"
 #include "protocol.h"
 #include "fns.h"
 
@@ -101,23 +102,7 @@ gdb_thread_id(void)
 	return mpc_and(2, gdbf_thread_id, mpc_maybe(pid), tid, free);
 }
 
-static mpc_val_t *
-gdbf_packet_h(int n, mpc_val_t** xs)
-{
-	gdb_command_t *cmd;
-
-	assert(n == 3);
-	assert(*((char*)xs[0]) == 'H');
-
-	cmd = gdb_new_cmd((char *)xs[0], GDB_ARG_H);
-	cmd->v.hcmd.op = *((char*)xs[1]);
-	cmd->v.hcmd.id = *((gdb_thread_t*)xs[2]);
-
-	free(xs[1]);
-	free(xs[2]);
-
-	return cmd;
-}
+gdbf_fold(h, GDB_ARG_H, GDBF_ARG_HCMD)
 
 mpc_parser_t *
 gdb_packet_h(void)
@@ -130,21 +115,7 @@ gdb_packet_h(void)
 	return mpc_and(3, gdbf_packet_h, mpc_char('H'), op, id, free, free);
 }
 
-static mpc_val_t *
-gdbf_packet_p(int n, mpc_val_t** xs)
-{
-	gdb_command_t *cmd;
-
-	assert(n == 2);
-	assert(*((char*)xs[0]) == 'p');
-
-	cmd = gdb_new_cmd((char *)xs[0], GDB_ARG_H);
-	cmd->v.ival = *((int*)xs[1]); /* TODO: make this a uint */
-
-	free(xs[1]);
-
-	return cmd;
-}
+gdbf_fold(p, GDB_ARG_INT, GDBF_ARG_INT)
 
 static mpc_parser_t *
 gdb_packet_p(void)
