@@ -113,7 +113,7 @@ void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
-	send_packet(conn, ("PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
+	send_packet(conn, ("vContSupported+;PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
