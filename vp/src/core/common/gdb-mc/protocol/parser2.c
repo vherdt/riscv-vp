@@ -208,9 +208,19 @@ gdb_any(void)
 }
 
 static mpc_parser_t *
+gdb_cmd(mpc_parser_t *cmd)
+{
+	return mpc_and(2, mpcf_fst_free, cmd, mpc_eoi(), gdb_free_cmd);
+}
+
+static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(4, gdb_packet_h(), gdb_packet_p(), gdb_packet_vcont(), gdb_any());
+	return mpc_or(4,
+	              gdb_cmd(gdb_packet_h()),
+	              gdb_cmd(gdb_packet_p()),
+	              gdb_cmd(gdb_packet_vcont()),
+	              gdb_any());
 }
 
 gdb_command_t *
