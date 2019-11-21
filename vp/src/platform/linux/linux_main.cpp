@@ -15,6 +15,7 @@
 #include "syscall.h"
 #include "util/options.h"
 #include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -259,13 +260,19 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
+	std::vector<debugable*> dharts;
 	if (opt.use_debug_runner) {
 #ifdef GDB_MULTICORE
-		std::vector<debugable*> dharts;
-		for (size_t i = 0; i < NUM_CORES; i++)
+		for (size_t i = 0; i < NUM_CORES; i++) {
+			cores[i]->iss.debug_mode = true; // TODO: move to GDBServerRunner
 			dharts.push_back(&cores[i]->iss);
-		new GDBServer("GDBServer", dharts, NULL, opt.debug_port);
+		}
+
+		auto server = new GDBServer("GDBServer", dharts, NULL, opt.debug_port);
+		for (size_t i = 0; i < dharts.size(); i++)
+			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 #else
+		(void)dharts;
 		std::cerr << "GDB_MULTICORE is not supported" << std::endl;
 		return EXIT_FAILURE;
 #endif

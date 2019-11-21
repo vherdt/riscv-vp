@@ -118,14 +118,24 @@ void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
+	debugable *hart;
 	_gdb_vcont_t *vcont;
+	sc_core::sc_event *run_event, *gdb_event;
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next)
 		printf("%s: vcont->action = %c\n", __func__, vcont->action);
 
+	/* TODO */
+	hart = harts[0];
+	std::tie (run_event, gdb_event) = events.at(hart);
+
+	run_event->notify();
+	sc_core::wait(*gdb_event);
+
 	/* TODO: implement the actual logic */
-	send_packet(conn, "S00");
+	/* TODO: needs status access */
+	send_packet(conn, "S05");
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {

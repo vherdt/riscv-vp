@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -26,17 +27,26 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	if (dharts.size() <= 0)
 		throw std::invalid_argument("no harts specified");
 
+	for (debugable *h : dharts)
+		events[h] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
+
 	arch = dharts.at(0)->get_architecture(); // assuming all harts use the same
 	harts = dharts;
 	prevpkt = NULL;
 	create_sock(port);
 
-	SC_METHOD(run);
-	sensitive << asyncEvent;
-	dont_initialize();
+	SC_THREAD(run);
 
 	thr = std::thread(&GDBServer::serve, this);
 	thr.detach();
+}
+
+sc_core::sc_event *GDBServer::get_event(debugable *hart) {
+	return std::get<0>(events.at(hart));
+}
+
+void GDBServer::set_event(debugable *hart, sc_core::sc_event *event) {
+	std::get<1>(events.at(hart)) = event;
 }
 
 void GDBServer::create_sock(uint16_t port) {
@@ -199,38 +209,42 @@ void GDBServer::run(void) {
 	gdb_packet_t *pkt;
 	packet_handler handler;
 
-	auto ctx = pktq.front();
-	std::tie (conn, pkt) = ctx;
+	for (;;) {
+		sc_core::wait(asyncEvent);
 
-	switch (pkt->kind) {
-	case GDB_KIND_NACK:
-		retransmit(conn);
-		/* fall through */
-	case GDB_KIND_ACK:
-		goto next1;
-	}
+		auto ctx = pktq.front();
+		std::tie (conn, pkt) = ctx;
 
-	if (!(cmd = gdb_parse_cmd(pkt))) {
-		send_packet(conn, NULL, GDB_KIND_NACK);
-		goto next1;
-	}
+		switch (pkt->kind) {
+		case GDB_KIND_NACK:
+			retransmit(conn);
+			/* fall through */
+		case GDB_KIND_ACK:
+			goto next1;
+		}
 
-	send_packet(conn, NULL, GDB_KIND_ACK);
-	try {
-		handler = handlers.at(cmd->name);
-	} catch (const std::out_of_range&) {
-		// For any command not supported by the stub, an
-		// empty response (‘$#00’) should be returned.
-		send_packet(conn, "");
-		goto next2;
-	}
+		if (!(cmd = gdb_parse_cmd(pkt))) {
+			send_packet(conn, NULL, GDB_KIND_NACK);
+			goto next1;
+		}
 
-	(this->*handler)(conn, cmd);
+		send_packet(conn, NULL, GDB_KIND_ACK);
+		try {
+			handler = handlers.at(cmd->name);
+		} catch (const std::out_of_range&) {
+			// For any command not supported by the stub, an
+			// empty response (‘$#00’) should be returned.
+			send_packet(conn, "");
+			goto next2;
+		}
+
+		(this->*handler)(conn, cmd);
 
 next2:
-	gdb_free_cmd(cmd);
+		gdb_free_cmd(cmd);
 next1:
-	gdb_free_packet(pkt);
-	pktq.pop();
-	mtx.unlock();
+		gdb_free_packet(pkt);
+		pktq.pop();
+		mtx.unlock();
+	}
 }

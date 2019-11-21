@@ -41,9 +41,13 @@ public:
 	          DebugMemoryInterface*,
 	          uint16_t);
 
+	sc_core::sc_event *get_event(debugable *);
+	void set_event(debugable *, sc_core::sc_event *);
+
 private:
 	typedef std::function<void(debugable *)> thread_func;
 	typedef std::tuple<int, gdb_packet_t *> ctx;
+	typedef std::tuple<sc_core::sc_event *, sc_core::sc_event *> hart_event;
 
 	AsyncEvent asyncEvent;
 	Architecture arch;
@@ -56,6 +60,9 @@ private:
 
 	/* operation → thread id */
 	std::map<char, int> thread_ops;
+
+	/* hart → events */
+	std::map<debugable *, hart_event> events;
 
 	void create_sock(uint16_t);
 	void exec_thread(thread_func, char = 'g');
