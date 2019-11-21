@@ -31,6 +31,7 @@ public:
 	void qSupported(int, gdb_command_t *);
 	void threadInfo(int, gdb_command_t *);
 	void threadInfoEnd(int, gdb_command_t *);
+	void vContSupported(int, gdb_command_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 

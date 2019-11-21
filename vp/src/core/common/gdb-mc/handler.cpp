@@ -19,6 +19,7 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "qSupported", &GDBServer::qSupported },
 	{ "qfThreadInfo", &GDBServer::threadInfo },
 	{ "qsThreadInfo", &GDBServer::threadInfoEnd },
+	{ "vCont?", &GDBServer::vContSupported },
 };
 
 void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
@@ -113,4 +114,9 @@ void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 	send_packet(conn, ("PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
+}
+
+void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
+	// Continue, Step and Stop will be supported but not with signals
+	send_packet(conn, "vCont;cst");
 }
