@@ -40,3 +40,11 @@
 		assert(n == 2);                                                \
 		cmd->v.vval = (gdb_vcont_t *)xs[1];                            \
 	} while (0)
+
+#define GDBF_ARG_MEMORY                                                        \
+	do {                                                                   \
+		assert(n == 4);                                                \
+		cmd->v.mem.addr = *((int *)xs[1]);                             \
+		cmd->v.mem.length = *((int *)xs[3]);                           \
+		free(xs[2]);                                                   \
+	} while (0)

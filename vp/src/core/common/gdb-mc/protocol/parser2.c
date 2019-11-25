@@ -201,6 +201,15 @@ gdb_packet_vcont(void)
 	return mpc_and(2, gdbf_packet_vcont, mpc_string("vCont"), args, free);
 }
 
+gdbf_fold(m, GDB_ARG_MEMORY, GDBF_ARG_MEMORY)
+
+static mpc_parser_t *
+gdb_packet_m(void)
+{
+	return mpc_and(4, gdbf_packet_m, mpc_string("m"),
+	               mpc_hex(), mpc_char(','), mpc_hex(), free, free, free);
+}
+
 mpc_parser_t *
 gdb_any(void)
 {
@@ -216,10 +225,11 @@ gdb_cmd(mpc_parser_t *cmd)
 static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(4,
+	return mpc_or(5,
 	              gdb_cmd(gdb_packet_h()),
 	              gdb_cmd(gdb_packet_p()),
 	              gdb_cmd(gdb_packet_vcont()),
+	              gdb_cmd(gdb_packet_m()),
 	              gdb_any());
 }
 

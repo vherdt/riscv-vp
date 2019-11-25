@@ -37,6 +37,12 @@ typedef struct {
 	int tid;
 } gdb_thread_t;
 
+/* TODO: change value types to unsigned */
+typedef struct {
+	int addr;
+	int length;
+} gdb_memory_t;
+
 typedef struct {
 	char op;
 	gdb_thread_t id;
@@ -57,6 +63,7 @@ typedef enum {
 	GDB_ARG_VCONT,
 	GDB_ARG_H,
 	GDB_ARG_INT,
+	GDB_ARG_MEMORY,
 } gdb_argument_t;
 
 typedef struct {
@@ -67,6 +74,7 @@ typedef struct {
 		gdb_vcont_t *vval;
 		gdb_cmd_h_t hcmd;
 		int ival;
+		gdb_memory_t mem;
 	} v;
 } gdb_command_t;
 
