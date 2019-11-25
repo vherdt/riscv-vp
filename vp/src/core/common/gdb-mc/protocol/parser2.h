@@ -44,7 +44,7 @@
 #define GDBF_ARG_MEMORY                                                        \
 	do {                                                                   \
 		assert(n == 4);                                                \
-		cmd->v.mem.addr = *((int *)xs[1]);                             \
-		cmd->v.mem.length = *((int *)xs[3]);                           \
+		cmd->v.mem.addr = (size_t)*((unsigned long long*)xs[1]);       \
+		cmd->v.mem.length = (size_t)*((unsigned long long *)xs[3]);    \
 		free(xs[2]);                                                   \
 	} while (0)

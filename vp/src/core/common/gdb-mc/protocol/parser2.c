@@ -55,6 +55,27 @@ gdbf_ignarg(mpc_val_t* xs)
 }
 
 static mpc_val_t *
+gdbf_unsigned_hex(mpc_val_t *x)
+{
+	unsigned long long *v;
+
+	v = xmalloc(sizeof(*v));
+
+	/* TODO: We can't signal an error error condition from an apply
+	   function and strtoull(3) might potentially overflow. */
+	*v = strtoull((char *)x, NULL, 16);
+
+	free(x);
+	return v;
+}
+
+static mpc_parser_t *
+gdb_address(void)
+{
+	return mpc_expect(mpc_apply(mpc_hexdigits(), gdbf_unsigned_hex), "hexadecimal address");
+}
+
+static mpc_val_t *
 gdbf_negative(mpc_val_t *val)
 {
 	int *neg;
@@ -207,7 +228,8 @@ static mpc_parser_t *
 gdb_packet_m(void)
 {
 	return mpc_and(4, gdbf_packet_m, mpc_string("m"),
-	               mpc_hex(), mpc_char(','), mpc_hex(), free, free, free);
+	               gdb_address(), mpc_char(','), gdb_address(),
+	               free, free, free);
 }
 
 mpc_parser_t *

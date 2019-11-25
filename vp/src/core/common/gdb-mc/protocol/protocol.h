@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #define GDB_CSUM_LEN 2
@@ -37,10 +38,10 @@ typedef struct {
 	int tid;
 } gdb_thread_t;
 
-/* TODO: change value types to unsigned */
+/* TODO: change value types, biggest address? */
 typedef struct {
-	int addr;
-	int length;
+	size_t addr;
+	size_t length;
 } gdb_memory_t;
 
 typedef struct {
