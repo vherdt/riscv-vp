@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "debug.h"
 #include "gdb_server.h"
@@ -14,6 +15,7 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
 	{ "g", &GDBServer::getRegisters },
 	{ "H", &GDBServer::setThread },
+	{ "m", &GDBServer::readMemory },
 	{ "p", &GDBServer::readRegister },
 	{ "qAttached", &GDBServer::qAttached },
 	{ "qSupported", &GDBServer::qSupported },
@@ -52,6 +54,19 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 	thread_ops[hcmd->op] = hcmd->id.tid;
 
 	send_packet(conn, "OK");
+}
+
+void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
+	gdb_memory_t *mem;
+
+	mem = &cmd->v.mem;
+	printf("%s: addr = %zu, size = %zu\n", __func__, mem->addr, mem->length);
+
+	assert(mem->addr <= UINT64_MAX);
+	assert(mem->length <= INT_MAX);
+
+	std::string val = memory->read_memory((uint64_t)mem->addr, (unsigned)mem->length);
+	send_packet(conn, val.c_str());
 }
 
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {

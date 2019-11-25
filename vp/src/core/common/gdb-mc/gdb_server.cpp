@@ -30,6 +30,7 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	for (debugable *h : dharts)
 		events[h] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
 
+	memory = mm;
 	arch = dharts.at(0)->get_architecture(); // assuming all harts use the same
 	harts = dharts;
 	prevpkt = NULL;

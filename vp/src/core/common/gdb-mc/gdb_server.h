@@ -26,6 +26,7 @@ public:
 	void haltReason(int, gdb_command_t *);
 	void getRegisters(int, gdb_command_t *);
 	void setThread(int, gdb_command_t *);
+	void readMemory(int, gdb_command_t *);
 	void readRegister(int, gdb_command_t *);
 	void qAttached(int, gdb_command_t *);
 	void qSupported(int, gdb_command_t *);
@@ -49,6 +50,7 @@ private:
 	typedef std::tuple<int, gdb_packet_t *> ctx;
 	typedef std::tuple<sc_core::sc_event *, sc_core::sc_event *> hart_event;
 
+	DebugMemoryInterface *memory;
 	AsyncEvent asyncEvent;
 	Architecture arch;
 	std::vector<debugable*> harts;
