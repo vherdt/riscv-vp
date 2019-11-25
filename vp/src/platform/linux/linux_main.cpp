@@ -268,7 +268,7 @@ int sc_main(int argc, char **argv) {
 			dharts.push_back(&cores[i]->iss);
 		}
 
-		auto server = new GDBServer("GDBServer", dharts, NULL, opt.debug_port);
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 #else
