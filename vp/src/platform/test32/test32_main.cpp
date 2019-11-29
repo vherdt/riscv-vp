@@ -206,8 +206,10 @@ int sc_main(int argc, char **argv) {
                 //NOTE: the "scall" benchmark (RISC-V compliance) still requires HTIF support for successful completion ...
                 core.sys_exit();
             } else {
-                std::cout << "to-host: " << std::to_string(x) << std::endl;
-                core.sys_exit();
+                if (x != 0) {
+                    std::cout << "to-host: " << std::to_string(x) << std::endl;
+                    core.sys_exit();
+                }
                 //throw std::runtime_error("to-host: " + std::to_string(x));
             }
         };
