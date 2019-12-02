@@ -154,7 +154,15 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	debugable *hart;
 	gdb_vcont_t *vcont;
-	sc_core::sc_event *run_event, *gdb_event;
+	sc_core::sc_event_or_list events;
+
+	auto register_hart = [this] (debugable *hart, sc_core::sc_event_or_list &list) {
+		sc_core::sc_event *run_event, *gdb_event;
+		std::tie (gdb_event, run_event) = this->events.at(hart);
+
+		run_event->notify();
+		list |= *gdb_event;
+	};
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
@@ -165,14 +173,15 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		}
 
 		if (vcont->thread.tid == GDB_THREAD_ALL)
-			vcont->thread.tid = 1; /* TODO */
-
-		hart = harts.at(vcont->thread.tid - 1); /* todo bounds check */
-		std::tie (gdb_event, run_event) = events.at(hart);
-
-		run_event->notify();
-		sc_core::wait(*gdb_event);
+			for (debugable *hart : harts)
+				register_hart(hart, events);
+		else
+			register_hart(harts.at(vcont->thread.tid - 1), events); /* todo bounds check */
 	}
+
+	sc_core::wait(events);
+	for (debugable *hart : harts)
+		hart->status = CoreExecStatus::HitBreakpoint;
 
 	/* TODO: needs status access */
 	send_packet(conn, "S05");
