@@ -38,6 +38,20 @@ typedef struct {
 	int tid;
 } gdb_thread_t;
 
+typedef enum {
+	GDB_ZKIND_SOFT = 0,
+	GDB_ZKIND_HARD,
+	GDB_ZKIND_WATCHW,
+	GDB_ZKIND_WATCHR,
+	GDB_ZKIND_WATCHA,
+} gdb_ztype_t;
+
+typedef struct {
+	gdb_ztype_t type;
+	size_t address;
+	unsigned int kind;
+} gdb_breakpoint_t;
+
 /* TODO: change value types, biggest address? */
 typedef struct {
 	size_t addr;
@@ -65,6 +79,7 @@ typedef enum {
 	GDB_ARG_H,
 	GDB_ARG_INT,
 	GDB_ARG_MEMORY,
+	GDB_ARG_BREAK,
 } gdb_argument_t;
 
 typedef struct {
@@ -76,6 +91,7 @@ typedef struct {
 		gdb_cmd_h_t hcmd;
 		int ival;
 		gdb_memory_t mem;
+		gdb_breakpoint_t bval;
 	} v;
 } gdb_command_t;
 

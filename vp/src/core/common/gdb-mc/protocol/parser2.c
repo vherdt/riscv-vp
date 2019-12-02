@@ -232,6 +232,29 @@ gdb_packet_m(void)
 	               free, free, free);
 }
 
+static mpc_parser_t *
+gdb_arg(mpc_parser_t *par)
+{
+	return mpc_and(2, mpcf_fst_free, par, mpc_char(','), free);
+}
+
+gdbf_fold(z, GDB_ARG_BREAK, GDBF_ARG_BREAK);
+
+static mpc_parser_t *
+gdb_packet_z(void)
+{
+	mpc_parser_t *name, *type;
+
+	/* TODO: parse cond_list */
+
+	name = mpc_or(2, mpc_char('z'), mpc_char('Z'));
+	type = mpc_apply(mpc_re("[0-4]"), mpcf_int);
+
+	return mpc_and(4, gdbf_packet_z, name,
+	               gdb_arg(type), gdb_arg(gdb_address()),
+	               mpc_hex(), free, free, free);
+}
+
 mpc_parser_t *
 gdb_any(void)
 {
@@ -247,11 +270,12 @@ gdb_cmd(mpc_parser_t *cmd)
 static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(5,
+	return mpc_or(6,
 	              gdb_cmd(gdb_packet_h()),
 	              gdb_cmd(gdb_packet_p()),
 	              gdb_cmd(gdb_packet_vcont()),
 	              gdb_cmd(gdb_packet_m()),
+	              gdb_cmd(gdb_packet_z()),
 	              gdb_any());
 }
 

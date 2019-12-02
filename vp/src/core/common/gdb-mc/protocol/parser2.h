@@ -48,3 +48,14 @@
 		cmd->v.mem.length = (size_t)*((unsigned long long *)xs[3]);    \
 		free(xs[2]);                                                   \
 	} while (0)
+
+#define GDBF_ARG_BREAK                                                         \
+	do {                                                                   \
+		assert(n == 3);                                                \
+		cmd->v.bval.type = *(int *)(xs[1]);                            \
+		cmd->v.bval.address = (size_t)*((unsigned long long*)xs[2]);   \
+		cmd->v.bval.kind = *(int *)(xs[3]);                            \
+		free(xs[1]);                                                   \
+		free(xs[2]);                                                   \
+		free(xs[3]);                                                   \
+	} while (0)
