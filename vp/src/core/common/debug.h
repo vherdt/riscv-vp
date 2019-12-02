@@ -17,6 +17,7 @@
  * values.
  */
 struct debugable {
+	CoreExecStatus status = CoreExecStatus::Runnable;
 	std::unordered_set<uint64_t> breakpoints;
 
 	virtual ~debugable() {}
