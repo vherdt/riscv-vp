@@ -150,7 +150,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 
 	/* TODO */
 	hart = harts[0];
-	std::tie (run_event, gdb_event) = events.at(hart);
+	std::tie (gdb_event, run_event) = events.at(hart);
 
 	run_event->notify();
 	sc_core::wait(*gdb_event);
