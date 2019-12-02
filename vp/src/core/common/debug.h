@@ -2,6 +2,8 @@
 #define RISCV_DEBUG
 
 #include <stdint.h>
+
+#include <unordered_set>
 #include <vector>
 
 #include "core_defs.h"
@@ -15,6 +17,8 @@
  * values.
  */
 struct debugable {
+	std::unordered_set<uint64_t> breakpoints;
+
 	virtual ~debugable() {}
 
 	virtual Architecture get_architecture(void) = 0;

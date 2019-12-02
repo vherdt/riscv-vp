@@ -158,7 +158,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	Opcode::Mapping op;
 
 	CoreExecStatus status = CoreExecStatus::Runnable;
-	std::unordered_set<uint64_t> breakpoints;
 	bool debug_mode = false;
 
 	sc_core::sc_event wfi_event;
