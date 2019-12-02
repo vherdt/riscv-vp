@@ -153,21 +153,27 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	debugable *hart;
-	_gdb_vcont_t *vcont;
+	gdb_vcont_t *vcont;
 	sc_core::sc_event *run_event, *gdb_event;
 
 	vcont = cmd->v.vval;
-	for (vcont = cmd->v.vval; vcont; vcont = vcont->next)
-		printf("%s: vcont->action = %c\n", __func__, vcont->action);
+	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
+		printf("%s: vcont->action = %c, tid = %d\n", __func__, vcont->action, vcont->thread.tid);
 
-	/* TODO */
-	hart = harts[0];
-	std::tie (gdb_event, run_event) = events.at(hart);
+		if (vcont->action != 'c') {
+			assert(0); /* not implemented */
+		}
 
-	run_event->notify();
-	sc_core::wait(*gdb_event);
+		if (vcont->thread.tid == GDB_THREAD_ALL)
+			vcont->thread.tid = 1; /* TODO */
 
-	/* TODO: implement the actual logic */
+		hart = harts.at(vcont->thread.tid - 1); /* todo bounds check */
+		std::tie (gdb_event, run_event) = events.at(hart);
+
+		run_event->notify();
+		sc_core::wait(*gdb_event);
+	}
+
 	/* TODO: needs status access */
 	send_packet(conn, "S05");
 }
