@@ -34,6 +34,7 @@ public:
 	void threadInfoEnd(int, gdb_command_t *);
 	void vCont(int, gdb_command_t *);
 	void vContSupported(int, gdb_command_t *);
+	void setBreakpoint(int, gdb_command_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 
