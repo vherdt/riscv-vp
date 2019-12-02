@@ -64,7 +64,14 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 	assert(mem->addr <= UINT64_MAX);
 	assert(mem->length <= INT_MAX);
 
-	std::string val = memory->read_memory((uint64_t)mem->addr, (unsigned)mem->length);
+	std::string val;
+	try {
+		val = memory->read_memory((uint64_t)mem->addr, (unsigned)mem->length);
+	} catch (const std::runtime_error&) {
+		send_packet(conn, "E01");
+		return;
+	}
+
 	send_packet(conn, val.c_str());
 }
 
