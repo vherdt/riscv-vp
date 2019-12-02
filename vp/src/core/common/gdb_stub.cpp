@@ -30,12 +30,8 @@ unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
 	unsigned nbytes = isock->transport_dbg(trans);
-
-	if (trans.is_response_error()) {
-		std::cout << "WARNING: debug transaction to address=" << addr << " with size=" << nbytes
-		          << " and command=" << cmd << "failed." << std::endl;
-		assert(false);
-	}
+	if (trans.is_response_error())
+		throw std::runtime_error("debug transaction failed");
 
 	return nbytes;
 }
