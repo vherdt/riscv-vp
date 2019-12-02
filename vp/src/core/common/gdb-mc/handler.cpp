@@ -35,16 +35,15 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
-	auto fn = [this, conn] (debugable *hart) {
-		RegisterFormater formatter(arch);
-
+	auto formatter = new RegisterFormater(arch);
+	auto fn = [formatter] (debugable *hart) {
 		for (int64_t v : hart->get_registers())
-			formatter.formatRegister(v);
-
-		this->send_packet(conn, formatter.str().c_str());
+			formatter->formatRegister(v);
 	};
 
 	exec_thread(fn);
+	send_packet(conn, formatter->str().c_str());
+	delete formatter;
 }
 
 void GDBServer::setThread(int conn, gdb_command_t *cmd) {
