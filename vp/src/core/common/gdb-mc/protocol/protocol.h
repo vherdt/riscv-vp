@@ -29,8 +29,8 @@ gdb_packet_t *gdb_parse_pkt(FILE *);
 
 enum {
 	GDB_THREAD_UNSET = -2,
-	GDB_THREAD_ANY = -1,
-	GDB_THREAD_ALL = 0,
+	GDB_THREAD_ANY = 0,
+	GDB_THREAD_ALL = -1,
 };
 
 typedef struct {
