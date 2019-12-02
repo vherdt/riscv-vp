@@ -80,6 +80,7 @@ typedef enum {
 	GDB_ARG_INT,
 	GDB_ARG_MEMORY,
 	GDB_ARG_BREAK,
+	GDB_ARG_THREAD,
 } gdb_argument_t;
 
 typedef struct {
@@ -92,6 +93,7 @@ typedef struct {
 		int ival;
 		gdb_memory_t mem;
 		gdb_breakpoint_t bval;
+		gdb_thread_t tval;
 	} v;
 } gdb_command_t;
 

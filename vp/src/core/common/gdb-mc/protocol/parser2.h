@@ -59,3 +59,10 @@
 		free(xs[2]);                                                   \
 		free(xs[3]);                                                   \
 	} while (0)
+
+#define GDBF_ARG_THREAD                                                        \
+	do {                                                                   \
+		assert(n == 2);                                                \
+		cmd->v.tval = *((gdb_thread_t *)xs[1]);                        \
+		free(xs[1]);                                                   \
+	} while (0)
