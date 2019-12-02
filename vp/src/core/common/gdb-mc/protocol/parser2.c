@@ -178,8 +178,13 @@ gdbf_vcont_action(int n, mpc_val_t **xs)
 	else
 		assert(0);
 
-	/* may be a null pointer */
-	vcont->thread = (gdb_thread_t *)xs[1];
+	/* An action with no thread-id matches all threads. */
+	if (!xs[1]) {
+		vcont->thread.pid = GDB_THREAD_UNSET;
+		vcont->thread.tid = GDB_THREAD_ALL;
+	} else {
+		vcont->thread = *((gdb_thread_t *)xs[1]);
+	}
 
 	free(xs[0]);
 	free(xs[1]);

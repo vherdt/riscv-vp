@@ -68,7 +68,7 @@ typedef struct _gdb_vcont_t gdb_vcont_t;
 struct _gdb_vcont_t {
 	char action;
 	int sig; /* TODO: make this unsigned */
-	gdb_thread_t *thread;
+	gdb_thread_t thread;
 
 	gdb_vcont_t *next; /* NULL on end */
 };
