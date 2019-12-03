@@ -154,49 +154,18 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
-	std::vector<debugable *> sharts;
-	sc_core::sc_event_or_list events;
-
-	auto register_hart = [this] (std::vector<debugable *> &sharts, debugable *hart, sc_core::sc_event_or_list &list) {
-		sc_core::sc_event *run_event, *gdb_event;
-		std::tie (gdb_event, run_event) = this->events.at(hart);
-
-		run_event->notify();
-		list |= *gdb_event;
-
-		sharts.push_back(hart);
-	};
+	std::vector<debugable *> selected_harts;
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
-		if (vcont->action != 'c') {
-			assert(0); /* not implemented */
-		}
+		if (vcont->action != 'c')
+			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
-		if (vcont->thread.tid == GDB_THREAD_ALL)
-			for (debugable *hart : harts)
-				register_hart(sharts, hart, events);
-		else
-			register_hart(sharts, harts.at(vcont->thread.tid - 1), events); /* todo bounds check */
+		/* continue all selected threads */
+		selected_harts = run_threads(vcont->thread.tid);
 
-		sc_core::wait(events);
-		sc_core::sc_event_or_list remharts;
-
-		for (debugable *hart : sharts) {
-			if (hart->status == CoreExecStatus::HitBreakpoint ||
-			    hart->status == CoreExecStatus::Terminated)
-				continue; /* hart is already stopped */
-
-			/* make hart exit after finishing next instruction */
-			hart->status = CoreExecStatus::HitBreakpoint;
-			remharts |= *std::get<0>(this->events.at(hart));
-		}
-
-		/* wait for all remaining harts to stop */
-		if (remharts.size() > 0)
-			sc_core::wait(remharts);
-
-		for (debugable *hart : sharts)
+		/* mark all continued harts runnable again */
+		for (debugable *hart : selected_harts)
 			hart->status = CoreExecStatus::Runnable;
 	}
 

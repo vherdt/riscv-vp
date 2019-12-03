@@ -71,6 +71,7 @@ private:
 
 	void create_sock(uint16_t);
 	void exec_thread(thread_func, char = 'g');
+	std::vector<debugable *> run_threads(int);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);

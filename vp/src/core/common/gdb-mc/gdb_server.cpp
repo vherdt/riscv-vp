@@ -104,6 +104,49 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 	}
 }
 
+std::vector<debugable *> GDBServer::run_threads(int id) {
+	std::vector<debugable *> hartsrun;
+
+	if (id == GDB_THREAD_ALL) {
+		for (debugable *hart : harts)
+			hartsrun.push_back(hart);
+	} else {
+		int thread;
+
+		if (id == GDB_THREAD_ANY)
+			thread = 1;
+
+		hartsrun.push_back(harts.at(id - 1));
+	}
+
+	/* invoke all selected harts */
+	sc_core::sc_event_or_list allharts;
+	for (debugable *hart : hartsrun) {
+		sc_core::sc_event *run_event, *gdb_event;
+
+		std::tie (gdb_event, run_event) = this->events.at(hart);
+
+		run_event->notify();
+		allharts |= *gdb_event;
+	}
+
+	/* wait until the first hart finishes execution */
+	sc_core::wait(allharts);
+
+	/* ensure that all running harts are stopped */
+	for (debugable *hart : hartsrun) {
+		if (hart->status != CoreExecStatus::Runnable)
+			continue;
+
+		hart->status = CoreExecStatus::HitBreakpoint;
+		sc_core::sc_event *runev = std::get<0>(events.at(hart));
+
+		sc_core::wait(*runev);
+	}
+
+	return hartsrun;
+}
+
 void GDBServer::writeall(int fd, char *data, size_t len) {
 	ssize_t ret, w;
 
