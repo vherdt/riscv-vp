@@ -88,7 +88,7 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 		RegisterFormater formatter(arch);
 
 		if (reg == GDB_PC_REG) {
-			regval = hart->get_program_counter();
+			regval = hart->pc;
 		} else {
 			/* TODO: add get_register method to debugable */
 			std::vector<int64_t> regs = hart->get_registers();
