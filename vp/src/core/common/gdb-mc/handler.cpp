@@ -145,11 +145,14 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 	gdb_thread_t *thr;
 
 	thr = &cmd->v.tval;
-	if (thr->tid - 1 >= harts.size()) {
+	try {
+		get_threads(thr->tid);
+	} catch (...) {
 		send_packet(conn, "E01");
-	} else {
-		send_packet(conn, "OK");
+		return;
 	}
+
+	send_packet(conn, "OK");
 }
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
