@@ -134,15 +134,21 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 	sc_core::wait(allharts);
 
 	/* ensure that all running harts are stopped */
+	std::vector<CoreExecStatus> orig_status;
 	for (debugable *hart : hartsrun) {
+		orig_status.push_back(hart->status);
 		if (hart->status != CoreExecStatus::Runnable)
 			continue;
-
 		hart->status = CoreExecStatus::HitBreakpoint;
-		sc_core::sc_event *runev = std::get<0>(events.at(hart));
 
+		sc_core::sc_event *runev = std::get<0>(events.at(hart));
 		sc_core::wait(*runev);
 	}
+
+	/* restore original hart status */
+	assert(orig_status.size() == hartsrun.size());
+	for (size_t i = 0; i < hartsrun.size(); i++)
+		hartsrun[i]->status = orig_status[i];
 
 	return hartsrun;
 }

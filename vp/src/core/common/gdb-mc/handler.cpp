@@ -154,6 +154,7 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
+	const char *stop_reason = NULL;
 	std::vector<debugable *> selected_harts;
 
 	vcont = cmd->v.vval;
@@ -161,16 +162,26 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		if (vcont->action != 'c')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
-		/* continue all selected threads */
 		selected_harts = run_threads(vcont->thread.tid);
+		for (debugable *hart : selected_harts) {
+			switch (hart->status) {
+			case CoreExecStatus::HitBreakpoint:
+				stop_reason = "S05";
+				break;
+			case CoreExecStatus::Terminated:
+				stop_reason = "S03";
+				break;
+			case CoreExecStatus::Runnable:
+				continue;
+			}
 
-		/* mark all continued harts runnable again */
-		for (debugable *hart : selected_harts)
+			/* mark runnable again */
 			hart->status = CoreExecStatus::Runnable;
+		}
 	}
 
-	/* TODO: check hart status */
-	send_packet(conn, "S05");
+	assert(stop_reason);
+	send_packet(conn, stop_reason);
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
