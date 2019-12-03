@@ -169,8 +169,6 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
-		printf("%s: vcont->action = %c, tid = %d\n", __func__, vcont->action, vcont->thread.tid);
-
 		if (vcont->action != 'c') {
 			assert(0); /* not implemented */
 		}
@@ -180,28 +178,30 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 				register_hart(sharts, hart, events);
 		else
 			register_hart(sharts, harts.at(vcont->thread.tid - 1), events); /* todo bounds check */
+
+		sc_core::wait(events);
+		sc_core::sc_event_or_list remharts;
+
+		/* TODO: handle CoreExecStatus::Terminated */
+		for (debugable *hart : sharts) {
+			if (hart->status == CoreExecStatus::HitBreakpoint)
+				continue; /* hart already hit breakpoint */
+
+			/* make hart exit after finishing next instruction */
+			hart->status = CoreExecStatus::HitBreakpoint;
+			remharts |= *std::get<0>(this->events.at(hart));
+		}
+
+		/* wait for all remaining harts to stop */
+		if (remharts.size() > 0)
+			sc_core::wait(remharts);
+
+		for (debugable *hart : sharts)
+			hart->status = CoreExecStatus::Runnable;
 	}
 
-	sc_core::wait(events);
-	sc_core::sc_event_or_list remharts;
-
-	/* TODO: handle CoreExecStatus::Terminated */
-	for (debugable *hart : sharts) {
-		if (hart->status == CoreExecStatus::HitBreakpoint)
-			continue; /* hart already hit breakpoint */
-
-		/* make hart exit after finishing next instruction */
-		hart->status = CoreExecStatus::HitBreakpoint;
-		remharts |= *std::get<0>(this->events.at(hart));
-	}
-
-	/* wait for all remaining harts to stop */
-	if (remharts.size() > 0)
-		sc_core::wait(remharts);
-
-	for (debugable *hart : sharts)
-		hart->status = CoreExecStatus::Runnable;
-	send_packet(conn, "S05"); /* TODO: needs status access */
+	/* TODO: check hart status */
+	send_packet(conn, "S05");
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
