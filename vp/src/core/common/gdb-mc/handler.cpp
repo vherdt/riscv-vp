@@ -155,14 +155,20 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
 	const char *stop_reason = NULL;
-	std::vector<debugable *> selected_harts;
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
 		if (vcont->action != 'c')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
-		selected_harts = run_threads(vcont->thread.tid);
+		std::vector<debugable *> selected_harts;
+		try {
+			selected_harts = run_threads(vcont->thread.tid);
+		} catch (const std::out_of_range&) {
+			send_packet(conn, "E01");
+			return;
+		}
+
 		for (debugable *hart : selected_harts) {
 			switch (hart->status) {
 			case CoreExecStatus::HitBreakpoint:
