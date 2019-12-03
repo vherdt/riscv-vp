@@ -82,8 +82,28 @@ err:
 	throw std::system_error(errno, std::generic_category());
 }
 
+std::vector<debugable *> GDBServer::get_threads(int id) {
+	if (id == GDB_THREAD_UNSET)
+		throw std::invalid_argument("Invalid thread id");
+	else if (id == GDB_THREAD_ANY)
+		id = 1; /* pick the first thread */
+
+	if (id == GDB_THREAD_ALL)
+		return harts;
+
+	if (id < 1) /* thread ids should start at index 1 */
+		throw std::out_of_range("Thread id is too small");
+	else
+		id--;
+
+	std::vector<debugable *> v;
+	v.push_back(harts.at(id));
+	return v;
+}
+
 void GDBServer::exec_thread(thread_func fn, char op) {
 	int thread;
+	std::vector<debugable *> threads;
 
 	try {
 		thread = thread_ops.at(op);
@@ -91,33 +111,13 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 		thread = GDB_THREAD_ANY;
 	}
 
-	if (thread == GDB_THREAD_ANY)
-		thread = 1;
-
-	assert(thread >= 0);
-	if (thread == GDB_THREAD_ALL) {
-		for (debugable *hart : harts)
-			fn(hart);
-	} else {
-		assert(thread >= 1);
-		fn(harts.at(thread - 1));
-	}
+	threads = get_threads(thread);
+	for (debugable *thread : threads)
+		fn(thread);
 }
 
 std::vector<debugable *> GDBServer::run_threads(int id) {
-	std::vector<debugable *> hartsrun;
-
-	if (id == GDB_THREAD_ALL) {
-		for (debugable *hart : harts)
-			hartsrun.push_back(hart);
-	} else {
-		int thread;
-
-		if (id == GDB_THREAD_ANY)
-			thread = 1;
-
-		hartsrun.push_back(harts.at(id - 1));
-	}
+	std::vector<debugable *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;

@@ -70,6 +70,7 @@ private:
 	std::map<debugable *, hart_event> events;
 
 	void create_sock(uint16_t);
+	std::vector<debugable *> get_threads(int);
 	void exec_thread(thread_func, char = 'g');
 	std::vector<debugable *> run_threads(int);
 	void writeall(int, char *, size_t);
