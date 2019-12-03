@@ -24,6 +24,7 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "T", &GDBServer::isAlive },
 	{ "vCont", &GDBServer::vCont },
 	{ "vCont?", &GDBServer::vContSupported },
+	{ "z", &GDBServer::removeBreakpoint },
 	{ "Z", &GDBServer::setBreakpoint },
 };
 
@@ -191,6 +192,23 @@ void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
 	// We need to support both c and C otherwise GDB doesn't use vCont
 	// This is documented in the remote_vcont_probe function in the GDB source.
 	send_packet(conn, "vCont;c;C;s;S;t");
+}
+
+void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
+	debugable *hart;
+	gdb_breakpoint_t *bpoint;
+
+	bpoint = &cmd->v.bval;
+	if (bpoint->type != GDB_ZKIND_SOFT) {
+		send_packet(conn, ""); /* not supported */
+		return;
+	}
+
+	/* TODO */
+	hart = harts[0];
+	hart->breakpoints.erase(bpoint->address);
+
+	send_packet(conn, "OK");
 }
 
 void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
