@@ -183,6 +183,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	sc_core::wait(events);
 	for (debugable *hart : harts)
 		hart->status = CoreExecStatus::HitBreakpoint;
+	/* TODO: make sure that all harts stopped */
 
 	/* TODO: needs status access */
 	send_packet(conn, "S05");
@@ -195,7 +196,6 @@ void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
-	debugable *hart;
 	gdb_breakpoint_t *bpoint;
 
 	bpoint = &cmd->v.bval;
@@ -204,28 +204,27 @@ void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	/* TODO */
-	hart = harts[0];
-	hart->breakpoints.erase(bpoint->address);
+	auto fn = [bpoint] (debugable *hart) {
+		hart->breakpoints.erase(bpoint->address);
+	};
 
+	exec_thread(fn);
 	send_packet(conn, "OK");
 }
 
 void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
-	debugable *hart;
 	gdb_breakpoint_t *bpoint;
 
 	bpoint = &cmd->v.bval;
-	printf("%s: type: %d, addr: %zu, kind: %d\n", __func__, bpoint->type, bpoint->address, bpoint->kind);
-
 	if (bpoint->type != GDB_ZKIND_SOFT) {
 		send_packet(conn, ""); /* not supported */
 		return;
 	}
 
-	/* TODO */
-	hart = harts[0];
-	hart->breakpoints.insert(bpoint->address);
+	auto fn = [bpoint] (debugable *hart) {
+		hart->breakpoints.insert(bpoint->address);
+	};
 
+	exec_thread(fn);
 	send_packet(conn, "OK");
 }
