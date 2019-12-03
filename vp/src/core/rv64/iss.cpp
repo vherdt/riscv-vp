@@ -1520,10 +1520,6 @@ uint64_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
 }
 
-uint64_t ISS::get_program_counter(void) {
-	return pc;
-}
-
 std::vector<int64_t> ISS::get_registers(void) {
 	std::vector<int64_t> regvals;
 

@@ -144,7 +144,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
-	uint64_t pc = 0;
 	uint64_t last_pc = 0;
 	bool trace = false;
 	bool shall_exit = false;
@@ -198,8 +197,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void write_register(unsigned idx, uint64_t value) override;
 
 	uint64_t get_hart_id();
-
-	uint64_t get_program_counter();
 
 	std::vector<int64_t> get_registers(void);
 

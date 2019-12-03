@@ -17,6 +17,7 @@
  * values.
  */
 struct debugable {
+	uint64_t pc = 0;
 	CoreExecStatus status = CoreExecStatus::Runnable;
 	std::unordered_set<uint64_t> breakpoints;
 
@@ -25,7 +26,6 @@ struct debugable {
 	virtual Architecture get_architecture(void) = 0;
 
 	virtual uint64_t get_hart_id(void) = 0;
-	virtual uint64_t get_program_counter(void) = 0;
 
 	virtual std::vector<int64_t> get_registers(void) = 0;
 
