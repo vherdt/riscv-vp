@@ -182,10 +182,10 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		sc_core::wait(events);
 		sc_core::sc_event_or_list remharts;
 
-		/* TODO: handle CoreExecStatus::Terminated */
 		for (debugable *hart : sharts) {
-			if (hart->status == CoreExecStatus::HitBreakpoint)
-				continue; /* hart already hit breakpoint */
+			if (hart->status == CoreExecStatus::HitBreakpoint ||
+			    hart->status == CoreExecStatus::Terminated)
+				continue; /* hart is already stopped */
 
 			/* make hart exit after finishing next instruction */
 			hart->status = CoreExecStatus::HitBreakpoint;
