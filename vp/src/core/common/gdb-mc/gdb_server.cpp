@@ -52,18 +52,18 @@ void GDBServer::set_event(debugable *hart, sc_core::sc_event *event) {
 
 void GDBServer::create_sock(uint16_t port) {
 	struct sockaddr_in6 addr;
-	int optval;
+	int reuse, ip6only;
 
 	sockfd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (sockfd == -1)
 		throw std::system_error(errno, std::generic_category());
 
-	optval = 1;
-	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) == -1)
+	ip6only = 0;
+	if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &ip6only, sizeof(ip6only)) == -1)
 		goto err;
 
-	optval = 0;
-	if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, sizeof(optval)) == -1)
+	reuse = 1;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) == -1)
 		goto err;
 
 	memset(&addr, 0, sizeof(addr));
