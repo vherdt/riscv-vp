@@ -62,7 +62,6 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 	gdb_memory_t *mem;
 
 	mem = &cmd->v.mem;
-	printf("%s: addr = %zu, size = %zu\n", __func__, mem->addr, mem->length);
 
 	assert(mem->addr <= UINT64_MAX);
 	assert(mem->length <= INT_MAX);

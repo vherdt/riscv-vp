@@ -172,8 +172,6 @@ void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 
 	serialized = gdb_serialize(kind, data);
 
-	printf("serialized '%s'\n", serialized);
-
 	try {
 		writeall(conn, serialized, strlen(serialized));
 	} catch (const std::system_error& e) {
@@ -223,9 +221,6 @@ void GDBServer::dispatch(int conn) {
 			mtx.unlock();
 			break;
 		}
-
-		printf("%s: received packet { kind: %d, data: '%s', csum: 0x%c%c }\n",
-		       __func__, pkt->kind, (pkt->data) ? pkt->data : "", pkt->csum[0], pkt->csum[1]);
 
 		pktq.push(std::make_tuple(conn, pkt));
 		asyncEvent.notify();
