@@ -263,10 +263,8 @@ int sc_main(int argc, char **argv) {
 	std::vector<debugable*> dharts;
 	if (opt.use_debug_runner) {
 #ifdef GDB_MULTICORE
-		for (size_t i = 0; i < NUM_CORES; i++) {
-			cores[i]->iss.debug_mode = true; // TODO: move to GDBServerRunner
+		for (size_t i = 0; i < NUM_CORES; i++)
 			dharts.push_back(&cores[i]->iss);
-		}
 
 		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
 		for (size_t i = 0; i < dharts.size(); i++)

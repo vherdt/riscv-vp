@@ -5,7 +5,7 @@ GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server
 	this->gdb_event = server->get_event(hart);
 	server->set_event(hart, &this->run_event);
 
-	// TODO: set core.debug_mode here
+	hart->debug_mode = true;
 	SC_THREAD(run);
 }
 
