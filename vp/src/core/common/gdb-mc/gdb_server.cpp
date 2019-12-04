@@ -83,9 +83,7 @@ err:
 }
 
 std::vector<debugable *> GDBServer::get_threads(int id) {
-	if (id == GDB_THREAD_UNSET)
-		throw std::invalid_argument("Invalid thread id");
-	else if (id == GDB_THREAD_ANY)
+	if (id == GDB_THREAD_ANY)
 		id = 1; /* pick the first thread */
 
 	if (id == GDB_THREAD_ALL)

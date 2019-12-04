@@ -144,7 +144,7 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 	thr = &cmd->v.tval;
 	try {
 		get_threads(thr->tid);
-	} catch (...) {
+	} catch (const std::out_of_range&) {
 		send_packet(conn, "E01");
 		return;
 	}
