@@ -40,7 +40,7 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	auto formatter = new RegisterFormater(arch);
 	auto fn = [formatter] (debugable *hart) {
-		for (int64_t v : hart->get_registers())
+		for (uint64_t v : hart->get_registers())
 			formatter->formatRegister(v);
 	};
 

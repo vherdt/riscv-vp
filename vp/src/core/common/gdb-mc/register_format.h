@@ -14,7 +14,7 @@ class RegisterFormater {
 
   public:
 	RegisterFormater(Architecture);
-	void formatRegister(int64_t);
+	void formatRegister(uint64_t);
 	std::string str(void);
 };
 

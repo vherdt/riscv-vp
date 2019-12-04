@@ -9,7 +9,7 @@ RegisterFormater::RegisterFormater(Architecture arch) {
 	this->stream << std::setfill('0') << std::hex;
 }
 
-void RegisterFormater::formatRegister(int64_t value) {
+void RegisterFormater::formatRegister(uint64_t value) {
 	switch (arch) {
 	case RV32:
 		stream << std::setw(8) << bswap_32(value);
