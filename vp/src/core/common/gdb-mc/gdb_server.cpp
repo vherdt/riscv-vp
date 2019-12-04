@@ -250,6 +250,9 @@ void GDBServer::serve(void) {
 
 		dispatch(conn);
 		close(conn);
+
+		free(prevpkt);
+		prevpkt = NULL;
 	}
 }
 
