@@ -52,7 +52,8 @@ void RegFile::write(uint32_t index, int32_t value) {
 }
 
 int32_t RegFile::read(uint32_t index) {
-	assert(index <= x31);
+	if (index > x31)
+		throw std::out_of_range("out-of-range register access");
 	return regs[index];
 }
 
