@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdlib.h>
 #include <limits.h>
 
 #include "debug.h"
@@ -15,6 +16,7 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 	{ "?", &GDBServer::haltReason },
 	{ "g", &GDBServer::getRegisters },
 	{ "H", &GDBServer::setThread },
+	{ "k", &GDBServer::killServer },
 	{ "m", &GDBServer::readMemory },
 	{ "p", &GDBServer::readRegister },
 	{ "qAttached", &GDBServer::qAttached },
@@ -56,6 +58,13 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 	thread_ops[hcmd->op] = hcmd->id.tid;
 
 	send_packet(conn, "OK");
+}
+
+void GDBServer::killServer(int conn, gdb_command_t *cmd) {
+	// TODO: Stop the System C simulation instead of
+	// terminating the program. This would require interacting
+	// with the GDBServerRunner directly to make it exit.
+	exit(EXIT_SUCCESS);
 }
 
 void GDBServer::readMemory(int conn, gdb_command_t *cmd) {

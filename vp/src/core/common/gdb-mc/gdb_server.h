@@ -26,6 +26,7 @@ public:
 	void haltReason(int, gdb_command_t *);
 	void getRegisters(int, gdb_command_t *);
 	void setThread(int, gdb_command_t *);
+	void killServer(int, gdb_command_t *);
 	void readMemory(int, gdb_command_t *);
 	void readRegister(int, gdb_command_t *);
 	void qAttached(int, gdb_command_t *);
