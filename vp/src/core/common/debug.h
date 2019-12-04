@@ -27,8 +27,7 @@ struct debugable {
 
 	virtual uint64_t get_hart_id(void) = 0;
 
-	/* TODO: use same return type for both functions */
-	virtual std::vector<int64_t> get_registers(void) = 0;
+	virtual std::vector<uint64_t> get_registers(void) = 0;
 	virtual uint64_t read_register(unsigned) = 0;
 
 	virtual void run(void) = 0;
