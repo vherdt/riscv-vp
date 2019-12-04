@@ -156,8 +156,6 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	Instruction instr;
 	Opcode::Mapping op;
 
-	bool debug_mode = false;
-
 	sc_core::sc_event wfi_event;
 
 	std::string systemc_name;
