@@ -15,6 +15,10 @@ vp/build/Makefile:
 	mkdir vp/build || true
 	cd vp/build && cmake ..
 
+vp-eclipse:
+	mkdir vp-eclipse || true
+	cd vp-eclipse && cmake ../vp/ -G "Eclipse CDT4 - Unix Makefiles"
+
 env/basic/vp-display/build/Makefile:
 	mkdir env/basic/vp-display/build || true
 	cd env/basic/vp-display/build && cmake ..
