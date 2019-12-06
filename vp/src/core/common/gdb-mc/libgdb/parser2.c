@@ -8,7 +8,7 @@
 
 #include "mpc.h"
 #include "parser2.h"
-#include "fns.h"
+#include "internal.h"
 
 static gdb_command_t *
 gdb_new_cmd(char *name, gdb_argument_t type)

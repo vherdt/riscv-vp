@@ -9,7 +9,7 @@
 
 #include <libgdb/parser1.h>
 
-#include "fns.h"
+#include "internal.h"
 
 #define GDB_RUNLEN_CHAR '*'
 #define GDB_RUNLEN_OFF 29

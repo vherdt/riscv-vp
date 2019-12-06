@@ -7,7 +7,7 @@
 
 #include <libgdb/parser1.h>
 
-#include "fns.h"
+#include "internal.h"
 
 static char
 kind_to_char(gdb_kind_t kind)

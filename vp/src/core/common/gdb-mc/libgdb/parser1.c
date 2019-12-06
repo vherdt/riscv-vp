@@ -6,7 +6,7 @@
 #include <libgdb/parser1.h>
 
 #include "mpc.h"
-#include "fns.h"
+#include "internal.h"
 
 static mpc_val_t *
 gdbf_packet(int n, mpc_val_t** xs)
