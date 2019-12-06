@@ -299,9 +299,9 @@ gdb_parse_stage2(void)
 gdb_command_t *
 gdb_parse_cmd(gdb_packet_t *pkt)
 {
-	char *data;
 	mpc_result_t r;
 	mpc_parser_t *par;
+	char *data, *unesc;
 	gdb_command_t *cmd;
 
 	cmd = NULL;
@@ -312,7 +312,10 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 	if (!(data = gdb_decode_runlen(pkt->data)))
 		return NULL;
 
-	if (mpc_parse("<packet>", data, par, &r)) {
+	unesc = gdb_unescape(data);
+	free(data);
+
+	if (mpc_parse("<packet>", unesc, par, &r)) {
 		cmd = (gdb_command_t *)r.output;
 	} else {
 #ifdef GDB_PARSER_DEBUG
