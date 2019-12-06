@@ -324,6 +324,7 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 		mpc_err_delete(r.error);
 	}
 
+	free(unesc);
 	mpc_cleanup(1, par);
 	return cmd;
 }
