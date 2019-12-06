@@ -2,6 +2,7 @@ add_library(gdb
 	mpc/mpc.c
 	parser1.c
 	parser2.c
+	response.c
 	util.c)
 
 set_source_files_properties(mpc/mpc.c

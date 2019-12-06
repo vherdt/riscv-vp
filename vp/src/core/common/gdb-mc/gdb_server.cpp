@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <libgdb/parser2.h>
+#include <libgdb/response.h>
 
 #include <systemc>
 

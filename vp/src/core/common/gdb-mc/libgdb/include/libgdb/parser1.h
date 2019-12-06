@@ -27,8 +27,6 @@ typedef struct {
 void gdb_free_packet(gdb_packet_t *);
 gdb_packet_t *gdb_parse_pkt(FILE *);
 
-char *gdb_serialize(gdb_kind_t, const char *);
-
 #ifdef __cplusplus
 }
 #endif
