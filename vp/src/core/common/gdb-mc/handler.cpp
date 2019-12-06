@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include <libgdb/parser2.h>
+
 #include "debug.h"
 #include "gdb_server.h"
 #include "register_format.h"
-#include "protocol/protocol.h"
 
 enum {
 	GDB_PKTSIZ = 4096,

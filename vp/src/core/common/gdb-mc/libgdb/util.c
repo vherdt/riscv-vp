@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "protocol.h"
+#include <libgdb/parser1.h>
+
 #include "fns.h"
 
 #define GDB_RUNLEN_CHAR '*'

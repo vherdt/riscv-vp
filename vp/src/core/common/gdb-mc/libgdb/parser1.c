@@ -3,8 +3,9 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <libgdb/parser1.h>
+
 #include "mpc.h"
-#include "protocol.h"
 #include "fns.h"
 
 static mpc_val_t *

@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libgdb/parser1.h>
+#include <libgdb/parser2.h>
+
 #include "mpc.h"
 #include "parser2.h"
-#include "protocol.h"
 #include "fns.h"
 
 static gdb_command_t *

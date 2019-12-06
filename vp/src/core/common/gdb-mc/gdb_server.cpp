@@ -9,11 +9,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <libgdb/parser2.h>
 
 #include <systemc>
 
 #include "gdb_server.h"
-#include "protocol/protocol.h"
 
 /* TODO: move this header to common? */
 #include <platform/hifive/async_event.h>

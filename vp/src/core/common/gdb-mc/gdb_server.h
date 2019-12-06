@@ -11,13 +11,13 @@
 #include <map>
 #include <tuple>
 
+/* TODO: move this header to common? */
+#include <platform/hifive/async_event.h>
+#include <libgdb/parser2.h>
+
 #include "debug.h"
 #include "core_defs.h"
 #include "gdb_stub.h" // DebugMemoryInterface
-#include "protocol/protocol.h"
-
-/* TODO: move this header to common? */
-#include <platform/hifive/async_event.h>
 
 SC_MODULE(GDBServer) {
 public:
