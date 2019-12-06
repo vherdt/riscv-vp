@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -307,10 +308,15 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 	cmd = NULL;
 	par = gdb_parse_stage2();
 
-	if (!gdb_is_valid(pkt))
+	if (!gdb_is_valid(pkt)) {
+		errno = EINVAL;
 		return NULL;
-	if (!(data = gdb_decode_runlen(pkt->data)))
+	}
+
+	if (!(data = gdb_decode_runlen(pkt->data))) {
+		errno = EBADMSG;
 		return NULL;
+	}
 
 	unesc = gdb_unescape(data);
 	free(data);
@@ -326,5 +332,9 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 
 	free(unesc);
 	mpc_cleanup(1, par);
+
+	if (!cmd)
+		errno = EBADMSG; /* mpc_parse failed */
+
 	return cmd;
 }
