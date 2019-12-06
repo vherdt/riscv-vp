@@ -27,9 +27,6 @@ typedef struct {
 void gdb_free_packet(gdb_packet_t *);
 gdb_packet_t *gdb_parse_pkt(FILE *);
 
-bool gdb_is_valid(gdb_packet_t *);
-char *gdb_unescape(char *);
-char *gdb_decode_runlen(char *);
 char *gdb_serialize(gdb_kind_t, const char *);
 
 #ifdef __cplusplus
