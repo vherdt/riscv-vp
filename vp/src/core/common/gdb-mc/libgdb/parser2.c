@@ -15,7 +15,7 @@ gdb_new_cmd(char *name, gdb_argument_t type)
 {
 	gdb_command_t *cmd;
 
-	cmd = malloc(sizeof(*cmd));
+	cmd = xmalloc(sizeof(*cmd));
 	cmd->name = name;
 	cmd->type = type;
 
