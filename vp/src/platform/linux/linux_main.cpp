@@ -14,8 +14,11 @@
 #include "prci.h"
 #include "syscall.h"
 #include "util/options.h"
+
+#ifdef GDB_MULTICORE
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
+#endif
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
