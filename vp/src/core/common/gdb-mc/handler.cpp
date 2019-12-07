@@ -74,7 +74,7 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 	mem = &cmd->v.mem;
 
 	assert(mem->addr <= UINT64_MAX);
-	assert(mem->length <= INT_MAX);
+	assert(mem->length <= UINT_MAX);
 
 	std::string val;
 	try {
