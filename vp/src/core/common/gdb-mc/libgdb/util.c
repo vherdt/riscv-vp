@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 #include <libgdb/parser1.h>
+#include <libgdb/parser2.h>
 
 #include "internal.h"
 
@@ -121,6 +122,36 @@ gdb_is_valid(gdb_packet_t *pkt)
 	assert(ret == GDB_CSUM_LEN);
 
 	return !strncmp(pkt->csum, strcsum, GDB_CSUM_LEN);
+}
+
+gdb_command_t *
+gdb_new_cmd(char *name, gdb_argument_t type)
+{
+	gdb_command_t *cmd;
+
+	cmd = xmalloc(sizeof(*cmd));
+	cmd->name = name;
+	cmd->type = type;
+
+	return cmd;
+}
+
+void
+gdb_free_cmd(gdb_command_t *cmd)
+{
+	gdb_vcont_t *parent, *next;
+
+	if (cmd->type == GDB_ARG_VCONT) {
+		parent = cmd->v.vval;
+		while (parent) {
+			next = parent->next;
+			free(parent);
+			parent = next;
+		}
+	}
+
+	free(cmd->name);
+	free(cmd);
 }
 
 void *

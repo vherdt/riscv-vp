@@ -10,36 +10,6 @@
 #include "parser2.h"
 #include "internal.h"
 
-static gdb_command_t *
-gdb_new_cmd(char *name, gdb_argument_t type)
-{
-	gdb_command_t *cmd;
-
-	cmd = xmalloc(sizeof(*cmd));
-	cmd->name = name;
-	cmd->type = type;
-
-	return cmd;
-}
-
-void
-gdb_free_cmd(gdb_command_t *cmd)
-{
-	gdb_vcont_t *parent, *next;
-
-	if (cmd->type == GDB_ARG_VCONT) {
-		parent = cmd->v.vval;
-		while (parent) {
-			next = parent->next;
-			free(parent);
-			parent = next;
-		}
-	}
-
-	free(cmd->name);
-	free(cmd);
-}
-
 static mpc_val_t *
 gdbf_ignarg(mpc_val_t* xs)
 {
