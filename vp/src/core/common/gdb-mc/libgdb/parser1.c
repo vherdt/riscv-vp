@@ -14,6 +14,7 @@ gdbf_packet(int n, mpc_val_t** xs)
 	gdb_packet_t *pkt;
 	char *start, *csum;
 
+	(void)n;
 	assert(n == 3);
 
 	pkt = xmalloc(sizeof(*pkt));

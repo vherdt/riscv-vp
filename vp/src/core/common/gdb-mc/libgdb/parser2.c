@@ -13,7 +13,6 @@
 static mpc_val_t *
 gdbf_ignarg(mpc_val_t* xs)
 {
-	int i;
 	char *str, *sep;
 	gdb_command_t *cmd;
 
@@ -37,6 +36,7 @@ gdbf_address(mpc_val_t *x)
 
 	r = sscanf((char *)x, "%"LIBGDB_ADDR_FORMAT, v);
 	assert(r == 1);
+	(void)r;
 
 	free(x);
 	return v;
@@ -58,6 +58,7 @@ gdbf_uhex(mpc_val_t *x)
 
 	r = sscanf((char *)x, "%zx", v);
 	assert(r == 1);
+	(void)r;
 	
 	free(x);
 	return v;
@@ -88,6 +89,7 @@ gdbf_thread_id(int n, mpc_val_t** xs)
 	int *arg1, *arg2;
 	gdb_thread_t *id;
 
+	(void)n;
 	assert(n == 2);
 
 	id = xmalloc(sizeof(*id));
@@ -130,7 +132,7 @@ gdb_thread_id(void)
 
 gdbf_fold(h, GDB_ARG_H, GDBF_ARG_HCMD)
 
-mpc_parser_t *
+static mpc_parser_t *
 gdb_packet_h(void)
 {
 	mpc_parser_t *op, *id;
@@ -152,10 +154,11 @@ gdb_packet_p(void)
 static mpc_val_t *
 gdbf_vcont_action(int n, mpc_val_t **xs)
 {
-	char *op, *actstr;
+	char *actstr;
 	size_t actlen;
 	gdb_vcont_t *vcont;
 
+	(void)n;
 	assert(n == 2);
 
 	actstr = (char *)xs[0];
@@ -168,7 +171,7 @@ gdbf_vcont_action(int n, mpc_val_t **xs)
 	if (actlen == 1)
 		vcont->sig = -1;
 	else if (actlen == 3)
-		vcont->sig = strtol(actstr + 1, NULL, 16);
+		vcont->sig = (int)strtol(actstr + 1, NULL, 16);
 	else
 		assert(0);
 
@@ -194,7 +197,7 @@ gdbf_vcont(int n, mpc_val_t **xs)
 
 	assert(n >= 1);
 
-	for (vcont = (gdb_vcont_t *)xs[0], i = 1; i < n; i++, vcont = vcont->next)
+	for (vcont = (gdb_vcont_t *)xs[0], i = 1; i < (size_t)n; i++, vcont = vcont->next)
 		vcont->next = (gdb_vcont_t *)xs[i];
 	vcont->next = NULL;
 
@@ -237,7 +240,7 @@ gdb_arg(mpc_parser_t *par)
 	return mpc_and(2, mpcf_fst_free, par, mpc_char(','), free);
 }
 
-gdbf_fold(z, GDB_ARG_BREAK, GDBF_ARG_BREAK);
+gdbf_fold(z, GDB_ARG_BREAK, GDBF_ARG_BREAK)
 
 static mpc_parser_t *
 gdb_packet_z(void)
@@ -263,7 +266,7 @@ gdb_packet_T(void)
 	               gdb_thread_id(), free);
 }
 
-mpc_parser_t *
+static mpc_parser_t *
 gdb_any(void)
 {
 	return mpc_apply(mpc_many1(mpcf_strfold, mpc_any()), gdbf_ignarg);

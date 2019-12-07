@@ -5,6 +5,10 @@ add_library(gdb
 	response.c
 	util.c)
 
+target_compile_options(gdb PRIVATE
+	-Wpedantic -Wall -Wextra -Wconversion -Wmissing-prototypes
+	-Wpointer-arith -Wstrict-prototypes -Wshadow -Wcast-align)
+
 set_source_files_properties(mpc/mpc.c
 	PROPERTIES COMPILE_FLAGS "-w -ansi")
 target_include_directories(gdb PRIVATE

@@ -1,7 +1,7 @@
 #define gdbf_fold(I, TYPE, FUNC)                                               \
 	static mpc_val_t *gdbf_packet_##I(int n, mpc_val_t **xs)               \
 	{                                                                      \
-		int i, j;                                                      \
+		int j;                                                         \
 		gdb_command_t *cmd;                                            \
                                                                                \
 		/* Remove optional mpc_maybe() arguments */                    \
