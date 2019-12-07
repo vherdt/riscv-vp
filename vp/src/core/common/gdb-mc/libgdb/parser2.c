@@ -58,15 +58,15 @@ gdbf_ignarg(mpc_val_t* xs)
 }
 
 static mpc_val_t *
-gdbf_unsigned_hex(mpc_val_t *x)
+gdbf_address(mpc_val_t *x)
 {
-	unsigned long long *v;
+	int r;
+	gdb_addr_t *v;
 
 	v = xmalloc(sizeof(*v));
 
-	/* TODO: We can't signal an error error condition from an apply
-	   function and strtoull(3) might potentially overflow. */
-	*v = strtoull((char *)x, NULL, 16);
+	r = sscanf((char *)x, "%"LIBGDB_ADDR_FORMAT, v);
+	assert(r == 1);
 
 	free(x);
 	return v;
@@ -75,7 +75,28 @@ gdbf_unsigned_hex(mpc_val_t *x)
 static mpc_parser_t *
 gdb_address(void)
 {
-	return mpc_expect(mpc_apply(mpc_hexdigits(), gdbf_unsigned_hex), "hexadecimal address");
+	return mpc_expect(mpc_apply(mpc_hexdigits(), gdbf_address), "hexadecimal address");
+}
+
+static mpc_val_t *
+gdbf_uhex(mpc_val_t *x)
+{
+	int r;
+	size_t *v;
+
+	v = xmalloc(sizeof(*v));
+
+	r = sscanf((char *)x, "%zx", v);
+	assert(r == 1);
+	
+	free(x);
+	return v;
+}
+
+static mpc_parser_t *
+gdb_uhex(void)
+{
+	return mpc_apply(mpc_hexdigits(), gdbf_uhex);
 }
 
 static mpc_val_t *
@@ -236,7 +257,7 @@ static mpc_parser_t *
 gdb_packet_m(void)
 {
 	return mpc_and(4, gdbf_packet_m, mpc_string("m"),
-	               gdb_address(), mpc_char(','), gdb_address(),
+	               gdb_address(), mpc_char(','), gdb_uhex(),
 	               free, free, free);
 }
 
@@ -260,7 +281,7 @@ gdb_packet_z(void)
 
 	return mpc_and(4, gdbf_packet_z, name,
 	               gdb_arg(type), gdb_arg(gdb_address()),
-	               mpc_hex(), free, free, free);
+	               gdb_uhex(), free, free, free);
 }
 
 gdbf_fold(T, GDB_ARG_THREAD, GDBF_ARG_THREAD)

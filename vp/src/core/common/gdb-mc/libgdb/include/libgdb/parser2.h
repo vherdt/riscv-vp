@@ -6,8 +6,20 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 #include <libgdb/parser1.h>
+
+#ifndef LIBGDB_ADDR_TYPE
+#define LIBGDB_ADDR_TYPE uint64_t
+#endif
+#ifndef LIBGDB_ADDR_FORMAT
+#define LIBGDB_ADDR_FORMAT PRIx64
+#endif
+
+typedef LIBGDB_ADDR_TYPE gdb_addr_t;
+#undef LIBGDB_ADDR_TYPE
 
 enum {
 	GDB_THREAD_UNSET = -2,
@@ -30,13 +42,12 @@ typedef enum {
 
 typedef struct {
 	gdb_ztype_t type;
-	size_t address;
-	unsigned int kind;
+	gdb_addr_t address;
+	size_t kind;
 } gdb_breakpoint_t;
 
-/* TODO: change value types, biggest address? */
 typedef struct {
-	size_t addr;
+	gdb_addr_t addr;
 	size_t length;
 } gdb_memory_t;
 
