@@ -1,5 +1,5 @@
-#ifndef LIBGDB_PARSER1_H
-#define LIBGDB_PARSER1_H
+#ifndef LIBGDB_RESPONSE_H
+#define LIBGDB_RESPONSE_H
 
 #ifdef __cplusplus
 extern "C" {
