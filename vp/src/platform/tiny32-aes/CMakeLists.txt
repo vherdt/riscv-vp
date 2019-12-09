@@ -1,0 +1,9 @@
+file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+
+add_executable(tiny32-aes-vp
+        tiny32_main.cpp
+        ${HEADERS})
+
+target_link_libraries(tiny32-aes-vp rv32 platform-common ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
+
+INSTALL(TARGETS tiny32-aes-vp RUNTIME DESTINATION bin)
