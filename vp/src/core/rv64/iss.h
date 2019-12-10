@@ -170,7 +170,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	ISS(uint64_t hart_id);
 
-	Architecture get_architecture(void) {
+	Architecture get_architecture(void) override {
 		return RV64;
 	}
 
@@ -194,9 +194,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void write_register(unsigned idx, uint64_t value) override;
 
-	uint64_t get_hart_id();
+	uint64_t get_hart_id() override;
 
-	std::vector<uint64_t> get_registers(void);
+	std::vector<uint64_t> get_registers(void) override;
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
@@ -311,7 +311,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void run_step();
 
-	void run();
+	void run() override;
 
 	void show();
 };
