@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include <libgdb/parser1.h>
+#include <libgdb/response.h>
 
 #include "internal.h"
 
@@ -23,6 +24,7 @@ kind_to_char(gdb_kind_t kind)
 		return '+';
 	default:
 		assert(0);
+		return -1;
 	}
 }
 

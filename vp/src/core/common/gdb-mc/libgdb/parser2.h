@@ -51,8 +51,13 @@
 
 #define GDBF_ARG_BREAK                                                         \
 	do {                                                                   \
+		int type;                                                      \
+		                                                               \
 		assert(n == 3);                                                \
-		cmd->v.bval.type = *(int *)(xs[1]);                            \
+		type = *(int *)(xs[1]);                                        \
+		assert(type >= GDB_ZKIND_SOFT && type <= GDB_ZKIND_WATCHA);    \
+		                                                               \
+		cmd->v.bval.type = (gdb_ztype_t)type;                          \
 		cmd->v.bval.address = *((gdb_addr_t *)xs[2]);                  \
 		cmd->v.bval.kind = *(size_t *)(xs[3]);                         \
 		free(xs[1]);                                                   \
