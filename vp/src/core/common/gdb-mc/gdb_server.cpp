@@ -268,6 +268,8 @@ void GDBServer::run(void) {
 			/* fall through */
 		case GDB_KIND_ACK:
 			goto next1;
+		default:
+			break;
 		}
 
 		if (!(cmd = gdb_parse_cmd(pkt))) {
