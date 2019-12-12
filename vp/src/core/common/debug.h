@@ -19,6 +19,7 @@
 struct debugable {
 	uint64_t pc = 0;
 	bool debug_mode = false;
+	bool ignore_wfi = false;
 	CoreExecStatus status = CoreExecStatus::Runnable;
 	std::unordered_set<uint64_t> breakpoints;
 
