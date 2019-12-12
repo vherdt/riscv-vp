@@ -128,7 +128,7 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 		orig_ignwfi.push_back(hart->ignore_wfi);
 		hart->ignore_wfi = true;
 
-		std::tie (gdb_event, run_event) = this->events.at(hart);
+		std::tie (gdb_event, run_event) = events.at(hart);
 
 		run_event->notify();
 		allharts |= *gdb_event;
@@ -136,6 +136,7 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 
 	/* wait until the first hart finishes execution */
 	sc_core::wait(allharts);
+	sc_core::sc_event_or_list remharts;
 
 	/* ensure that all running harts are stopped */
 	std::vector<CoreExecStatus> orig_status;
@@ -145,9 +146,12 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 			continue;
 		hart->status = CoreExecStatus::HitBreakpoint;
 
-		sc_core::sc_event *runev = std::get<0>(events.at(hart));
-		sc_core::wait(*runev);
+		remharts |= *std::get<0>(events.at(hart));
 	}
+
+	/* wait for all remaining harts to stop (if any) */
+	if (remharts.size() > 0)
+		sc_core::wait(remharts);
 
 	/* restore original hart status and ignore_wfi */
 	assert(orig_status.size() == hartsrun.size());
