@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <err.h>
 #include <limits.h>
 #include <stdio.h>
@@ -66,7 +65,7 @@ gdb_decode_runlen(char *data)
 				nrem += GDB_RUNLEN_STEP;
 			}
 
-			assert(runlen >= 0 && runlen <= CHAR_MAX);
+			xassert(runlen >= 0 && runlen <= CHAR_MAX);
 			ndat[nlen++] = (char)runlen;
 		}
 
@@ -122,8 +121,7 @@ gdb_is_valid(gdb_packet_t *pkt)
 	expcsum = calc_csum(pkt->data);
 
 	ret = snprintf(strcsum, sizeof(strcsum), "%.2x", expcsum);
-	assert(ret == GDB_CSUM_LEN);
-	(void)ret;
+	xassert(ret == GDB_CSUM_LEN);
 
 	return !strncmp(pkt->csum, strcsum, GDB_CSUM_LEN);
 }

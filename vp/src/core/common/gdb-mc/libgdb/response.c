@@ -1,6 +1,5 @@
 #include <err.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -23,7 +22,7 @@ kind_to_char(gdb_kind_t kind)
 	case GDB_KIND_ACK:
 		return '+';
 	default:
-		assert(0);
+		xassert(0);
 		return -1;
 	}
 }
@@ -38,7 +37,7 @@ gdb_serialize(gdb_kind_t kind, const char *data)
 
 	pktkind = kind_to_char(kind);
 	if (kind == GDB_KIND_NACK || kind == GDB_KIND_ACK) {
-		assert(data == NULL);
+		xassert(data == NULL);
 		serialized = xmalloc(2); /* kind + nullbyte */
 
 		serialized[0] = pktkind;

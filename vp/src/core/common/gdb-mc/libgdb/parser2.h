@@ -9,7 +9,7 @@
 			if (!xs[j])                                            \
 				--n;                                           \
                                                                                \
-		assert(n > 0);                                                 \
+		xassert(n > 0);                                                \
 		cmd = gdb_new_cmd(xs[0], TYPE);                                \
 		FUNC;                                                          \
                                                                                \
@@ -18,7 +18,7 @@
 
 #define GDBF_ARG_HCMD                                                          \
 	do {                                                                   \
-		assert(n == 3);                                                \
+		xassert(n == 3);                                               \
 		                                                               \
 		cmd->v.hcmd.op = *((char*)xs[1]);                              \
 		cmd->v.hcmd.id = *((gdb_thread_t*)xs[2]);                      \
@@ -29,7 +29,7 @@
 
 #define GDBF_ARG_INT                                                           \
 	do {                                                                   \
-		assert(n == 2);                                                \
+		xassert(n == 2);                                               \
 		                                                               \
 		cmd->v.ival = *((int*)xs[1]);                                  \
 		free(xs[1]);                                                   \
@@ -37,13 +37,13 @@
 
 #define GDBF_ARG_VCONT                                                         \
 	do {                                                                   \
-		assert(n == 2);                                                \
+		xassert(n == 2);                                               \
 		cmd->v.vval = (gdb_vcont_t *)xs[1];                            \
 	} while (0)
 
 #define GDBF_ARG_MEMORY                                                        \
 	do {                                                                   \
-		assert(n == 2);                                                \
+		xassert(n == 2);                                               \
 		cmd->v.mem = *((gdb_memory_t *)xs[1]);                         \
 		free(xs[1]);                                                   \
 	} while (0)
@@ -52,9 +52,9 @@
 	do {                                                                   \
 		int type;                                                      \
 		                                                               \
-		assert(n == 3);                                                \
+		xassert(n == 3);                                               \
 		type = *(int *)(xs[1]);                                        \
-		assert(type >= GDB_ZKIND_SOFT && type <= GDB_ZKIND_WATCHA);    \
+		xassert(type >= GDB_ZKIND_SOFT && type <= GDB_ZKIND_WATCHA);   \
 		                                                               \
 		cmd->v.bval.type = (gdb_ztype_t)type;                          \
 		cmd->v.bval.address = *((gdb_addr_t *)xs[2]);                  \
@@ -66,7 +66,7 @@
 
 #define GDBF_ARG_THREAD                                                        \
 	do {                                                                   \
-		assert(n == 2);                                                \
+		xassert(n == 2);                                               \
 		cmd->v.tval = *((gdb_thread_t *)xs[1]);                        \
 		free(xs[1]);                                                   \
 	} while (0)

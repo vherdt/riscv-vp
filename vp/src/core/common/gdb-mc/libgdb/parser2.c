@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,8 +34,7 @@ gdbf_address(mpc_val_t *x)
 	v = xmalloc(sizeof(*v));
 
 	r = sscanf((char *)x, "%"LIBGDB_ADDR_FORMAT, v);
-	assert(r == 1);
-	(void)r;
+	xassert(r == 1);
 
 	free(x);
 	return v;
@@ -57,8 +55,7 @@ gdbf_uhex(mpc_val_t *x)
 	v = xmalloc(sizeof(*v));
 
 	r = sscanf((char *)x, "%zx", v);
-	assert(r == 1);
-	(void)r;
+	xassert(r == 1);
 	
 	free(x);
 	return v;
@@ -75,7 +72,7 @@ gdbf_negative(mpc_val_t *val)
 {
 	int *neg;
 
-	assert(!strcmp((char*)val, "-1"));
+	xassert(!strcmp((char*)val, "-1"));
 	neg = xmalloc(sizeof(*neg));
 	*neg = -1;
 
@@ -88,9 +85,8 @@ gdbf_memory(int n, mpc_val_t **xs)
 {
 	gdb_memory_t *mem;
 
-	assert(n == 3);
-	(void)n;
-	assert(*(char *)xs[1] == ',');
+	xassert(n == 3);
+	xassert(*(char *)xs[1] == ',');
 
 	mem = xmalloc(sizeof(*mem));
 	mem->addr = *((gdb_addr_t *)xs[0]);
@@ -117,8 +113,7 @@ gdbf_thread_id(int n, mpc_val_t** xs)
 	int *arg1, *arg2;
 	gdb_thread_t *id;
 
-	(void)n;
-	assert(n == 2);
+	xassert(n == 2);
 
 	id = xmalloc(sizeof(*id));
 	arg1 = (int*)xs[0];
@@ -186,8 +181,7 @@ gdbf_vcont_action(int n, mpc_val_t **xs)
 	size_t actlen;
 	gdb_vcont_t *vcont;
 
-	(void)n;
-	assert(n == 2);
+	xassert(n == 2);
 
 	actstr = (char *)xs[0];
 	actlen = strlen(actstr);
@@ -201,7 +195,7 @@ gdbf_vcont_action(int n, mpc_val_t **xs)
 	else if (actlen == 3)
 		vcont->sig = (int)strtol(actstr + 1, NULL, 16);
 	else
-		assert(0);
+		xassert(0);
 
 	/* An action with no thread-id matches all threads. */
 	if (!xs[1]) {
@@ -223,7 +217,7 @@ gdbf_vcont(int n, mpc_val_t **xs)
 	size_t i;
 	gdb_vcont_t *vcont;
 
-	assert(n >= 1);
+	xassert(n >= 1);
 
 	for (vcont = (gdb_vcont_t *)xs[0], i = 1; i < (size_t)n; i++, vcont = vcont->next)
 		vcont->next = (gdb_vcont_t *)xs[i];

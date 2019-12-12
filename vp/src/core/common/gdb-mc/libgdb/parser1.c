@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stdint.h>
 
 #include <libgdb/parser1.h>
@@ -14,8 +13,7 @@ gdbf_packet(int n, mpc_val_t** xs)
 	gdb_packet_t *pkt;
 	char *start, *csum;
 
-	(void)n;
-	assert(n == 3);
+	xassert(n == 3);
 
 	pkt = xmalloc(sizeof(*pkt));
 	pkt->data = (char*)xs[1];
@@ -29,7 +27,7 @@ gdbf_packet(int n, mpc_val_t** xs)
 		pkt->kind = GDB_KIND_PACKET;
 		break;
 	default:
-		assert(0);
+		xassert(0);
 	}
 
 	csum = (char*)xs[2];
@@ -62,7 +60,7 @@ gdbf_acknowledge(mpc_val_t* xs)
 		pkt->kind = GDB_KIND_NACK;
 		break;
 	default:
-		assert(0);
+		xassert(0);
 	}
 
 	free(xs);

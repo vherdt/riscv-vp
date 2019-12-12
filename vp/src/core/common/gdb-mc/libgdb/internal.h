@@ -1,9 +1,16 @@
 #ifndef GDB_PROTOCOL_FNS
 #define GDB_PROTOCOL_FNS
 
+#include <assert.h>
 #include <stddef.h>
 
 #include <libgdb/parser2.h>
+
+#ifdef NDEBUG
+#define xassert(X) ((void)(X)) /* prevent -Wunused-parameter warning */
+#else
+#define xassert(X) (assert(X))
+#endif
 
 void *xrealloc(void *, size_t);
 void *xmalloc(size_t);
