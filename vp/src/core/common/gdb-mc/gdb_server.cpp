@@ -116,12 +116,17 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 }
 
 std::vector<debugable *> GDBServer::run_threads(int id) {
+	std::vector<bool> orig_ignwfi;
 	std::vector<debugable *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;
 	for (debugable *hart : hartsrun) {
 		sc_core::sc_event *run_event, *gdb_event;
+
+		/* temporarily ignore WFIs to ensure the runners returns */
+		orig_ignwfi.push_back(hart->ignore_wfi);
+		hart->ignore_wfi = true;
 
 		std::tie (gdb_event, run_event) = this->events.at(hart);
 
@@ -144,10 +149,12 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 		sc_core::wait(*runev);
 	}
 
-	/* restore original hart status */
+	/* restore original hart status and ignore_wfi */
 	assert(orig_status.size() == hartsrun.size());
-	for (size_t i = 0; i < hartsrun.size(); i++)
+	for (size_t i = 0; i < hartsrun.size(); i++) {
 		hartsrun[i]->status = orig_status[i];
+		hartsrun[i]->ignore_wfi = orig_ignwfi[i];
+	}
 
 	return hartsrun;
 }
