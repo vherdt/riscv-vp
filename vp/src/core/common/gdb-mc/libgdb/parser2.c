@@ -84,6 +84,34 @@ gdbf_negative(mpc_val_t *val)
 }
 
 static mpc_val_t *
+gdbf_memory(int n, mpc_val_t **xs)
+{
+	gdb_memory_t *mem;
+
+	assert(n == 3);
+	(void)n;
+	assert(*(char *)xs[1] == ',');
+
+	mem = xmalloc(sizeof(*mem));
+	mem->addr = *((gdb_addr_t *)xs[0]);
+	mem->length = *((size_t *)xs[2]);
+
+	free(xs[0]);
+	free(xs[1]);
+	free(xs[2]);
+
+	return mem;
+}
+
+static mpc_parser_t *
+gdb_memory(void)
+{
+	return mpc_and(3, gdbf_memory, gdb_address(),
+	               mpc_char(','), gdb_uhex(),
+	               free, free);
+}
+
+static mpc_val_t *
 gdbf_thread_id(int n, mpc_val_t** xs)
 {
 	int *arg1, *arg2;
@@ -229,9 +257,7 @@ gdbf_fold(m, GDB_ARG_MEMORY, GDBF_ARG_MEMORY)
 static mpc_parser_t *
 gdb_packet_m(void)
 {
-	return mpc_and(4, gdbf_packet_m, mpc_string("m"),
-	               gdb_address(), mpc_char(','), gdb_uhex(),
-	               free, free, free);
+	return mpc_and(2, gdbf_packet_m, mpc_string("m"), gdb_memory(), free);
 }
 
 static mpc_parser_t *

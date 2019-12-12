@@ -43,10 +43,9 @@
 
 #define GDBF_ARG_MEMORY                                                        \
 	do {                                                                   \
-		assert(n == 4);                                                \
-		cmd->v.mem.addr = *((gdb_addr_t *)xs[1]);                      \
-		cmd->v.mem.length = *((size_t *)xs[3]);                        \
-		free(xs[2]);                                                   \
+		assert(n == 2);                                                \
+		cmd->v.mem = *((gdb_memory_t *)xs[1]);                         \
+		free(xs[1]);                                                   \
 	} while (0)
 
 #define GDBF_ARG_BREAK                                                         \
