@@ -251,7 +251,17 @@ gdbf_fold(m, GDB_ARG_MEMORY, GDBF_ARG_MEMORY)
 static mpc_parser_t *
 gdb_packet_m(void)
 {
-	return mpc_and(2, gdbf_packet_m, mpc_string("m"), gdb_memory(), free);
+	return mpc_and(2, gdbf_packet_m, mpc_char('m'), gdb_memory(), free);
+}
+
+gdbf_fold(M, GDB_ARG_MEMORYW, GDBF_ARG_MEMORYW)
+
+static mpc_parser_t *
+gdb_packet_M(void)
+{
+	return mpc_and(4, gdbf_packet_M, mpc_char('M'),
+	               gdb_memory(), mpc_char(':'), mpc_hexdigits(),
+	               free, free, free);
 }
 
 static mpc_parser_t *
@@ -301,11 +311,12 @@ gdb_cmd(mpc_parser_t *cmd)
 static mpc_parser_t *
 gdb_parse_stage2(void)
 {
-	return mpc_or(7,
+	return mpc_or(8,
 	              gdb_cmd(gdb_packet_h()),
 	              gdb_cmd(gdb_packet_p()),
 	              gdb_cmd(gdb_packet_vcont()),
 	              gdb_cmd(gdb_packet_m()),
+	              gdb_cmd(gdb_packet_M()),
 	              gdb_cmd(gdb_packet_z()),
 	              gdb_cmd(gdb_packet_T()),
 	              gdb_any());

@@ -52,6 +52,11 @@ typedef struct {
 } gdb_memory_t;
 
 typedef struct {
+	gdb_memory_t location;
+	char *data; /* null-terminated hexstring */
+} gdb_memory_write_t;
+
+typedef struct {
 	char op;
 	gdb_thread_t id;
 } gdb_cmd_h_t;
@@ -72,6 +77,7 @@ typedef enum {
 	GDB_ARG_H,
 	GDB_ARG_INT,
 	GDB_ARG_MEMORY,
+	GDB_ARG_MEMORYW,
 	GDB_ARG_BREAK,
 	GDB_ARG_THREAD,
 } gdb_argument_t;
@@ -85,6 +91,7 @@ typedef struct {
 		gdb_cmd_h_t hcmd;
 		int ival;
 		gdb_memory_t mem;
+		gdb_memory_write_t memw;
 		gdb_breakpoint_t bval;
 		gdb_thread_t tval;
 	} v;

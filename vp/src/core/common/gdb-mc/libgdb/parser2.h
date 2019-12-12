@@ -48,6 +48,15 @@
 		free(xs[1]);                                                   \
 	} while (0)
 
+#define GDBF_ARG_MEMORYW                                                       \
+	do {                                                                   \
+		xassert(n == 4);                                               \
+		cmd->v.memw.location = *((gdb_memory_t *)xs[1]);               \
+		cmd->v.memw.data = (char *)xs[3];                              \
+		free(xs[1]);                                                   \
+		free(xs[2]);                                                   \
+	} while (0)
+
 #define GDBF_ARG_BREAK                                                         \
 	do {                                                                   \
 		int type;                                                      \

@@ -143,6 +143,9 @@ gdb_free_cmd(gdb_command_t *cmd)
 {
 	gdb_vcont_t *parent, *next;
 
+	if (cmd->type == GDB_ARG_MEMORYW)
+		free(cmd->v.memw.data);
+
 	if (cmd->type == GDB_ARG_VCONT) {
 		parent = cmd->v.vval;
 		while (parent) {
