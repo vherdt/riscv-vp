@@ -28,6 +28,7 @@ public:
 	void setThread(int, gdb_command_t *);
 	void killServer(int, gdb_command_t *);
 	void readMemory(int, gdb_command_t *);
+	void writeMemory(int, gdb_command_t *);
 	void readRegister(int, gdb_command_t *);
 	void qAttached(int, gdb_command_t *);
 	void qSupported(int, gdb_command_t *);
