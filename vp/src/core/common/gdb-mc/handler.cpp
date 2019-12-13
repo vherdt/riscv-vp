@@ -112,12 +112,11 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	int reg;
 	debugable *hart;
+	auto formatter = new RegisterFormater(arch);
 
 	reg = cmd->v.ival;
-	auto fn = [this, reg, conn] (debugable *hart) {
+	auto fn = [formatter, reg] (debugable *hart) {
 		uint64_t regval;
-		RegisterFormater formatter(arch);
-
 		if (reg == GDB_PC_REG) {
 			regval = hart->pc;
 		} else {
@@ -126,15 +125,19 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 
 		/* TODO: handle CSRs? */
 
-		formatter.formatRegister(regval);
-		send_packet(conn, formatter.str().c_str());
+		formatter->formatRegister(regval);
 	};
 
 	try {
 		exec_thread(fn);
-	} catch (const std::out_of_range&) {
+	} catch (const std::out_of_range&) { /* exception raised in fn */
 		send_packet(conn, "E01");
+		goto ret;
 	}
+
+	send_packet(conn, formatter->str().c_str());
+ret:
+	delete formatter;
 }
 
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
