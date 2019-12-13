@@ -225,9 +225,18 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	}
 
 	assert(stop_reason && stopped_thread >= 1);
+
+	/* This sets the current thread for various follow-up
+	 * operations, most importantly readRegister. Without this
+	 * change gdb reads the registers of the previously selected
+	 * thread and doesn't switch threads properly if a thread other
+	 * than the currently selected hits a breakpoint.
+	 *
+	 * XXX: No idea if the stub is really required to do this. */
+	thread_ops['g'] = stopped_thread;
+
 	const std::string msg = std::string("T") + stop_reason + "thread:" +
 	                        std::to_string(stopped_thread) + ";";
-
 	send_packet(conn, msg.c_str());
 }
 
