@@ -204,10 +204,12 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		for (debugable *hart : selected_harts) {
 			switch (hart->status) {
 			case CoreExecStatus::HitBreakpoint:
-				stop_reason = "S05";
+				stop_reason = (std::string("T05") + "thread:" +
+				               std::to_string(hart->get_hart_id() + 1) + ";").c_str();
 				break;
 			case CoreExecStatus::Terminated:
-				stop_reason = "S03";
+				stop_reason = (std::string("T03") + "thread:" +
+				               std::to_string(hart->get_hart_id() + 1) + ";").c_str();
 				break;
 			case CoreExecStatus::Runnable:
 				continue;
