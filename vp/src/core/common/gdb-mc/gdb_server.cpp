@@ -106,7 +106,7 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 
 	try {
 		thread = thread_ops.at(op);
-	} catch (const std::system_error& e) {
+	} catch (const std::out_of_range&) {
 		thread = GDB_THREAD_ANY;
 	}
 
