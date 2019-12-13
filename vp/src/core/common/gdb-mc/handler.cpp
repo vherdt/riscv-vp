@@ -237,11 +237,8 @@ void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	auto fn = [bpoint] (debugable *hart) {
+	for (debugable *hart : harts)
 		hart->breakpoints.erase(bpoint->address);
-	};
-
-	exec_thread(fn);
 	send_packet(conn, "OK");
 }
 
@@ -254,10 +251,7 @@ void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	auto fn = [bpoint] (debugable *hart) {
+	for (debugable *hart : harts)
 		hart->breakpoints.insert(bpoint->address);
-	};
-
-	exec_thread(fn);
 	send_packet(conn, "OK");
 }
