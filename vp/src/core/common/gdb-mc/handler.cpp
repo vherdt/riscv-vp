@@ -192,6 +192,9 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	int stopped_thread = -1;
 	const char *stop_reason = NULL;
 
+	/* This handler attempts to implement the all-stop mode.
+	 * See: https://sourceware.org/gdb/onlinedocs/gdb/All_002dStop-Mode.html */
+
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
 		if (vcont->action != 'c')
