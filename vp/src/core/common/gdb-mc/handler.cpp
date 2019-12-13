@@ -189,6 +189,7 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
+	int stopped_thread = -1;
 	const char *stop_reason = NULL;
 
 	vcont = cmd->v.vval;
@@ -207,12 +208,12 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		for (debugable *hart : selected_harts) {
 			switch (hart->status) {
 			case CoreExecStatus::HitBreakpoint:
-				stop_reason = (std::string("T05") + "thread:" +
-				               std::to_string(hart->get_hart_id() + 1) + ";").c_str();
+				stop_reason = "05";
+				stopped_thread = hart->get_hart_id() + 1;
 				break;
 			case CoreExecStatus::Terminated:
-				stop_reason = (std::string("T03") + "thread:" +
-				               std::to_string(hart->get_hart_id() + 1) + ";").c_str();
+				stop_reason = "03";
+				stopped_thread = hart->get_hart_id() + 1;
 				break;
 			case CoreExecStatus::Runnable:
 				continue;
@@ -223,8 +224,11 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		}
 	}
 
-	assert(stop_reason);
-	send_packet(conn, stop_reason);
+	assert(stop_reason && stopped_thread >= 1);
+	const std::string msg = std::string("T") + stop_reason + "thread:" +
+	                        std::to_string(stopped_thread) + ";";
+
+	send_packet(conn, msg.c_str());
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
