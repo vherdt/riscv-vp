@@ -66,6 +66,11 @@ void GDBServer::killServer(int conn, gdb_command_t *cmd) {
 	// TODO: Stop the System C simulation instead of
 	// terminating the program. This would require interacting
 	// with the GDBServerRunner directly to make it exit.
+	//
+	// This could be implemented by adding sys_exit to
+	// debugable, however, some SystemC modules, e.g. FU540_PLIC
+	// also spawn threads which are not stopped at all. These
+	// modules need to be fixed first.
 	exit(EXIT_SUCCESS);
 }
 
