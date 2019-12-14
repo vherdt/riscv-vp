@@ -213,6 +213,10 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			case CoreExecStatus::HitBreakpoint:
 				stop_reason = "05";
 				stopped_thread = hart->get_hart_id() + 1;
+
+				/* mark runnable again */
+				hart->set_status(CoreExecStatus::Runnable);
+
 				break;
 			case CoreExecStatus::Terminated:
 				stop_reason = "03";
@@ -221,10 +225,6 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			case CoreExecStatus::Runnable:
 				continue;
 			}
-
-			/* mark runnable again */
-			/* TODO: don't mark runnable if terminated */
-			hart->set_status(CoreExecStatus::Runnable);
 		}
 	}
 

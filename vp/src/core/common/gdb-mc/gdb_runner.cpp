@@ -14,5 +14,8 @@ void GDBServerRunner::run(void) {
 		sc_core::wait(run_event);
 		hart->run();
 		gdb_event->notify();
+
+		if (hart->get_status() == CoreExecStatus::Terminated)
+			break;
 	}
 }
