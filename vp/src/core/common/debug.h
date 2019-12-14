@@ -22,9 +22,7 @@ struct debugable {
 	virtual void enable_debug(void) = 0;
 	virtual CoreExecStatus get_status(void) = 0;
 	virtual void set_status(CoreExecStatus) = 0;
-
-	virtual void set_wfi(bool) = 0;
-	virtual bool get_wfi(void) = 0;
+	virtual void block_on_wfi(bool) = 0;
 
 	virtual void insert_breakpoint(uint64_t) = 0;
 	virtual void remove_breakpoint(uint64_t) = 0;

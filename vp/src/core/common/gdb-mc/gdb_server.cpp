@@ -34,7 +34,7 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 		/* Don't block on WFI, otherwise the run_threads method
 		 * does not work correctly. Allowing blocking WFI would
 		 * likely increase the performance */
-		h->set_wfi(true);
+		h->block_on_wfi(false);
 	}
 
 	memory = mm;

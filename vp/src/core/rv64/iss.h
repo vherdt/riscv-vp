@@ -183,9 +183,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void enable_debug(void) override;
 	CoreExecStatus get_status(void) override;
 	void set_status(CoreExecStatus) override;
-
-	void set_wfi(bool) override;
-	bool get_wfi(void) override;
+	void block_on_wfi(bool) override;
 
 	void insert_breakpoint(uint64_t) override;
 	void remove_breakpoint(uint64_t) override;

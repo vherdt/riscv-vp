@@ -1521,12 +1521,8 @@ uint64_t ISS::get_progam_counter(void) {
 	return pc;
 }
 
-void ISS::set_wfi(bool status) {
-	ignore_wfi = status;
-}
-
-bool ISS::get_wfi(void) {
-	return ignore_wfi;
+void ISS::block_on_wfi(bool block) {
+	ignore_wfi = !block;
 }
 
 CoreExecStatus ISS::get_status(void) {
