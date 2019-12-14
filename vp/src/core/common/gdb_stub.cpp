@@ -1,5 +1,11 @@
 #include "gdb_stub.h"
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
+
 #include <arpa/inet.h>
 #include <byteswap.h>
 #include <netinet/in.h>
@@ -30,12 +36,8 @@ unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
 	unsigned nbytes = isock->transport_dbg(trans);
-
-	if (trans.is_response_error()) {
-		std::cout << "WARNING: debug transaction to address=" << addr << " with size=" << nbytes
-		          << " and command=" << cmd << "failed." << std::endl;
-		assert(false);
-	}
+	if (trans.is_response_error())
+		throw std::runtime_error("debug transaction failed");
 
 	return nbytes;
 }
@@ -56,14 +58,27 @@ std::string DebugMemoryInterface::read_memory(uint64_t start, unsigned nbytes) {
 }
 
 void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const std::string &data) {
+	unsigned i, j;
+	std::vector<uint8_t> buf(data.length() / 2);
+
 	assert(data.length() % 2 == 0);
+	assert(buf.size() == nbytes);
 
-	std::vector<uint8_t> buf(nbytes / 2);
+	for (j = 0, i = 0; i + 1 < nbytes; j++, i += 2) {
+		long num;
+		char hex[3];
 
-	for (uint64_t i = 0; i < nbytes; ++i) {
-		std::string bytes = data.substr(i * 2, 2);
-		uint8_t byte = (uint8_t)std::strtol(bytes.c_str(), NULL, 16);
-		buf.at(i) = byte;
+		hex[0] = data.at(i);
+		hex[1] = data.at(i+1);
+		hex[2] = '\0';
+
+		errno = 0;
+		num = strtol(hex, NULL, 16);
+		if (num == 0 && errno != 0)
+			throw std::system_error(errno, std::generic_category());
+
+		assert(num >= 0 && num <= UINT8_MAX);
+		buf.at(j) = (uint8_t)num;
 	}
 
 	unsigned nbytes_write = _do_dbg_transaction(tlm::TLM_WRITE_COMMAND, start, buf.data(), buf.size());

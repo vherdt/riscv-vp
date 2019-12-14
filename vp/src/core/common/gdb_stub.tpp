@@ -231,8 +231,13 @@ void DebugCoreRunner<Core, Arch>::handle_gdb_loop(int conn) {
             send_packet(conn, stream.str());
         } else if (boost::starts_with(msg, "m")) {
             memory_access_t m = parse_memory_access(msg);
-            std::string ans = read_memory(m.start, m.nbytes);
-            send_packet(conn, ans);
+            std::string ans;
+            try {
+                ans = read_memory(m.start, m.nbytes);
+                send_packet(conn, ans);
+            } catch (const std::runtime_error&) {
+                send_packet(conn, "E01");
+            }
         } else if (boost::starts_with(msg, "M")) {
             memory_access_t m = parse_memory_access(msg);
             std::string data = msg.substr(msg.find(":") + 1);
