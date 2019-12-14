@@ -118,7 +118,7 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	auto fn = [formatter, reg] (debugable *hart) {
 		uint64_t regval;
 		if (reg == GDB_PC_REG) {
-			regval = hart->pc;
+			regval = hart->get_progam_counter();
 		} else {
 			regval = hart->read_register(reg);
 		}
@@ -209,7 +209,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		}
 
 		for (debugable *hart : selected_harts) {
-			switch (hart->status) {
+			switch (hart->get_status()) {
 			case CoreExecStatus::HitBreakpoint:
 				stop_reason = "05";
 				stopped_thread = hart->get_hart_id() + 1;
@@ -223,7 +223,8 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			}
 
 			/* mark runnable again */
-			hart->status = CoreExecStatus::Runnable;
+			/* TODO: don't mark runnable if terminated */
+			hart->set_status(CoreExecStatus::Runnable);
 		}
 	}
 
@@ -259,7 +260,7 @@ void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
 	}
 
 	for (debugable *hart : harts)
-		hart->breakpoints.erase(bpoint->address);
+		hart->remove_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }
 
@@ -273,6 +274,6 @@ void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
 	}
 
 	for (debugable *hart : harts)
-		hart->breakpoints.insert(bpoint->address);
+		hart->insert_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }

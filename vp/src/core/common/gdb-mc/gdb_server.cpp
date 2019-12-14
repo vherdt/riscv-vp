@@ -125,8 +125,8 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 		sc_core::sc_event *run_event, *gdb_event;
 
 		/* temporarily ignore WFIs to ensure the runners returns */
-		orig_ignwfi.push_back(hart->ignore_wfi);
-		hart->ignore_wfi = true;
+		orig_ignwfi.push_back(hart->get_wfi());
+		hart->set_wfi(true);
 
 		std::tie (gdb_event, run_event) = events.at(hart);
 
@@ -141,10 +141,12 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 	/* ensure that all running harts are stopped */
 	std::vector<CoreExecStatus> orig_status;
 	for (debugable *hart : hartsrun) {
-		orig_status.push_back(hart->status);
-		if (hart->status != CoreExecStatus::Runnable)
+		CoreExecStatus status = hart->get_status();
+		orig_status.push_back(status);
+
+		if (status != CoreExecStatus::Runnable)
 			continue;
-		hart->status = CoreExecStatus::HitBreakpoint;
+		hart->set_status(CoreExecStatus::HitBreakpoint);
 
 		remharts |= *std::get<0>(events.at(hart));
 	}
@@ -153,11 +155,11 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 	if (remharts.size() > 0)
 		sc_core::wait(remharts);
 
-	/* restore original hart status and ignore_wfi */
+	/* restore original hart status and wfi handling */
 	assert(orig_status.size() == hartsrun.size());
 	for (size_t i = 0; i < hartsrun.size(); i++) {
-		hartsrun[i]->status = orig_status[i];
-		hartsrun[i]->ignore_wfi = orig_ignwfi[i];
+		hartsrun[i]->set_status(orig_status[i]);
+		hartsrun[i]->set_wfi(orig_ignwfi[i]);
 	}
 
 	return hartsrun;
