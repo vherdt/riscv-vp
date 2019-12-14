@@ -28,8 +28,14 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	if (dharts.size() <= 0)
 		throw std::invalid_argument("no harts specified");
 
-	for (debugable *h : dharts)
+	for (debugable *h : dharts) {
 		events[h] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
+
+		/* Don't block on WFI, otherwise the run_threads method
+		 * does not work correctly. Allowing blocking WFI would
+		 * likely increase the performance */
+		h->set_wfi(true);
+	}
 
 	memory = mm;
 	arch = dharts.at(0)->get_architecture(); // assuming all harts use the same
@@ -116,18 +122,12 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 }
 
 std::vector<debugable *> GDBServer::run_threads(int id) {
-	std::vector<bool> orig_ignwfi;
 	std::vector<debugable *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;
 	for (debugable *hart : hartsrun) {
 		sc_core::sc_event *run_event, *gdb_event;
-
-		/* temporarily ignore WFIs to ensure the runners returns */
-		orig_ignwfi.push_back(hart->get_wfi());
-		hart->set_wfi(true);
-
 		std::tie (gdb_event, run_event) = this->events.at(hart);
 
 		run_event->notify();
@@ -151,12 +151,10 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 		sc_core::wait(*runev);
 	}
 
-	/* restore original hart status and wfi handling */
+	/* restore original hart status */
 	assert(orig_status.size() == hartsrun.size());
-	for (size_t i = 0; i < hartsrun.size(); i++) {
+	for (size_t i = 0; i < hartsrun.size(); i++)
 		hartsrun[i]->set_status(orig_status[i]);
-		hartsrun[i]->set_wfi(orig_ignwfi[i]);
-	}
 
 	return hartsrun;
 }
