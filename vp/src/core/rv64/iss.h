@@ -144,9 +144,11 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
+	uint64_t pc = 0;
 	uint64_t last_pc = 0;
 	bool trace = false;
 	bool shall_exit = false;
+	bool ignore_wfi = false;
 	csr_table csrs;
 	PrivilegeLevel prv = MachineMode;
 	uint64_t lr_sc_counter = 0;
@@ -154,6 +156,10 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	// last decoded and executed instruction and opcode
 	Instruction instr;
 	Opcode::Mapping op;
+
+	CoreExecStatus status = CoreExecStatus::Runnable;
+	std::unordered_set<uint64_t> breakpoints;
+	bool debug_mode = false;
 
 	sc_core::sc_event wfi_event;
 
@@ -172,6 +178,17 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	Architecture get_architecture(void) override {
 		return RV64;
 	}
+
+	uint64_t get_progam_counter(void) override;
+	void enable_debug(void) override;
+	CoreExecStatus get_status(void) override;
+	void set_status(CoreExecStatus) override;
+
+	void set_wfi(bool) override;
+	bool get_wfi(void) override;
+
+	void insert_breakpoint(uint64_t) override;
+	void remove_breakpoint(uint64_t) override;
 
 	void exec_step();
 

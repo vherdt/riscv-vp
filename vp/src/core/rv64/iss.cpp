@@ -1517,6 +1517,38 @@ void ISS::write_register(unsigned idx, uint64_t value) {
 	regs.write(idx, value);
 }
 
+uint64_t ISS::get_progam_counter(void) {
+	return pc;
+}
+
+void ISS::set_wfi(bool status) {
+	ignore_wfi = status;
+}
+
+bool ISS::get_wfi(void) {
+	return ignore_wfi;
+}
+
+CoreExecStatus ISS::get_status(void) {
+	return status;
+}
+
+void ISS::set_status(CoreExecStatus s) {
+	status = s;
+}
+
+void ISS::enable_debug(void) {
+	debug_mode = true;
+}
+
+void ISS::insert_breakpoint(uint64_t addr) {
+	breakpoints.insert(addr);
+}
+
+void ISS::remove_breakpoint(uint64_t addr) {
+	breakpoints.erase(addr);
+}
+
 uint64_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
 }
