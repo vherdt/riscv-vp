@@ -49,11 +49,11 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	thr.detach();
 }
 
-sc_core::sc_event *GDBServer::get_event(debugable *hart) {
+sc_core::sc_event *GDBServer::get_stop_event(debugable *hart) {
 	return std::get<0>(events.at(hart));
 }
 
-void GDBServer::set_event(debugable *hart, sc_core::sc_event *event) {
+void GDBServer::set_run_event(debugable *hart, sc_core::sc_event *event) {
 	std::get<1>(events.at(hart)) = event;
 }
 
@@ -127,11 +127,11 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;
 	for (debugable *hart : hartsrun) {
-		sc_core::sc_event *run_event, *gdb_event;
-		std::tie (gdb_event, run_event) = this->events.at(hart);
+		sc_core::sc_event *stop_event, *run_event;
+		std::tie (stop_event, run_event) = this->events.at(hart);
 
 		run_event->notify();
-		allharts |= *gdb_event;
+		allharts |= *stop_event;
 	}
 
 	/* wait until the first hart finishes execution */
@@ -147,8 +147,8 @@ std::vector<debugable *> GDBServer::run_threads(int id) {
 			continue;
 		hart->set_status(CoreExecStatus::HitBreakpoint);
 
-		sc_core::sc_event *runev = std::get<0>(events.at(hart));
-		sc_core::wait(*runev);
+		sc_core::sc_event &stopev = *get_stop_event(hart);
+		sc_core::wait(stopev);
 	}
 
 	/* restore original hart status */

@@ -47,8 +47,8 @@ public:
 	          DebugMemoryInterface*,
 	          uint16_t);
 
-	sc_core::sc_event *get_event(debugable *);
-	void set_event(debugable *, sc_core::sc_event *);
+	sc_core::sc_event *get_stop_event(debugable *);
+	void set_run_event(debugable *, sc_core::sc_event *);
 
 private:
 	typedef std::function<void(debugable *)> thread_func;

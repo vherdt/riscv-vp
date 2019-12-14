@@ -14,7 +14,7 @@ public:
 private:
 	debugable *hart;
 	sc_core::sc_event run_event;
-	sc_core::sc_event *gdb_event;
+	sc_core::sc_event *stop_event;
 
 	void run(void);
 };
