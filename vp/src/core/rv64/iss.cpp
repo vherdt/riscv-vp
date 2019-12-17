@@ -55,7 +55,8 @@ void RegFile::write(uint64_t index, int64_t value) {
 }
 
 int64_t RegFile::read(uint64_t index) {
-	assert(index <= x31);
+	if (index > x31)
+		throw std::out_of_range("out-of-range register access");
 	return regs[index];
 }
 
@@ -1516,8 +1517,45 @@ void ISS::write_register(unsigned idx, uint64_t value) {
 	regs.write(idx, value);
 }
 
+uint64_t ISS::get_progam_counter(void) {
+	return pc;
+}
+
+void ISS::block_on_wfi(bool block) {
+	ignore_wfi = !block;
+}
+
+CoreExecStatus ISS::get_status(void) {
+	return status;
+}
+
+void ISS::set_status(CoreExecStatus s) {
+	status = s;
+}
+
+void ISS::enable_debug(void) {
+	debug_mode = true;
+}
+
+void ISS::insert_breakpoint(uint64_t addr) {
+	breakpoints.insert(addr);
+}
+
+void ISS::remove_breakpoint(uint64_t addr) {
+	breakpoints.erase(addr);
+}
+
 uint64_t ISS::get_hart_id() {
 	return csrs.mhartid.reg;
+}
+
+std::vector<uint64_t> ISS::get_registers(void) {
+	std::vector<uint64_t> regvals;
+
+	for (int64_t v : regs.regs)
+		regvals.push_back(v);
+
+	return regvals;
 }
 
 void ISS::fp_finish_instr() {
@@ -1837,6 +1875,13 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 void ISS::run_step() {
 	assert(regs.read(0) == 0);
 
+	// speeds up the execution performance (non debug mode) significantly by
+	// checking the additional flag first
+	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) {
+		status = CoreExecStatus::HitBreakpoint;
+		goto ret;
+	}
+
 	last_pc = pc;
 	try {
 		exec_step();
@@ -1859,16 +1904,12 @@ void ISS::run_step() {
 	// before every register write)
 	regs.regs[regs.zero] = 0;
 
+ret:
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
 	// to *mepc*).
 	if (shall_exit)
 		status = CoreExecStatus::Terminated;
-
-	// speeds up the execution performance (non debug mode) significantly by
-	// checking the additional flag first
-	if (debug_mode && (breakpoints.find(pc) != breakpoints.end()))
-		status = CoreExecStatus::HitBreakpoint;
 
 	performance_and_sync_update(op);
 }

@@ -11,6 +11,7 @@
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
+#include "debug.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -136,7 +137,7 @@ struct PendingInterrupts {
 	uint64_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
+struct ISS : public external_interrupt_target, public clint_interrupt_target, public debug_target, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -174,6 +175,19 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	ISS(uint64_t hart_id);
 
+	Architecture get_architecture(void) override {
+		return RV64;
+	}
+
+	uint64_t get_progam_counter(void) override;
+	void enable_debug(void) override;
+	CoreExecStatus get_status(void) override;
+	void set_status(CoreExecStatus) override;
+	void block_on_wfi(bool) override;
+
+	void insert_breakpoint(uint64_t) override;
+	void remove_breakpoint(uint64_t) override;
+
 	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();
@@ -194,7 +208,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void write_register(unsigned idx, uint64_t value) override;
 
-	uint64_t get_hart_id();
+	uint64_t get_hart_id() override;
+
+	std::vector<uint64_t> get_registers(void) override;
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
@@ -309,7 +325,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void run_step();
 
-	void run();
+	void run() override;
 
 	void show();
 };

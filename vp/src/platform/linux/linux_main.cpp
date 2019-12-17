@@ -13,7 +13,13 @@
 #include "platform/common/uart.h"
 #include "prci.h"
 #include "syscall.h"
+#include "debug.h"
 #include "util/options.h"
+
+#ifdef GDB_MULTICORE
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+#endif
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -258,9 +264,24 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	for (size_t i = 0; i < NUM_CORES; i++) {
-		// TODO: Readd debung support (opt.use_debug_runner)
-		new DirectCoreRunner(cores[i]->iss);
+	std::vector<debug_target*> dharts;
+	if (opt.use_debug_runner) {
+#ifdef GDB_MULTICORE
+		for (size_t i = 0; i < NUM_CORES; i++)
+			dharts.push_back(&cores[i]->iss);
+
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
+		for (size_t i = 0; i < dharts.size(); i++)
+			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
+#else
+		std::cerr << "Multicore debugging support was not enabled. "
+			  << "Recompile with -DGDB_MULTICORE=ON" << std::endl;
+		return EXIT_FAILURE;
+#endif
+	} else {
+		for (size_t i = 0; i < NUM_CORES; i++) {
+			new DirectCoreRunner(cores[i]->iss);
+		}
 	}
 
 	sc_core::sc_start();

@@ -1,0 +1,3 @@
+[submodule "vp/src/core/common/gdb-mc/parser/mpc"]
+	path = vp/src/core/common/gdb-mc/libgdb/mpc
+	url = https://github.com/orangeduck/mpc
