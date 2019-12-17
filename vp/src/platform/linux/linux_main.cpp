@@ -13,6 +13,7 @@
 #include "platform/common/uart.h"
 #include "prci.h"
 #include "syscall.h"
+#include "debug.h"
 #include "util/options.h"
 
 #ifdef GDB_MULTICORE
