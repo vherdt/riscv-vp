@@ -273,7 +273,8 @@ int sc_main(int argc, char **argv) {
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 #else
-		std::cerr << "GDB_MULTICORE is not supported" << std::endl;
+		std::cerr << "Multicore debugging support was not enabled. "
+			  << "Recompile with -DGDB_MULTICORE=ON" << std::endl;
 		return EXIT_FAILURE;
 #endif
 	} else {
