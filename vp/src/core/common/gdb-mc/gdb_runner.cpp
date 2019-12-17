@@ -1,6 +1,6 @@
 #include "gdb_runner.h"
 
-GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server, debugable *hart) {
+GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server, debug_target *hart) {
 	this->hart = hart;
 	this->stop_event = server->get_stop_event(hart);
 	server->set_run_event(hart, &this->run_event);

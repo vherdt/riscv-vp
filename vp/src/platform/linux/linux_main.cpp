@@ -263,7 +263,7 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	std::vector<debugable*> dharts;
+	std::vector<debug_target*> dharts;
 	if (opt.use_debug_runner) {
 #ifdef GDB_MULTICORE
 		for (size_t i = 0; i < NUM_CORES; i++)

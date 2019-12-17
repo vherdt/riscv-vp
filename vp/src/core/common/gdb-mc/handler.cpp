@@ -43,7 +43,7 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	auto formatter = new RegisterFormater(arch);
-	auto fn = [formatter] (debugable *hart) {
+	auto fn = [formatter] (debug_target *hart) {
 		for (uint64_t v : hart->get_registers())
 			formatter->formatRegister(v);
 	};
@@ -68,7 +68,7 @@ void GDBServer::killServer(int conn, gdb_command_t *cmd) {
 	// with the GDBServerRunner directly to make it exit.
 	//
 	// This could be implemented by adding sys_exit to
-	// debugable, however, some SystemC modules, e.g. FU540_PLIC
+	// debug_target, however, some SystemC modules, e.g. FU540_PLIC
 	// also spawn threads which are not stopped at all. These
 	// modules need to be fixed first.
 	exit(EXIT_SUCCESS);
@@ -116,11 +116,11 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	int reg;
-	debugable *hart;
+	debug_target *hart;
 	auto formatter = new RegisterFormater(arch);
 
 	reg = cmd->v.ival;
-	auto fn = [formatter, reg] (debugable *hart) {
+	auto fn = [formatter, reg] (debug_target *hart) {
 		uint64_t regval;
 		if (reg == GDB_PC_REG) {
 			regval = hart->get_progam_counter();
@@ -205,7 +205,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		if (vcont->action != 'c')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
-		std::vector<debugable *> selected_harts;
+		std::vector<debug_target *> selected_harts;
 		try {
 			selected_harts = run_threads(vcont->thread.tid);
 		} catch (const std::out_of_range&) {
@@ -213,7 +213,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			return;
 		}
 
-		for (debugable *hart : selected_harts) {
+		for (debug_target *hart : selected_harts) {
 			switch (hart->get_status()) {
 			case CoreExecStatus::HitBreakpoint:
 				stop_reason = "05";
@@ -264,7 +264,7 @@ void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	for (debugable *hart : harts)
+	for (debug_target *hart : harts)
 		hart->remove_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }
@@ -278,7 +278,7 @@ void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	for (debugable *hart : harts)
+	for (debug_target *hart : harts)
 		hart->insert_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }

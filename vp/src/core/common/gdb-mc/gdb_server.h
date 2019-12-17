@@ -43,22 +43,22 @@ public:
 	SC_HAS_PROCESS(GDBServer);
 
 	GDBServer(sc_core::sc_module_name,
-	          std::vector<debugable*>,
+	          std::vector<debug_target*>,
 	          DebugMemoryInterface*,
 	          uint16_t);
 
-	sc_core::sc_event *get_stop_event(debugable *);
-	void set_run_event(debugable *, sc_core::sc_event *);
+	sc_core::sc_event *get_stop_event(debug_target *);
+	void set_run_event(debug_target *, sc_core::sc_event *);
 
 private:
-	typedef std::function<void(debugable *)> thread_func;
+	typedef std::function<void(debug_target *)> thread_func;
 	typedef std::tuple<int, gdb_packet_t *> ctx;
 	typedef std::tuple<sc_core::sc_event *, sc_core::sc_event *> hart_event;
 
 	DebugMemoryInterface *memory;
 	AsyncEvent asyncEvent;
 	Architecture arch;
-	std::vector<debugable*> harts;
+	std::vector<debug_target*> harts;
 	std::thread thr;
 	char *prevpkt;
 	std::queue<ctx> pktq;
@@ -69,12 +69,12 @@ private:
 	std::map<char, int> thread_ops;
 
 	/* hart → events */
-	std::map<debugable *, hart_event> events;
+	std::map<debug_target *, hart_event> events;
 
 	void create_sock(uint16_t);
-	std::vector<debugable *> get_threads(int);
+	std::vector<debug_target *> get_threads(int);
 	void exec_thread(thread_func, char = 'g');
-	std::vector<debugable *> run_threads(int);
+	std::vector<debug_target *> run_threads(int);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
