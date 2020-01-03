@@ -42,6 +42,7 @@ struct Options {
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 	bool trace_mode = false;
+	bool intercept_syscalls = false;
 
 	unsigned int tlm_global_quantum = 10;
 };
@@ -61,6 +62,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("help", "produce help message")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
 		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
+		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
 		("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using gdb rsp interface)")
 		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
 		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
@@ -134,6 +136,11 @@ int sc_main(int argc, char **argv) {
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core0);
 	sys.register_core(&core1);
+
+	if (opt.intercept_syscalls) {
+		core0.sys = &sys;
+		core1.sys = &sys;
+	}
 
 	// connect TLM sockets
 	core0_mem_if.isock.bind(bus.tsocks[0]);
