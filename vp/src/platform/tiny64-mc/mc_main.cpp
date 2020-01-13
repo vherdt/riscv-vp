@@ -173,6 +173,9 @@ int sc_main(int argc, char **argv) {
 		new DirectCoreRunner(core1);
 	}
 
+	if (opt.quiet)
+		 sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
+
 	sc_core::sc_start();
 	if (!opt.quiet) {
 		core0.show();
