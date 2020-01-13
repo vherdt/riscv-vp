@@ -16,10 +16,8 @@
 #include "debug.h"
 #include "util/options.h"
 
-#ifdef GDB_MULTICORE
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
-#endif
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
@@ -266,18 +264,12 @@ int sc_main(int argc, char **argv) {
 
 	std::vector<debug_target_if*> dharts;
 	if (opt.use_debug_runner) {
-#ifdef GDB_MULTICORE
 		for (size_t i = 0; i < NUM_CORES; i++)
 			dharts.push_back(&cores[i]->iss);
 
 		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
-#else
-		std::cerr << "Multicore debugging support was not enabled. "
-			  << "Recompile with -DGDB_MULTICORE=ON" << std::endl;
-		return EXIT_FAILURE;
-#endif
 	} else {
 		for (size_t i = 0; i < NUM_CORES; i++) {
 			new DirectCoreRunner(cores[i]->iss);
