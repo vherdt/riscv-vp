@@ -49,9 +49,12 @@ blt a0, t2, 1b
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
 SYS_EXIT 0
 
+.align 8
 stack0_begin:
 .zero 32768
 stack0_end:
+
+.align 8
 stack1_begin:
 .zero 32768
 stack1_end:
