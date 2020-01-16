@@ -37,6 +37,7 @@ struct Options {
 	bool use_data_dmi = false;
 	bool trace_mode = false;
 	bool intercept_syscalls = false;
+	bool quiet = false;
 
 	unsigned int tlm_global_quantum = 10;
 };
@@ -54,6 +55,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
         // clang-format off
 		desc.add_options()
 		("help", "produce help message")
+		("quiet", po::bool_switch(&opt.quiet), "do not output register values on exit")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
 		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
 		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
@@ -148,10 +150,14 @@ int sc_main(int argc, char **argv) {
 	new DirectCoreRunner(core0);
 	new DirectCoreRunner(core1);
 
-	sc_core::sc_start();
+	if (opt.quiet)
+		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 
-	core0.show();
-	core1.show();
+	sc_core::sc_start();
+	if (!opt.quiet) {
+		core0.show();
+		core1.show();
+	}
 
 	return 0;
 }

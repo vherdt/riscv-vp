@@ -40,6 +40,7 @@ struct Options {
 	bool use_data_dmi = false;
 	bool trace_mode = false;
 	bool intercept_syscalls = false;
+	bool quiet = false;
 	bool use_E_base_isa = false;
 	unsigned int debug_port = 5005;
 
@@ -59,6 +60,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
         // clang-format off
 		desc.add_options()
 		("help", "produce help message")
+		("quiet", po::bool_switch(&opt.quiet), "do not output register values on exit")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
 		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
 		("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
@@ -161,9 +163,13 @@ int sc_main(int argc, char **argv) {
 		new DirectCoreRunner(core);
 	}
 
-	sc_core::sc_start();
+	if (opt.quiet)
+		 sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 
-	core.show();
+	sc_core::sc_start();
+	if (!opt.quiet) {
+		core.show();
+	}
 
 	return 0;
 }
