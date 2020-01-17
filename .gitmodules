@@ -1,3 +1,6 @@
 [submodule "vp/src/core/common/gdb-mc/parser/mpc"]
 	path = vp/src/core/common/gdb-mc/libgdb/mpc
 	url = https://github.com/orangeduck/mpc
+[submodule "tests/integration"]
+	path = vp/tests
+	url = git@gitlab.informatik.uni-bremen.de:riscv/vp-integration-tests.git
