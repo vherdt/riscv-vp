@@ -75,6 +75,11 @@ make install
 
 The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
 
+ii) optionally run the tests, in *vp* folder:
+
+```bash
+make test
+```
 
 #### 3) Compile and run some Software:
 
