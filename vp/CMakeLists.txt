@@ -22,7 +22,7 @@ if(NOT USE_SYSTEM_SYSTEMC)
 	find_package( SystemC REQUIRED)
 	include_directories( ${SystemC_INCLUDE_DIRS})
 else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -lsystemc")
+	find_library(SystemC_LIBRARIES libsystemc.a)
 endif()
 
 find_package( SoftFloat REQUIRED )
