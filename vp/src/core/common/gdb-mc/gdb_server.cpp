@@ -241,7 +241,6 @@ void GDBServer::dispatch(int conn) {
 
 void GDBServer::serve(void) {
 	int conn;
-	FILE *stream;
 
 	for (;;) {
 		if ((conn = accept(sockfd, NULL, NULL)) == -1) {

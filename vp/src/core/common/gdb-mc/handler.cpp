@@ -116,7 +116,6 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	int reg;
-	debug_target *hart;
 	auto formatter = new RegisterFormater(arch);
 
 	reg = cmd->v.ival;
