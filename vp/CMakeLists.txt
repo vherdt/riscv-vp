@@ -42,6 +42,9 @@ add_test(NAME gdb
 add_test(NAME integration
 	COMMAND ./test.sh
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/tests/integration")
+add_test(NAME sw
+	COMMAND ./test.sh
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/../sw")
 
-set_tests_properties(gdb integration PROPERTIES ENVIRONMENT
+set_tests_properties(gdb integration sw PROPERTIES ENVIRONMENT
 	PATH=$ENV{PATH}:${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
