@@ -9,19 +9,37 @@ pipeline {
         GIT_COMMIT_TIM = sh (script: 'git log -n1 --pretty=format:"%ai"', returnStdout: true).trim()
         GIT_COMMITTER  = sh (script: 'git log -n1 --pretty=format:"%an"', returnStdout: true).trim()
         GIT_COMMITTER_MAIL = sh (script: 'git log -n1 --pretty=format:"%ae"', returnStdout: true).trim()
+
+        PATH = "${env.WORKSPACE}/rv32/bin:${env.WORKSPACE}/rv64/bin:${env.PATH}"
+        GDB_DEBUG_PROG = "riscv64-unknown-elf-gdb"
     }
     stages {
+        stage('Get Artifacts'){
+            steps{
+                copyArtifacts(projectName: 'gnu-toolchain_riscv32', target: 'rv32', selector: specific("81"));
+                sh """
+                cd rv32
+                tar xzf gnu-toolchain_riscv32* --strip-components=1
+                """
+
+                copyArtifacts(projectName: 'gnu-toolchain_riscv64', target: 'rv64', selector: specific("82"));
+                sh """
+                cd rv64
+                tar xzf gnu-toolchain_riscv64* --strip-components=1
+                """
+            }
+        }
         stage('Build') {
             steps {
                 sh 'make all'
                 //sh 'echo mock-build'
             }
         }
-//        stage('Test') {
-//            steps {
-//                sh './jenkins/scripts/test.sh'
-//            }
-//        }
+        stage('Test') {
+            steps {
+                sh 'cd vp/build && ctest -V'
+            }
+        }
         stage ("Archive") {
             steps {
                 archiveArtifacts artifacts: 'vp/build/bin/*'
