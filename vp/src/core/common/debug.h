@@ -35,6 +35,7 @@ struct debug_target {
 	virtual uint64_t read_register(unsigned) = 0;
 
 	virtual void run(void) = 0;
+	virtual void run_step(void) = 0;
 };
 
 #endif
