@@ -201,12 +201,15 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 
 	vcont = cmd->v.vval;
 	for (vcont = cmd->v.vval; vcont; vcont = vcont->next) {
-		if (vcont->action != 'c')
+		bool single = false;
+		if (vcont->action == 's')
+			single = true;
+		else if (vcont->action == 'S')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
 		std::vector<debug_target *> selected_harts;
 		try {
-			selected_harts = run_threads(vcont->thread.tid);
+			selected_harts = run_threads(vcont->thread.tid, single);
 		} catch (const std::out_of_range&) {
 			send_packet(conn, "E01");
 			return;

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include <queue>
 #include <mutex>
@@ -47,6 +48,12 @@ public:
 	          DebugMemoryInterface*,
 	          uint16_t);
 
+	/* Used by GDBRunner to determine whether run() or run_step()
+	 * should be used when receiving a run event for a debug_target.
+	 *
+	 * TODO: Pass this on a per-event basis instead. */
+	bool single_run = false;
+
 	sc_core::sc_event *get_stop_event(debug_target *);
 	void set_run_event(debug_target *, sc_core::sc_event *);
 
@@ -74,7 +81,7 @@ private:
 	void create_sock(uint16_t);
 	std::vector<debug_target *> get_threads(int);
 	void exec_thread(thread_func, char = 'g');
-	std::vector<debug_target *> run_threads(int);
+	std::vector<debug_target *> run_threads(int, bool = false);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
