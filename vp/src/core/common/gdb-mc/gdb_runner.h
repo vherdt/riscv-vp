@@ -12,6 +12,7 @@ public:
 
 	GDBServerRunner(sc_core::sc_module_name, GDBServer *, debug_target *);
 private:
+	GDBServer *server;
 	debug_target *hart;
 	sc_core::sc_event run_event;
 	sc_core::sc_event *stop_event;

@@ -61,7 +61,7 @@
 	do {                                                                   \
 		int type;                                                      \
 		                                                               \
-		xassert(n == 3);                                               \
+		xassert(n == 4);                                               \
 		type = *(int *)(xs[1]);                                        \
 		xassert(type >= GDB_ZKIND_SOFT && type <= GDB_ZKIND_WATCHA);   \
 		                                                               \

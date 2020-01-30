@@ -323,7 +323,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void performance_and_sync_update(Opcode::Mapping executed_op);
 
-	void run_step();
+	void run_step() override;
 
 	void run() override;
 

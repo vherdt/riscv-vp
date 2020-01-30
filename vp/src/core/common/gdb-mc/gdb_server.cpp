@@ -121,7 +121,8 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 		fn(thread);
 }
 
-std::vector<debug_target *> GDBServer::run_threads(int id) {
+std::vector<debug_target *> GDBServer::run_threads(int id, bool single) {
+	this->single_run = single;
 	std::vector<debug_target *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
