@@ -3,7 +3,7 @@
 #include "iss.h"
 #include "core/common/mmu.h"
 
-namespace rv64 {
+namespace rv32 {
 
     typedef GenericMMU<ISS> MMU;
 

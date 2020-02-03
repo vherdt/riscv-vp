@@ -1879,7 +1879,7 @@ void ISS::run_step() {
 	// checking the additional flag first
 	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) {
 		status = CoreExecStatus::HitBreakpoint;
-		goto ret;
+		return;
 	}
 
 	last_pc = pc;
@@ -1904,7 +1904,6 @@ void ISS::run_step() {
 	// before every register write)
 	regs.regs[regs.zero] = 0;
 
-ret:
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
 	// to *mepc*).
