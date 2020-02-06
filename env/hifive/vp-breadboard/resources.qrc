@@ -1,8 +1,8 @@
 <RCC>
     <qresource>
         <file>img/sevensegment.jpg</file>
-        <file>img/oled_layout.jpg</file>
+        <file>img/oled_shield.JPG</file>
         <file>conf/sevensegment.json</file>
-        <file>conf/oled.json</file>
+        <file>conf/oled_shield.json</file>
     </qresource>
 </RCC>

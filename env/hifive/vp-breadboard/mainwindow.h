@@ -9,7 +9,7 @@ namespace Ui {
 class VPBreadboard;
 }
 
-static constexpr unsigned max_num_buttons = 5;
+static constexpr unsigned max_num_buttons = 7;
 
 struct Sevensegment {
 	QPoint offs;
@@ -36,9 +36,10 @@ struct OLED
 	QPoint offs;
 	QPoint margin;
 	QImage image;
+	float scale;
 	void draw(QPainter& p);
-	OLED(QPoint offs, unsigned margin) : offs(offs),
-			margin(QPoint(margin, margin)),
+	OLED(QPoint offs, unsigned margin, float scale = 1) : offs(offs),
+			margin(QPoint(margin, margin)), scale(scale),
 			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
 	{
 		state = ss1106::getSharedState();
@@ -50,6 +51,12 @@ struct Button
 {
 	QRect area;
 	uint8_t pin;
+	QKeySequence keybinding;
+	QString name;
+	bool pressed;
+Button(QRect area, uint8_t pin, QKeySequence keybinding, QString name = "") :
+	area(area), pin(pin), keybinding(keybinding), name(name),
+		pressed(false){};
 };
 
 class VPBreadboard : public QWidget {
@@ -63,6 +70,7 @@ class VPBreadboard : public QWidget {
 	const char* port;
 
 	bool debugmode = false;
+	unsigned moving_button = 0;
 	bool inited = false;
 
 	uint64_t translateGpioToExtPin(GpioCommon::Reg reg);
@@ -76,6 +84,7 @@ class VPBreadboard : public QWidget {
 	void showConnectionErrorOverlay(QPainter& p);
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;
+	void keyReleaseEvent(QKeyEvent* e) override;
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
 

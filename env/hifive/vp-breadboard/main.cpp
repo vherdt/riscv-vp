@@ -32,7 +32,7 @@ class InputParser{
 
 int main(int argc, char* argv[]) {
 	QApplication a(argc, argv);
-	std::string configfile = ":/conf/oled.json";
+	std::string configfile = ":/conf/oled_shield.json";
 	std::string host = "localhost";
 	std::string port = "1400";
 

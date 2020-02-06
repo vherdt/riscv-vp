@@ -32,5 +32,5 @@ struct Display : public sc_core::sc_module {
 
 	// graphics acceleration functions
 	void fillFrame(Framebuffer::Type frame, Color color);
-	void drawLine(Framebuffer::Type frame, PointF from, PointF to, Color color);
+	void drawLine(Framebuffer::Type frame, frame::PointF from, frame::PointF to, Color color);
 };
