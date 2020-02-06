@@ -3,24 +3,25 @@
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
-#include "gdb_stub.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "syscall.h"
+
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
 
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
 
-using namespace rv32;
+using namespace rv64;
 
 struct Options {
 	typedef unsigned int addr_t;
 
 	Options &check_and_post_process() {
-		mem_end_addr = mem_start_addr + mem_size - 1;
 		return *this;
 	}
 
@@ -36,13 +37,13 @@ struct Options {
 	addr_t sys_end_addr = 0x020103ff;
 
 	bool use_debug_runner = false;
+	unsigned int debug_port = 5005;
+
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 	bool trace_mode = false;
 	bool intercept_syscalls = false;
 	bool quiet = false;
-	bool use_E_base_isa = false;
-	unsigned int debug_port = 5005;
 
 	unsigned int tlm_global_quantum = 10;
 };
@@ -62,12 +63,10 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("help", "produce help message")
 		("quiet", po::bool_switch(&opt.quiet), "do not output register values on exit")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
-		("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
-		("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
+		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
 		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
 		("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using gdb rsp interface)")
 		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
-		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
 		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
 		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
@@ -107,60 +106,71 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0, opt.use_E_base_isa);
-    MMU mmu(core);
-	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
+	ISS core0(0);
+	MMU mmu0(core0);
+	ISS core1(1);
+	MMU mmu1(core1);
+
+	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0, mmu0);
+	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1, mmu1);
+
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 3> bus("SimpleBus");
+	SimpleBus<3, 3> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
-	CLINT<1> clint("CLINT");
+	CLINT<2> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
-	InstrMemoryProxy instr_mem(dmi, core);
-
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
-	core_mem_if.bus_lock = bus_lock;
+	core0_mem_if.bus_lock = bus_lock;
+	core1_mem_if.bus_lock = bus_lock;
 
-	instr_memory_if *instr_mem_if = &core_mem_if;
-	data_memory_if *data_mem_if = &core_mem_if;
-	if (opt.use_instr_dmi)
-		instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi) {
-		core_mem_if.dmi_ranges.emplace_back(dmi);
-	}
-
-	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
-	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
-	sys.register_core(&core);
-
-	if (opt.intercept_syscalls)
-		core.sys = &sys;
-
-	// setup port mapping
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
 	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
 
+	loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
+
+	core0.init(&core0_mem_if, &core0_mem_if, &clint, loader.get_entrypoint(),
+	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
+	core1.init(&core1_mem_if, &core1_mem_if, &clint, loader.get_entrypoint(), opt.mem_end_addr - 32767);
+
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
+	sys.register_core(&core0);
+	sys.register_core(&core1);
+
+	if (opt.intercept_syscalls) {
+		core0.sys = &sys;
+		core1.sys = &sys;
+	}
+
 	// connect TLM sockets
-	core_mem_if.isock.bind(bus.tsocks[0]);
-	dbg_if.isock.bind(bus.tsocks[1]);
+	core0_mem_if.isock.bind(bus.tsocks[0]);
+	core1_mem_if.isock.bind(bus.tsocks[1]);
+	dbg_if.isock.bind(bus.tsocks[2]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(sys.tsock);
 
 	// connect interrupt signals/communication
-	clint.target_harts[0] = &core;
+	clint.target_harts[0] = &core0;
+	clint.target_harts[1] = &core1;
 
 	// switch for printing instructions
-	core.trace = opt.trace_mode;
+	core0.trace = opt.trace_mode;
+	core1.trace = opt.trace_mode;
+
+	std::vector<debug_target_if *> threads;
+	threads.push_back(&core0);
+	threads.push_back(&core1);
 
 	if (opt.use_debug_runner) {
-		new DebugCoreRunner<ISS, RV32>(core, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		new GDBServerRunner("GDBRunner0", server, &core0);
+		new GDBServerRunner("GDBRunner1", server, &core1);
 	} else {
-		new DirectCoreRunner(core);
+		new DirectCoreRunner(core0);
+		new DirectCoreRunner(core1);
 	}
 
 	if (opt.quiet)
@@ -168,7 +178,8 @@ int sc_main(int argc, char **argv) {
 
 	sc_core::sc_start();
 	if (!opt.quiet) {
-		core.show();
+		core0.show();
+		core1.show();
 	}
 
 	return 0;

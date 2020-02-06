@@ -2,7 +2,7 @@ all : main.c bootstrap.S
 	riscv32-unknown-elf-gcc main.c bootstrap.S -o main -nostartfiles -march=rv32ima -mabi=ilp32
 	
 sim: all
-	riscv-mvp main
+	tiny32-mc main
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main

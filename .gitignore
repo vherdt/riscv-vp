@@ -17,3 +17,5 @@ dist/
 nbdist/
 .nb-gradle/
 nbproject/
+sw/basic-gcov/main.*
+sw/**/*.o

@@ -36,6 +36,8 @@ struct Options {
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 	bool trace_mode = false;
+	bool intercept_syscalls = false;
+	bool quiet = false;
 
 	unsigned int tlm_global_quantum = 10;
 };
@@ -53,8 +55,10 @@ Options parse_command_line_arguments(int argc, char **argv) {
         // clang-format off
 		desc.add_options()
 		("help", "produce help message")
+		("quiet", po::bool_switch(&opt.quiet), "do not output register values on exit")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
 		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
+		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
 		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
 		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
@@ -123,6 +127,11 @@ int sc_main(int argc, char **argv) {
 	sys.register_core(&core0);
 	sys.register_core(&core1);
 
+	if (opt.intercept_syscalls) {
+		core0.sys = &sys;
+		core1.sys = &sys;
+	}
+
 	// connect TLM sockets
 	core0_mem_if.isock.bind(bus.tsocks[0]);
 	core1_mem_if.isock.bind(bus.tsocks[1]);
@@ -141,10 +150,14 @@ int sc_main(int argc, char **argv) {
 	new DirectCoreRunner(core0);
 	new DirectCoreRunner(core1);
 
-	sc_core::sc_start();
+	if (opt.quiet)
+		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 
-	core0.show();
-	core1.show();
+	sc_core::sc_start();
+	if (!opt.quiet) {
+		core0.show();
+		core1.show();
+	}
 
 	return 0;
 }
