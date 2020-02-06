@@ -11,6 +11,8 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
+using namespace frame;
+
 Display::Display(sc_module_name) {
 	tsock.register_b_transport(this, &Display::transport);
 	createSM();

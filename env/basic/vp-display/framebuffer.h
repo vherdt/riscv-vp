@@ -9,6 +9,9 @@ static constexpr uint16_t screenHeight = 600;
 
 typedef uint16_t Color;
 
+namespace frame
+{
+
 struct Point {
 	uint32_t x;
 	uint32_t y;
@@ -24,8 +27,10 @@ struct PointF {
 	inline PointF(Point p) : x(p.x), y(p.y){};
 };
 
-inline PointF operator+(const PointF l, PointF const r) {
-	return PointF(l.x + r.x, l.y + r.y);
+};
+
+inline frame::PointF operator+(const frame::PointF l, frame::PointF const r) {
+	return frame::PointF(l.x + r.x, l.y + r.y);
 }
 
 struct Frame {
@@ -44,13 +49,15 @@ struct Framebuffer {
 	} volatile command;
 	union Parameter {
 		struct {
+			//fillframe
 			Type frame;
 			Color color;
 		} fill;
 		struct {
+			//drawLine
 			Type frame;
-			PointF from;
-			PointF to;
+			frame::PointF from;
+			frame::PointF to;
 			Color color;
 		} line;
 		inline Parameter(){};

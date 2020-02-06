@@ -73,7 +73,7 @@ void RGBLed::draw(QPainter& p) {
 
 void OLED::draw(QPainter& p)
 {
-	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) + margin.x()*2, ss1106::height+margin.y()*2)), Qt::SolidPattern);
+	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) * scale + margin.x()*2, ss1106::height * scale + margin.y()*2)), Qt::SolidPattern);
 
 	if(state->display_on && state->changed)
 	{
@@ -93,7 +93,7 @@ void OLED::draw(QPainter& p)
 
 	}
 	if(state->display_on)
-		p.drawImage(offs + margin, image);
+		p.drawImage(offs + margin, image.scaled((ss1106::width - 2 * ss1106::padding_lr) * scale, ss1106::height * scale));
 }
 
 VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent)
@@ -173,20 +173,22 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
 		oled = new OLED(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
-			obj["margin"].toInt(15)
-			);
+			obj["margin"].toInt(15),
+			obj["scale"].toDouble(1.));
 	}
 	if(config.contains("buttons"))
 	{
 		QJsonArray butts = config["buttons"].toArray();
-		for(unsigned i = 0; i < butts.size() && i < 5; i++)
+		for(unsigned i = 0; i < butts.size() && i < max_num_buttons; i++)
 		{
 			QJsonObject butt = butts[i].toObject();
 			buttons[i] = new Button{
 				QRect{
 					QPoint{butt["pos"].toArray().at(0).toInt(), butt["pos"].toArray().at(1).toInt()},
-					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()},
-				}, static_cast<uint8_t>(butt["pin"].toInt())
+					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()}
+				},
+				static_cast<uint8_t>(butt["pin"].toInt()),
+				butt["name"].toString(QString("undef"))
 			};
 		}
 	}
@@ -210,8 +212,16 @@ VPBreadboard::~VPBreadboard()
 void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.save();
 	p.setBrush(QBrush(QColor("black")));
-	QPoint shitfuck = QPoint(this->size().width(), this->size().height());
-	QRect sign(shitfuck/4, this->size()/2);
+	QRect sign;
+	if(this->size().width() > this->size().height())
+	{
+		sign = QRect (QPoint(this->size().width()/4, this->size().height()/4), this->size()/2);
+	}
+	else
+	{
+		sign = QRect (QPoint(this->size().width()/10, this->size().height()/4),
+				QSize(4*this->size().width()/5, this->size().height()/4));
+	}
 	p.drawRect(sign);
 	p.setFont(QFont("Arial", 25, QFont::Bold));
 	QPen penHText(QColor("red"));
@@ -312,14 +322,29 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		rgbLed->draw(painter);
 	}
 
-	if (debugmode) {
-		painter.setBrush(QBrush(QColor("black")));
-		for(unsigned i = 0; i < max_num_buttons; i++)
-		{
-			if(!buttons[i])
-				break;
+	//buttons
+	painter.save();
+	QColor dark("#101010");
+	dark.setAlphaF(0.5);
+	painter.setBrush(QBrush(dark));
+	if(debugmode)
+	{
+		painter.setPen(QPen(QColor("red")));
+		painter.setFont(QFont("Arial", 12));
+	}
+	for(unsigned i = 0; i < max_num_buttons; i++)
+	{
+		if(!buttons[i])
+			break;
+		if(buttons[i]->pressed || debugmode)
 			painter.drawRect(buttons[i]->area);
-		}
+		if(debugmode)
+			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
+	}
+	painter.restore();
+
+
+	if (debugmode) {
 		if(sevensegment)
 			painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
 	}
@@ -356,6 +381,8 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 			}
 			break;
 		}
+
+		/*
 		case Qt::Key_I:
 			rgbLed->offs = rgbLed->offs - QPoint(0, 1);
 			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
@@ -372,40 +399,68 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 			rgbLed->offs = rgbLed->offs + QPoint(1, 0);
 			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
 			break;
+		*/
 
-		/*
+
+		case Qt::Key_Right:
+			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
+				moving_button = 0;
+			if(buttons[moving_button] == nullptr)
+			{
+				cout << "No Buttons available" << endl;
+			}
+			else
+			{
+				cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
+			}
+			break;
+
 		case Qt::Key_W:
-			button.moveTopLeft(button.topLeft() - QPoint(0, 1));
-			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
+			if(buttons[moving_button] == nullptr)
+				break;
+			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
+			cout << buttons[moving_button]->name.toStdString() << " ";
+			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 			break;
 		case Qt::Key_A:
-			button.moveTopLeft(button.topLeft() - QPoint(1, 0));
-			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
+			if(buttons[moving_button] == nullptr)
+				break;
+			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
+			cout << buttons[moving_button]->name.toStdString() << " ";
+			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 			break;
 		case Qt::Key_S:
-			button.moveTopLeft(button.topLeft() + QPoint(0, 1));
-			cout << "E X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
+			if(buttons[moving_button] == nullptr)
+				break;
+			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
+			cout << buttons[moving_button]->name.toStdString() << " ";
+			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 			break;
 		case Qt::Key_D:
-			button.moveTopLeft(button.topLeft() + QPoint(1, 0));
-			cout << "BR X: " << button.topLeft().x() << " Y: " << button.topLeft().y() << endl;
+			if(buttons[moving_button] == nullptr)
+				break;
+			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
+			cout << buttons[moving_button]->name.toStdString() << " ";
+			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
+			break;
+
+
+
+		/*
+		case Qt::Key_Left:
+			button.setWidth(button.width() - 1);
+			cout << "width: " << button.height() << endl;
 			break;
 		case Qt::Key_Up:
 			button.setHeight(button.height() - 1);
 			cout << "height: " << button.height() << endl;
 			break;
-		case Qt::Key_Left:
-			button.setWidth(button.width() - 1);
-			cout << "width: " << button.height() << endl;
-			break;
+
 		case Qt::Key_Down:
 			button.setHeight(button.height() + 1);
 			cout << "height: " << button.height() << endl;
 			break;
-		case Qt::Key_Right:
-			button.setWidth(button.width() + 1);
-			cout << "width: " << button.height() << endl;
-			break;
+
 		*/
 		case Qt::Key_Space:
 			cout << "Changed Debug mode" << endl;
@@ -427,6 +482,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 				//cout << "button " << i << " click!" << endl;
 				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),
 							0);  // Active low
+				buttons[i]->pressed = true;
 			}
 		}
 		// cout << "clicked summin elz" << endl;
@@ -446,6 +502,7 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " release!" << endl;
 				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 1);
+				buttons[i]->pressed = false;
 			}
 		}
 		// cout << "released summin elz" << endl;
