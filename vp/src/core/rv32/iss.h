@@ -5,6 +5,7 @@
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
 #include "core/common/trap.h"
+#include "core/common/debug.h"
 #include "csr.h"
 #include "fp.h"
 #include "mem_if.h"
@@ -151,7 +152,7 @@ struct PendingInterrupts {
 	uint32_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if {
+struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, public debug_target {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -203,12 +204,29 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void trigger_software_interrupt(bool status) override;
 
+
 	void sys_exit() override;
 	unsigned get_syscall_register_index() override;
-	uint32_t read_register(unsigned idx) override;
-	void write_register(unsigned idx, uint32_t value) override;
+	uint64_t read_register(unsigned idx) override;
+	void write_register(unsigned idx, uint64_t value) override;
 
-	uint32_t get_hart_id();
+    std::vector<uint64_t> get_registers(void) override;
+
+    Architecture get_architecture(void) override {
+        return RV32;
+    }
+
+    uint64_t get_progam_counter(void) override;
+    void enable_debug(void) override;
+    CoreExecStatus get_status(void) override;
+    void set_status(CoreExecStatus) override;
+    void block_on_wfi(bool) override;
+
+    void insert_breakpoint(uint64_t) override;
+    void remove_breakpoint(uint64_t) override;
+
+	uint64_t get_hart_id();
+
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;

@@ -1440,17 +1440,56 @@ unsigned ISS::get_syscall_register_index() {
 		return RegFile::a7;
 }
 
-uint32_t ISS::read_register(unsigned idx) {
-	return regs.read(idx);
+
+uint64_t ISS::read_register(unsigned idx) {
+	return (uint32_t)regs.read(idx);    //NOTE: zero extend
 }
 
-void ISS::write_register(unsigned idx, uint32_t value) {
-	regs.write(idx, value);
+void ISS::write_register(unsigned idx, uint64_t value) {
+	regs.write(idx, boost::lexical_cast<uint32_t>(value));
 }
 
-uint32_t ISS::get_hart_id() {
-	return csrs.mhartid.reg;
+uint64_t ISS::get_progam_counter(void) {
+    return pc;
 }
+
+void ISS::block_on_wfi(bool block) {
+    ignore_wfi = !block;
+}
+
+CoreExecStatus ISS::get_status(void) {
+    return status;
+}
+
+void ISS::set_status(CoreExecStatus s) {
+    status = s;
+}
+
+void ISS::enable_debug(void) {
+    debug_mode = true;
+}
+
+void ISS::insert_breakpoint(uint64_t addr) {
+    breakpoints.insert(addr);
+}
+
+void ISS::remove_breakpoint(uint64_t addr) {
+    breakpoints.erase(addr);
+}
+
+uint64_t ISS::get_hart_id() {
+    return csrs.mhartid.reg;
+}
+
+std::vector<uint64_t> ISS::get_registers(void) {
+    std::vector<uint64_t> regvals;
+
+    for (auto v : regs.regs)
+        regvals.push_back((uint32_t)v); //NOTE: zero extend
+
+    return regvals;
+}
+
 
 void ISS::fp_finish_instr() {
 	fp_set_dirty();
