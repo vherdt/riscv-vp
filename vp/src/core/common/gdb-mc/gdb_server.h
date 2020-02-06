@@ -49,7 +49,7 @@ public:
 	          uint16_t);
 
 	/* Used by GDBRunner to determine whether run() or run_step()
-	 * should be used when receiving a run event for a debug_target.
+	 * should be used when receiving a run event for a debug_target_if.
 	 *
 	 * TODO: Pass this on a per-event basis instead. */
 	bool single_run = false;

@@ -22,13 +22,13 @@
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
-                     std::vector<debug_target*> dharts,
+                     std::vector<debug_target_if*> dharts,
                      DebugMemoryInterface *mm,
                      uint16_t port) {
 	if (dharts.size() <= 0)
 		throw std::invalid_argument("no harts specified");
 
-	for (debug_target *h : dharts) {
+	for (debug_target_if *h : dharts) {
 		events[h] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
 
 		/* Don't block on WFI, otherwise the run_threads method
@@ -49,11 +49,11 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	thr.detach();
 }
 
-sc_core::sc_event *GDBServer::get_stop_event(debug_target *hart) {
+sc_core::sc_event *GDBServer::get_stop_event(debug_target_if *hart) {
 	return std::get<0>(events.at(hart));
 }
 
-void GDBServer::set_run_event(debug_target *hart, sc_core::sc_event *event) {
+void GDBServer::set_run_event(debug_target_if *hart, sc_core::sc_event *event) {
 	std::get<1>(events.at(hart)) = event;
 }
 
@@ -89,7 +89,7 @@ err:
 	throw std::system_error(errno, std::generic_category());
 }
 
-std::vector<debug_target *> GDBServer::get_threads(int id) {
+std::vector<debug_target_if *> GDBServer::get_threads(int id) {
 	if (id == GDB_THREAD_ANY)
 		id = 1; /* pick the first thread */
 
@@ -101,14 +101,14 @@ std::vector<debug_target *> GDBServer::get_threads(int id) {
 	else
 		id--;
 
-	std::vector<debug_target *> v;
+	std::vector<debug_target_if *> v;
 	v.push_back(harts.at(id));
 	return v;
 }
 
 void GDBServer::exec_thread(thread_func fn, char op) {
 	int thread;
-	std::vector<debug_target *> threads;
+	std::vector<debug_target_if *> threads;
 
 	try {
 		thread = thread_ops.at(op);
@@ -117,17 +117,17 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 	}
 
 	threads = get_threads(thread);
-	for (debug_target *thread : threads)
+	for (debug_target_if *thread : threads)
 		fn(thread);
 }
 
-std::vector<debug_target *> GDBServer::run_threads(int id, bool single) {
+std::vector<debug_target_if *> GDBServer::run_threads(int id, bool single) {
 	this->single_run = single;
-	std::vector<debug_target *> hartsrun = get_threads(id);
+	std::vector<debug_target_if *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;
-	for (debug_target *hart : hartsrun) {
+	for (debug_target_if *hart : hartsrun) {
 		sc_core::sc_event *stop_event, *run_event;
 		std::tie (stop_event, run_event) = this->events.at(hart);
 
@@ -140,7 +140,7 @@ std::vector<debug_target *> GDBServer::run_threads(int id, bool single) {
 
 	/* ensure that all running harts are stopped */
 	std::vector<CoreExecStatus> orig_status;
-	for (debug_target *hart : hartsrun) {
+	for (debug_target_if *hart : hartsrun) {
 		CoreExecStatus status = hart->get_status();
 		orig_status.push_back(status);
 

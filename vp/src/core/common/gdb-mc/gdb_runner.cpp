@@ -1,6 +1,6 @@
 #include "gdb_runner.h"
 
-GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server, debug_target *hart) {
+GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server, debug_target_if *hart) {
 	this->hart = hart;
 	this->server = server;
 
