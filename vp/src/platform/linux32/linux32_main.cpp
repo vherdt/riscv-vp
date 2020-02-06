@@ -16,6 +16,9 @@
 #include "debug.h"
 #include "util/options.h"
 
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <iomanip>
@@ -259,9 +262,14 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
+	std::vector<debug_target_if*> dharts;
 	if (opt.use_debug_runner) {
-		std::cerr << "Multicore debugging support not available for rv32" << std::endl;
-		return EXIT_FAILURE;
+		for (size_t i = 0; i < NUM_CORES; i++)
+			dharts.push_back(&cores[i]->iss);
+
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
+		for (size_t i = 0; i < dharts.size(); i++)
+			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 	} else {
 		for (size_t i = 0; i < NUM_CORES; i++) {
 			new DirectCoreRunner(cores[i]->iss);
