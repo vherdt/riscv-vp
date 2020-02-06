@@ -106,7 +106,8 @@ int sc_main(int argc, char **argv) {
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	ISS core(0, opt.use_E_base_isa);
-	CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
+    MMU mmu(core);
+	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
 	SimpleBus<2, 3> bus("SimpleBus");

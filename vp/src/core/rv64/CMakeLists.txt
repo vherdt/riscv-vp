@@ -3,7 +3,6 @@ file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 add_library(rv64
 		iss.cpp
 		syscall.cpp
-		mmu.cpp
         ${HEADERS})
 
 target_link_libraries(rv64 core-common ${SoftFloat_LIBRARIES})

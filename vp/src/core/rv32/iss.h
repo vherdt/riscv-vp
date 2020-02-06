@@ -162,6 +162,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	uint32_t last_pc = 0;
 	bool trace = false;
 	bool shall_exit = false;
+    bool ignore_wfi = false;
 	csr_table csrs;
 	PrivilegeLevel prv = MachineMode;
 	uint64_t lr_sc_counter = 0;
@@ -184,6 +185,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
+    static constexpr unsigned xlen = 32;
 
 	ISS(uint32_t hart_id, bool use_E_base_isa = false);
 

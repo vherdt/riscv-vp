@@ -143,7 +143,8 @@ int sc_main(int argc, char **argv) {
     tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
     ISS core(0, opt.use_E_base_isa);
-    CombinedMemoryInterface core_mem_if("MemoryInterface0", core);
+    MMU mmu(core);
+    CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
     SimpleMemory mem("SimpleMemory", opt.mem_size);
     ELFLoader loader(opt.input_program.c_str());
     SimpleBus<2, 3> bus("SimpleBus");
@@ -219,6 +220,8 @@ int sc_main(int argc, char **argv) {
     {
         std::transform(opt.isa.begin(), opt.isa.end(), opt.isa.begin(), ::toupper);
         core.csrs.misa.extensions = core.csrs.misa.I;
+        if (opt.isa.find('G') != std::string::npos)
+            core.csrs.misa.extensions |= core.csrs.misa.M | core.csrs.misa.A | core.csrs.misa.F | core.csrs.misa.D;
         if (opt.isa.find('M') != std::string::npos)
             core.csrs.misa.extensions |= core.csrs.misa.M;
         if (opt.isa.find('A') != std::string::npos)
@@ -227,6 +230,8 @@ int sc_main(int argc, char **argv) {
             core.csrs.misa.extensions |= core.csrs.misa.C;
         if (opt.isa.find('F') != std::string::npos)
             core.csrs.misa.extensions |= core.csrs.misa.F;
+        if (opt.isa.find('D') != std::string::npos)
+            core.csrs.misa.extensions |= core.csrs.misa.D;
         if (opt.isa.find('N') != std::string::npos)
             core.csrs.misa.extensions |= core.csrs.misa.N;
         if (opt.isa.find('U') != std::string::npos)

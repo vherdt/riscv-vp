@@ -2,6 +2,7 @@
 
 #include "core/common/dmi.h"
 #include "iss.h"
+#include "mmu.h"
 
 namespace rv32 {
 
@@ -21,7 +22,10 @@ struct InstrMemoryProxy : public instr_memory_if {
 	}
 };
 
-struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_if, public data_memory_if {
+struct CombinedMemoryInterface : public sc_core::sc_module,
+                                 public instr_memory_if,
+                                 public data_memory_if,
+                                 public mmu_memory_if  {
 	ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
@@ -34,7 +38,17 @@ struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_
 	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
 	std::vector<MemoryDMI> dmi_ranges;
 
-	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner) : iss(owner), quantum_keeper(iss.quantum_keeper) {}
+    MMU *mmu;
+
+	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU *mmu = nullptr)
+	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
+	}
+
+    inline uint64_t _v2p(uint64_t vaddr, MemoryAccessType type) {
+	    if (mmu == nullptr)
+	        return vaddr;
+        return mmu->translate_virtual_to_physical_addr(vaddr, type);
+    }
 
 	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		tlm::tlm_generic_payload trans;
@@ -64,7 +78,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_
 	}
 
 	template <typename T>
-	inline T _load_data(uint64_t addr) {
+	inline T _raw_load_data(uint64_t addr) {
 		// NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to
 		// postpone the lock after the dmi access
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
@@ -82,7 +96,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_
 	}
 
 	template <typename T>
-	inline void _store_data(uint64_t addr, T value) {
+	inline void _raw_store_data(uint64_t addr, T value) {
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
 		bool done = false;
@@ -99,50 +113,81 @@ struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_
 		atomic_unlock();
 	}
 
-	uint32_t load_instr(uint64_t addr) {
-		return _load_data<uint32_t>(addr);
-	}
 
-	int32_t load_word(uint64_t addr) {
+    template <typename T>
+    inline T _load_data(uint64_t addr) {
+        return _raw_load_data<T>(_v2p(addr, LOAD));
+    }
+
+    template <typename T>
+    inline void _store_data(uint64_t addr, T value) {
+        _raw_store_data(_v2p(addr, STORE), value);
+    }
+
+    uint64_t mmu_load_pte64(uint64_t addr) override {
+        return _raw_load_data<uint64_t>(addr);
+    }
+    uint64_t mmu_load_pte32(uint64_t addr) override {
+        return _raw_load_data<uint32_t>(addr);
+    }
+    void mmu_store_pte32(uint64_t addr, uint32_t value) override {
+        _raw_store_data(addr, value);
+    }
+
+    void flush_tlb() override {
+        mmu->flush_tlb();
+    }
+
+    uint32_t load_instr(uint64_t addr) override {
+        return _raw_load_data<uint32_t>(_v2p(addr, FETCH));
+    }
+
+    int64_t load_double(uint64_t addr) override {
+        return _load_data<int64_t>(addr);
+    }
+	int32_t load_word(uint64_t addr) override {
 		return _load_data<int32_t>(addr);
 	}
-	int32_t load_half(uint64_t addr) {
+	int32_t load_half(uint64_t addr) override {
 		return _load_data<int16_t>(addr);
 	}
-	int32_t load_byte(uint64_t addr) {
+	int32_t load_byte(uint64_t addr) override {
 		return _load_data<int8_t>(addr);
 	}
-	uint32_t load_uhalf(uint64_t addr) {
+	uint32_t load_uhalf(uint64_t addr) override {
 		return _load_data<uint16_t>(addr);
 	}
-	uint32_t load_ubyte(uint64_t addr) {
+	uint32_t load_ubyte(uint64_t addr) override {
 		return _load_data<uint8_t>(addr);
 	}
 
-	void store_word(uint64_t addr, uint32_t value) {
+    void store_double(uint64_t addr, uint64_t value) override {
+        _store_data(addr, value);
+    }
+	void store_word(uint64_t addr, uint32_t value) override {
 		_store_data(addr, value);
 	}
-	void store_half(uint64_t addr, uint16_t value) {
+	void store_half(uint64_t addr, uint16_t value) override {
 		_store_data(addr, value);
 	}
-	void store_byte(uint64_t addr, uint8_t value) {
+	void store_byte(uint64_t addr, uint8_t value) override {
 		_store_data(addr, value);
 	}
 
-	virtual int32_t atomic_load_word(uint64_t addr) {
+	virtual int32_t atomic_load_word(uint64_t addr) override {
 		bus_lock->lock(iss.get_hart_id());
 		return load_word(addr);
 	}
-	virtual void atomic_store_word(uint64_t addr, uint32_t value) {
+	virtual void atomic_store_word(uint64_t addr, uint32_t value) override {
 		assert(bus_lock->is_locked(iss.get_hart_id()));
 		store_word(addr, value);
 	}
-	virtual int32_t atomic_load_reserved_word(uint64_t addr) {
+	virtual int32_t atomic_load_reserved_word(uint64_t addr) override {
 		bus_lock->lock(iss.get_hart_id());
 		lr_addr = addr;
 		return load_word(addr);
 	}
-	virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) {
+	virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) override {
 		/* According to the RISC-V ISA, an implementation can fail each LR/SC sequence that does not satisfy the forward
 		 * progress semantic.
 		 * The lock is established by the LR instruction and the lock is kept while forward progress is maintained. */
@@ -155,7 +200,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module, public instr_memory_
 		}
 		return false;
 	}
-	virtual void atomic_unlock() {
+	virtual void atomic_unlock() override {
 		bus_lock->unlock(iss.get_hart_id());
 	}
 };

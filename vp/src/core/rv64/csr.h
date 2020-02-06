@@ -11,13 +11,6 @@
 
 namespace rv64 {
 
-constexpr unsigned SATP_MODE_BARE = 0;
-constexpr unsigned SATP_MODE_SV32 = 1;
-constexpr unsigned SATP_MODE_SV39 = 8;
-constexpr unsigned SATP_MODE_SV48 = 9;
-constexpr unsigned SATP_MODE_SV57 = 10;
-constexpr unsigned SATP_MODE_SV64 = 11;
-
 constexpr unsigned FS_OFF = 0b00;
 constexpr unsigned FS_INITIAL = 0b01;
 constexpr unsigned FS_CLEAN = 0b10;
