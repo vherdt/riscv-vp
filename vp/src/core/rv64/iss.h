@@ -137,7 +137,7 @@ struct PendingInterrupts {
 	uint64_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public debug_target, public iss_syscall_if {
+struct ISS : public external_interrupt_target, public clint_interrupt_target, public debug_target_if, public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;

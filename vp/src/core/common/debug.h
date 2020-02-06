@@ -8,16 +8,9 @@
 
 #include "core_defs.h"
 
-/* TODO: For now the debug_target class can only be used with RV64, it is
- * howver intended as an abstract interface that should work with both
- * RV32 and RV64.
- *
- * Unfourtunatly, supporting both would require significant changes to
- * iss.cpp, e.g. make sure they return a uniform type for register
- * values.
- */
-struct debug_target {
-	virtual ~debug_target() {}
+
+struct debug_target_if {
+	virtual ~debug_target_if() {}
 
 	virtual void enable_debug(void) = 0;
 	virtual CoreExecStatus get_status(void) = 0;
