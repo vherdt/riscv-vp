@@ -1097,6 +1097,7 @@ void ISS::exec_step() {
         case Opcode::SFENCE_VMA:
             if (s_mode() && csrs.mstatus.tvm)
                 raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+            mem->flush_tlb();
             break;
 
         case Opcode::URET:
