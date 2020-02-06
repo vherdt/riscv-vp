@@ -160,7 +160,7 @@ int sc_main(int argc, char **argv) {
 	// switch for printing instructions
 	core.trace = opt.trace_mode;
 
-	std::vector<debug_target *> threads;
+	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
 
 	if (opt.use_debug_runner) {

@@ -160,7 +160,7 @@ int sc_main(int argc, char **argv) {
 	core0.trace = opt.trace_mode;
 	core1.trace = opt.trace_mode;
 
-	std::vector<debug_target *> threads;
+	std::vector<debug_target_if *> threads;
 	threads.push_back(&core0);
 	threads.push_back(&core1);
 
