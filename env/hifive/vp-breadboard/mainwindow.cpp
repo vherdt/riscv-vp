@@ -277,10 +277,15 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin) {
 	if (pin < 8) {
 		return pin + 16;  // PIN_0_OFFSET
 	}
-	if (pin < 20) {
+	if(pin >= 8 && pin < 14) {
 		return pin - 8;
 	}
-	return 0;  // also ignoring non-wired pin 14 <==> 8
+	//ignoring non-wired pin 14 <==> 8
+	if(pin > 14 && pin < 20){
+		return pin - 6;
+	}
+
+	return 0;
 }
 
 void printBin(char* buf, uint8_t len) {
