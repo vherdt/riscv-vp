@@ -56,7 +56,13 @@ For additional configurations and options for the RISC-V GNU toolchain visit htt
 
 #### 2) Build this RISC-V Virtual Prototype:
 
-i) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
+i) Checkout required git submodules:
+
+```bash
+git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
+```
+
+ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
 
 ```bash
 ./build_systemc_233.sh
@@ -64,7 +70,7 @@ i) in *vp/dependencies* folder (will download and compile SystemC, and build a l
 ```
 
 
-ii) in *vp* folder (requires the *boost* C++ library):
+iii) in *vp* folder (requires the *boost* C++ library):
  
 ```bash
 mkdir build
@@ -75,7 +81,7 @@ make install
 
 The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
 
-ii) optionally run the tests, in *vp* folder:
+iiii) optionally run the tests, in *vp* folder:
 
 ```bash
 make test
