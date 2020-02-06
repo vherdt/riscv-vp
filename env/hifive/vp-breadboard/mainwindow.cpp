@@ -188,6 +188,7 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
 					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()}
 				},
 				static_cast<uint8_t>(butt["pin"].toInt()),
+				butt["key"].toString(QString("")),
 				butt["name"].toString(QString("undef"))
 			};
 		}
@@ -363,45 +364,11 @@ void VPBreadboard::notifyChange(bool success) {
 void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 	this->update();
 	// scout << "Yee, keypress" << endl;
-	switch (e->key()) {
-		case Qt::Key_Escape:
-		case Qt::Key_Q:
-			QApplication::quit();
-			break;
-		case Qt::Key_0: {
-			uint8_t until = 6;
-			for (uint8_t i = 0; i < 8; i++) {
-				gpio.setBit(i, i < until ? 1 : 0);
-			}
-			break;
-		}
-		case Qt::Key_1: {
-			for (uint8_t i = 0; i < 8; i++) {
-				gpio.setBit(i, 0);
-			}
-			break;
-		}
 
-		/*
-		case Qt::Key_I:
-			rgbLed->offs = rgbLed->offs - QPoint(0, 1);
-			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
-			break;
-		case Qt::Key_J:
-			rgbLed->offs = rgbLed->offs - QPoint(1, 0);
-			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
-			break;
-		case Qt::Key_K:
-			rgbLed->offs = rgbLed->offs + QPoint(0, 1);
-			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
-			break;
-		case Qt::Key_L:
-			rgbLed->offs = rgbLed->offs + QPoint(1, 0);
-			cout << "E X: " << rgbLed->offs.x() << " Y: " << rgbLed->offs.y() << endl;
-			break;
-		*/
-
-
+	if(debugmode)
+	{
+		switch(e->key())
+		{
 		case Qt::Key_Right:
 			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
 				moving_button = 0;
@@ -443,31 +410,66 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 			cout << buttons[moving_button]->name.toStdString() << " ";
 			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 			break;
-
-
-
-		/*
-		case Qt::Key_Left:
-			button.setWidth(button.width() - 1);
-			cout << "width: " << button.height() << endl;
-			break;
-		case Qt::Key_Up:
-			button.setHeight(button.height() - 1);
-			cout << "height: " << button.height() << endl;
-			break;
-
-		case Qt::Key_Down:
-			button.setHeight(button.height() + 1);
-			cout << "height: " << button.height() << endl;
-			break;
-
-		*/
 		case Qt::Key_Space:
-			cout << "Changed Debug mode" << endl;
-			debugmode ^= 1;
+			cout << "Debug mode off" << endl;
+			debugmode = 0;
 			break;
 		default:
 			break;
+		}
+	}
+	else
+	{
+		//normal mode
+		switch (e->key()) {
+			case Qt::Key_Escape:
+			case Qt::Key_Q:
+				QApplication::quit();
+				break;
+			case Qt::Key_0: {
+				uint8_t until = 6;
+				for (uint8_t i = 0; i < 8; i++) {
+					gpio.setBit(i, i < until ? 1 : 0);
+				}
+				break;
+			}
+			case Qt::Key_1: {
+				for (uint8_t i = 0; i < 8; i++) {
+					gpio.setBit(i, 0);
+				}
+				break;
+			}
+			case Qt::Key_Space:
+				cout << "Set Debug mode" << endl;
+				debugmode = true;
+				break;
+			default:
+				for(unsigned i = 0; i < max_num_buttons; i++)
+				{
+					if(buttons[i] == nullptr)
+						break;	//this is sorted somewhat
+
+					if (buttons[i]->keybinding == e->key()) {
+						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),0);
+						buttons[i]->pressed = true;
+					}
+				}
+				break;
+		}
+	}
+}
+
+void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
+{
+	for(unsigned i = 0; i < max_num_buttons; i++)
+	{
+		if(buttons[i] == nullptr)
+			break;	//this is sorted somewhat
+
+		if (buttons[i]->keybinding == e->key()) {
+			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),1);
+			buttons[i]->pressed = false;
+		}
 	}
 }
 
@@ -480,8 +482,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " click!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),
-							0);  // Active low
+				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 0);  // Active low
 				buttons[i]->pressed = true;
 			}
 		}

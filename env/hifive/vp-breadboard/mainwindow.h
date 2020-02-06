@@ -51,9 +51,11 @@ struct Button
 {
 	QRect area;
 	uint8_t pin;
+	QKeySequence keybinding;
 	QString name;
 	bool pressed;
-Button(QRect area, uint8_t pin, QString name = "") : area(area), pin(pin), name(name),
+Button(QRect area, uint8_t pin, QKeySequence keybinding, QString name = "") :
+	area(area), pin(pin), keybinding(keybinding), name(name),
 		pressed(false){};
 };
 
@@ -82,6 +84,7 @@ class VPBreadboard : public QWidget {
 	void showConnectionErrorOverlay(QPainter& p);
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;
+	void keyReleaseEvent(QKeyEvent* e) override;
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
 
