@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 enum {
-	NUM_CORES = 1,
+	NUM_CORES = 5,
 };
 
 using namespace rv32;
@@ -42,7 +42,7 @@ struct Options {
 
 	std::string input_program;
 
-	addr_t mem_size = 1024u * 1024u * 2048u;  // 2048 MB ram
+	addr_t mem_size = 1024u * 1024u * 1024u;  // 1024 MB ram
 	addr_t mem_start_addr = 0x80000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
