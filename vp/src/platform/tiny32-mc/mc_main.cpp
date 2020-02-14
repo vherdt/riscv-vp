@@ -8,6 +8,9 @@
 #include "memory.h"
 #include "syscall.h"
 
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <iomanip>
@@ -32,6 +35,9 @@ struct Options {
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
+
+	bool use_debug_runner = false;
+	unsigned int debug_port = 5005;
 
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
@@ -59,6 +65,8 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
 		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
 		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
+		("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using gdb rsp interface)")
+		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
 		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
 		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
@@ -105,9 +113,10 @@ int sc_main(int argc, char **argv) {
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 3> bus("SimpleBus");
+	SimpleBus<3, 3> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	CLINT<2> clint("CLINT");
+	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0_mem_if.bus_lock = bus_lock;
@@ -135,6 +144,7 @@ int sc_main(int argc, char **argv) {
 	// connect TLM sockets
 	core0_mem_if.isock.bind(bus.tsocks[0]);
 	core1_mem_if.isock.bind(bus.tsocks[1]);
+	dbg_if.isock.bind(bus.tsocks[2]);
 	bus.isocks[0].bind(mem.tsock);
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(sys.tsock);
@@ -147,8 +157,18 @@ int sc_main(int argc, char **argv) {
 	core0.trace = opt.trace_mode;
 	core1.trace = opt.trace_mode;
 
-	new DirectCoreRunner(core0);
-	new DirectCoreRunner(core1);
+	std::vector<debug_target_if *> threads;
+	threads.push_back(&core0);
+	threads.push_back(&core1);
+
+	if (opt.use_debug_runner) {
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		new GDBServerRunner("GDBRunner0", server, &core0);
+		new GDBServerRunner("GDBRunner1", server, &core1);
+	} else {
+		new DirectCoreRunner(core0);
+		new DirectCoreRunner(core1);
+	}
 
 	if (opt.quiet)
 		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
