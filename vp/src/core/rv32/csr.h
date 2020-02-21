@@ -253,9 +253,9 @@ struct csr_satp {
 	union {
 		uint32_t reg = 0;
 		struct {
-			unsigned mode : 1;  // WARL
-			unsigned asid : 9;  // WARL
 			unsigned ppn : 22;  // WARL
+			unsigned asid : 9;  // WARL
+			unsigned mode : 1;  // WARL
 		};
 	};
 };
