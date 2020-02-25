@@ -2,8 +2,6 @@
 
 #include "mmu_mem_if.h"
 
-enum MemoryAccessType { FETCH, LOAD, STORE };
-
 constexpr unsigned PTE_PPN_SHIFT = 10;
 constexpr unsigned PGSHIFT = 12;
 constexpr unsigned PGSIZE = 1 << PGSHIFT;
