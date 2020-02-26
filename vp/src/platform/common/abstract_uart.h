@@ -143,12 +143,16 @@ class AbstractUART : public sc_core::sc_module {
 				// std::cout << "RXctrl";
 			} else if (r.vptr == &ip) {
 				uint32_t ret = 0;
+				txmtx.lock();
 				if (tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
 					ret |= UART_TXWM;
 				}
+				txmtx.unlock();
+				rcvmtx.lock();
 				if (rx_fifo.size() > UART_CTRL_CNT(rxctrl)) {
 					ret |= UART_RXWM;
 				}
+				rcvmtx.unlock();
 				ip = ret;
 			} else if (r.vptr == &ie) {
 				// do nothing
