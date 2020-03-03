@@ -262,12 +262,15 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
+	std::vector<mmu_memory_if*> mmus;
 	std::vector<debug_target_if*> dharts;
 	if (opt.use_debug_runner) {
-		for (size_t i = 0; i < NUM_CORES; i++)
+		for (size_t i = 0; i < NUM_CORES; i++) {
 			dharts.push_back(&cores[i]->iss);
+			mmus.push_back(&cores[i]->memif);
+		}
 
-		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port, mmus);
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 	} else {
