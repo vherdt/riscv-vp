@@ -561,8 +561,8 @@ void ISS::exec_step() {
 			uint32_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
-			lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V
-			                     // forward progress property
+			if (lr_sc_counter == 0)
+			    lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
 		} break;
 
 		case Opcode::SC_W: {
@@ -1792,8 +1792,9 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	if (lr_sc_counter != 0) {
 		--lr_sc_counter;
+		assert (lr_sc_counter >= 0);
 		if (lr_sc_counter == 0)
-			release_lr_sc_reservation();
+            release_lr_sc_reservation();
 	}
 
 	auto new_cycles = instr_cycles[executed_op];
@@ -1803,7 +1804,8 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
-		quantum_keeper.sync();
+	    if (lr_sc_counter == 0) // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
+		    quantum_keeper.sync();
 	}
 }
 

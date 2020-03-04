@@ -151,7 +151,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool ignore_wfi = false;
 	csr_table csrs;
 	PrivilegeLevel prv = MachineMode;
-	uint64_t lr_sc_counter = 0;
+	int64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
 	Instruction instr;
