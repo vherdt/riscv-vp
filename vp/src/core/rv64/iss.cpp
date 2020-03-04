@@ -675,8 +675,7 @@ void ISS::exec_step() {
 			trap_check_addr_alignment<4, false>(addr);
 			int32_t val = regs[instr.rs2()];
 			regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
-			regs[instr.rd()] =
-			    mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
+			regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
 		} break;
 
