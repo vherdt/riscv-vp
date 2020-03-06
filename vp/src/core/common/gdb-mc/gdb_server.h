@@ -14,6 +14,7 @@
 
 /* TODO: move this header to common? */
 #include <platform/hifive/async_event.h>
+#include <core/common/mmu_mem_if.h>
 #include <libgdb/parser2.h>
 
 #include "debug.h"
@@ -46,7 +47,8 @@ public:
 	GDBServer(sc_core::sc_module_name,
 	          std::vector<debug_target_if*>,
 	          DebugMemoryInterface*,
-	          uint16_t);
+	          uint16_t,
+	          std::vector<mmu_memory_if*> mmus = {});
 
 	/* Used by GDBRunner to determine whether run() or run_step()
 	 * should be used when receiving a run event for a debug_target_if.
@@ -78,8 +80,12 @@ private:
 	/* hart → events */
 	std::map<debug_target_if *, hart_event> events;
 
+	/* hart → mmu */
+	std::map<debug_target_if *, mmu_memory_if *> mmu;
+
 	void create_sock(uint16_t);
 	std::vector<debug_target_if *> get_threads(int);
+	uint64_t translate_addr(debug_target_if *, uint64_t, MemoryAccessType type);
 	void exec_thread(thread_func, char = 'g');
 	std::vector<debug_target_if *> run_threads(int, bool = false);
 	void writeall(int, char *, size_t);

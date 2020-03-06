@@ -2,8 +2,6 @@
 
 #include "mmu_mem_if.h"
 
-enum MemoryAccessType { FETCH, LOAD, STORE };
-
 constexpr unsigned PTE_PPN_SHIFT = 10;
 constexpr unsigned PGSHIFT = 12;
 constexpr unsigned PGSIZE = 1 << PGSHIFT;
@@ -126,7 +124,7 @@ struct GenericMMU {
 
     vm_info decode_vm_info(PrivilegeLevel prv) {
         assert(prv <= SupervisorMode);
-        uint64_t ptbase = core.csrs.satp.ppn << PGSHIFT;
+        uint64_t ptbase = (uint64_t)core.csrs.satp.ppn << PGSHIFT;
         unsigned mode = core.csrs.satp.mode;
         switch (mode) {
             case SATP_MODE_SV32:

@@ -248,6 +248,10 @@ int sc_main(int argc, char **argv) {
 		// emulate RISC-V core boot loader
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
+
+		// configure supported instructions
+		cores[i]->iss.csrs.misa.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
+			cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
 	}
 
 	// OpenSBI boots all harts except hart 0 by default.
@@ -262,12 +266,15 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
+	std::vector<mmu_memory_if*> mmus;
 	std::vector<debug_target_if*> dharts;
 	if (opt.use_debug_runner) {
-		for (size_t i = 0; i < NUM_CORES; i++)
+		for (size_t i = 0; i < NUM_CORES; i++) {
 			dharts.push_back(&cores[i]->iss);
+			mmus.push_back(&cores[i]->memif);
+		}
 
-		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port, mmus);
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 	} else {

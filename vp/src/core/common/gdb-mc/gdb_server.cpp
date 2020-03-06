@@ -22,24 +22,31 @@
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
 GDBServer::GDBServer(sc_core::sc_module_name name,
-                     std::vector<debug_target_if*> dharts,
+                     std::vector<debug_target_if*> targets,
                      DebugMemoryInterface *mm,
-                     uint16_t port) {
-	if (dharts.size() <= 0)
+                     uint16_t port,
+                     std::vector<mmu_memory_if*> mmus) {
+	if (targets.size() <= 0)
 		throw std::invalid_argument("no harts specified");
+	if (mmus.size() > 0 && mmus.size() != targets.size())
+		throw std::invalid_argument("invalid amount of MMUs specified");
 
-	for (debug_target_if *h : dharts) {
-		events[h] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
+	for (size_t i = 0; i < targets.size(); i++) {
+		debug_target_if *target = targets.at(i);
+		harts.push_back(target);
+
+		events[target] = std::make_tuple(new sc_core::sc_event, (sc_core::sc_event *)NULL);
+		if (mmus.size() > 0)
+			mmu[target] = mmus.at(i);
 
 		/* Don't block on WFI, otherwise the run_threads method
 		 * does not work correctly. Allowing blocking WFI would
 		 * likely increase the performance */
-		h->block_on_wfi(false);
+		target->block_on_wfi(false);
 	}
 
 	memory = mm;
-	arch = dharts.at(0)->get_architecture(); // assuming all harts use the same
-	harts = dharts;
+	arch = harts.at(0)->get_architecture(); // assuming all harts use the same
 	prevpkt = NULL;
 	create_sock(port);
 
@@ -104,6 +111,21 @@ std::vector<debug_target_if *> GDBServer::get_threads(int id) {
 	std::vector<debug_target_if *> v;
 	v.push_back(harts.at(id));
 	return v;
+}
+
+uint64_t GDBServer::translate_addr(debug_target_if *hart, uint64_t addr, MemoryAccessType type) {
+	mmu_memory_if *mmu_if;
+	try {
+		mmu_if = mmu.at(hart);
+	} catch (const std::out_of_range&) {
+		mmu_if = NULL;
+	}
+
+	if (!mmu_if) {
+		return addr;
+	} else {
+		return mmu_if->v2p(addr, type);
+	}
 }
 
 void GDBServer::exec_thread(thread_func fn, char op) {

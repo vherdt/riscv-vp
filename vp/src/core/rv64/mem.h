@@ -45,7 +45,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU &mmu)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {}
 
-	inline uint64_t _v2p(uint64_t vaddr, MemoryAccessType type) {
+	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) {
 		return mmu.translate_virtual_to_physical_addr(vaddr, type);
 	}
 
@@ -117,12 +117,12 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 
 	template <typename T>
 	inline T _load_data(uint64_t addr) {
-		return _raw_load_data<T>(_v2p(addr, LOAD));
+		return _raw_load_data<T>(v2p(addr, LOAD));
 	}
 
 	template <typename T>
 	inline void _store_data(uint64_t addr, T value) {
-		_raw_store_data(_v2p(addr, STORE), value);
+		_raw_store_data(v2p(addr, STORE), value);
 	}
 
 	uint64_t mmu_load_pte64(uint64_t addr) override {
@@ -140,7 +140,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	}
 
 	uint32_t load_instr(uint64_t addr) override {
-		return _raw_load_data<uint32_t>(_v2p(addr, FETCH));
+		return _raw_load_data<uint32_t>(v2p(addr, FETCH));
 	}
 
 	template <typename T>

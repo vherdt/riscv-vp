@@ -82,15 +82,20 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 	assert(mem->addr <= UINT64_MAX);
 	assert(mem->length <= UINT_MAX);
 
-	std::string val;
+	std::string retval;
+	auto fn = [this, &retval, mem] (debug_target_if *hart) {
+		uint64_t addr = translate_addr(hart, mem->addr, LOAD);
+		retval += memory->read_memory(addr, (unsigned)mem->length);
+	};
+
 	try {
-		val = memory->read_memory((uint64_t)mem->addr, (unsigned)mem->length);
-	} catch (const std::runtime_error&) {
+		exec_thread(fn);
+	} catch (const std::runtime_error&) { /* exception raised in fn */
 		send_packet(conn, "E01");
 		return;
 	}
 
-	send_packet(conn, val.c_str());
+	send_packet(conn, retval.c_str());
 }
 
 void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
@@ -103,9 +108,13 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 	assert(loc->addr <= UINT64_MAX);
 	assert(loc->length <= UINT_MAX);
 
-	const std::string str = mem->data;
+	auto fn = [this, loc, mem] (debug_target_if *hart) {
+		uint64_t addr = translate_addr(hart, loc->addr, STORE);
+		memory->write_memory(addr, (unsigned)loc->length, mem->data);
+	};
+
 	try {
-		memory->write_memory((uint64_t)loc->addr, (unsigned)loc->length, str);
+		exec_thread(fn);
 	} catch (const std::runtime_error&) {
 		send_packet(conn, "E01");
 		return;
