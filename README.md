@@ -109,3 +109,8 @@ make
 ```
 
 This will also copy the VP binaries into the *vp/build/bin* folder.
+
+
+#### Acknowledgements:
+
+This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project VerSys under contract no. 01IW19001 and within the project SATiSFy under contract no. 16KIS0821K, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.
