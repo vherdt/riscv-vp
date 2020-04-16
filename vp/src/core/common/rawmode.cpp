@@ -58,7 +58,7 @@ static void sethandler(void) {
 
 	act.sa_flags = 0;
 	act.sa_handler = sighandler;
-	if (sigemptyset(&act.sa_mask) == -1)
+	if (sigfillset(&act.sa_mask) == -1)
 		throw std::system_error(errno, std::generic_category());
 
 	for (i = 0; i < (sizeof(signals) / sizeof(signals[0])); i++) {
