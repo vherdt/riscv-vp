@@ -11,6 +11,7 @@
 #include <thread>
 #include <map>
 #include <tuple>
+#include <functional>
 
 /* TODO: move this header to common? */
 #include <platform/hifive/async_event.h>
