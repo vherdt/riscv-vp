@@ -19,6 +19,9 @@
 #include "uart.h"
 #include "oled.hpp"
 
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <iomanip>
@@ -244,9 +247,13 @@ int sc_main(int argc, char **argv) {
 	uart0.plic = &plic;
 	slip.plic = &plic;
 
+	std::vector<debug_target_if *> threads;
+	threads.push_back(&core);
+
 	core.trace = opt.trace_mode;  // switch for printing instructions
 	if (opt.use_debug_runner) {
-		new DebugCoreRunner<ISS, RV32>(core, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
 		new DirectCoreRunner(core);
 	}
