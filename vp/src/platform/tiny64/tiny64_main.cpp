@@ -3,7 +3,7 @@
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
-#include "gdb_stub.h"
+#include "debug_memory.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"

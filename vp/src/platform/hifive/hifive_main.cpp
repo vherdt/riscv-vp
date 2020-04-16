@@ -7,7 +7,7 @@
 #include "core/rv32/syscall.h"
 #include "elf_loader.h"
 #include "fe310_plic.h"
-#include "gdb_stub.h"
+#include "debug_memory.h"
 #include "gpio.h"
 #include "iss.h"
 #include "maskROM.h"

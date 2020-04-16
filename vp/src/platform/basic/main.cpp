@@ -9,7 +9,7 @@
 #include "ethernet.h"
 #include "fe310_plic.h"
 #include "flash.h"
-#include "gdb_stub.h"
+#include "debug_memory.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"

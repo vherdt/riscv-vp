@@ -20,7 +20,7 @@
 
 #include "debug.h"
 #include "core_defs.h"
-#include "gdb_stub.h" // DebugMemoryInterface
+#include "debug_memory.h" // DebugMemoryInterface
 
 SC_MODULE(GDBServer) {
 public:

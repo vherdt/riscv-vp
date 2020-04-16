@@ -1,5 +1,5 @@
-#ifndef RISCV_ISA_GDB_STUB_H
-#define RISCV_ISA_GDB_STUB_H
+#ifndef RISCV_ISA_DEBUG_MEMORY_H
+#define RISCV_ISA_DEBUG_MEMORY_H
 
 #include <string>
 #include <type_traits>
