@@ -7,9 +7,7 @@
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
-
-/* TODO: move this header to common? */
-#include <platform/hifive/async_event.h>
+#include "platform/common/async_event.h"
 
 #include <fcntl.h>
 #include <semaphore.h>

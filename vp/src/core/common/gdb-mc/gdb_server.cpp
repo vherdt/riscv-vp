@@ -15,9 +15,7 @@
 #include <systemc>
 
 #include "gdb_server.h"
-
-/* TODO: move this header to common? */
-#include <platform/hifive/async_event.h>
+#include "platform/common/async_event.h"
 
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 

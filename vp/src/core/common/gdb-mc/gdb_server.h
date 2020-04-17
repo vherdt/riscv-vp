@@ -13,13 +13,12 @@
 #include <tuple>
 #include <functional>
 
-/* TODO: move this header to common? */
-#include <platform/hifive/async_event.h>
 #include <core/common/mmu_mem_if.h>
 #include <libgdb/parser2.h>
 
 #include "debug.h"
 #include "core_defs.h"
+#include "platform/common/async_event.h"
 #include "debug_memory.h" // DebugMemoryInterface
 
 SC_MODULE(GDBServer) {

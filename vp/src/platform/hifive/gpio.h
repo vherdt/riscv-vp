@@ -1,6 +1,6 @@
 #pragma once
 
-#include "async_event.h"
+#include "platform/common/async_event.h"
 #include "core/common/irq_if.h"
 #include "gpio/gpio-server.hpp"
 #include "util/tlm_map.h"
