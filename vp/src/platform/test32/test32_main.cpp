@@ -3,11 +3,14 @@
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
-#include "gdb_stub.h"
+#include "debug_memory.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "syscall.h"
+
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
 
 #include "htif.h"
 
@@ -192,8 +195,12 @@ int sc_main(int argc, char **argv) {
     // switch for printing instructions
     core.trace = opt.trace_mode;
 
+    std::vector<debug_target_if *> threads;
+    threads.push_back(&core);
+
     if (opt.use_debug_runner) {
-        new DebugCoreRunner<ISS, RV32>(core, &dbg_if, opt.debug_port);
+        auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+        new GDBServerRunner("GDBRunner", server, &core);
     } else {
         new DirectCoreRunner(core);
     }

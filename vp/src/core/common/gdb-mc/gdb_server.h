@@ -11,6 +11,7 @@
 #include <thread>
 #include <map>
 #include <tuple>
+#include <functional>
 
 /* TODO: move this header to common? */
 #include <platform/hifive/async_event.h>
@@ -19,7 +20,7 @@
 
 #include "debug.h"
 #include "core_defs.h"
-#include "gdb_stub.h" // DebugMemoryInterface
+#include "debug_memory.h" // DebugMemoryInterface
 
 SC_MODULE(GDBServer) {
 public:

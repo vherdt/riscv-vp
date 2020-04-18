@@ -1,8 +1,8 @@
-file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h gdb_stub.tpp)
+file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
 add_library(core-common
 		instr.cpp
-		gdb_stub.cpp
+		debug_memory.cpp
 		rawmode.cpp
 		${HEADERS})
 

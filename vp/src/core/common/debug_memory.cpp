@@ -1,4 +1,4 @@
-#include "gdb_stub.h"
+#include "debug_memory.h"
 
 #include <assert.h>
 #include <stdio.h>
