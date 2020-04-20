@@ -4,6 +4,7 @@ add_library(platform-common
 		fe310_plic.cpp
 		fu540_plic.cpp
 		abstract_uart.cpp
+		slip.cpp
         ${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
