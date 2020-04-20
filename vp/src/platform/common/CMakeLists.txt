@@ -5,6 +5,7 @@ add_library(platform-common
 		fu540_plic.cpp
 		abstract_uart.cpp
 		slip.cpp
+		uart.cpp
         ${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
