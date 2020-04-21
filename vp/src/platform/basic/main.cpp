@@ -19,6 +19,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "util/options.h"
+#include "platform/common/options.h"
 
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
@@ -29,21 +30,12 @@
 #include <iostream>
 
 using namespace rv32;
+namespace po = boost::program_options;
 
-struct Options {
+class BasicOptions : public Options {
+public:
 	typedef unsigned int addr_t;
 
-	Options &check_and_post_process() {
-		entry_point.finalize(parse_ulong_option);
-		mem_end_addr = mem_start_addr + mem_size - 1;
-		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
-		       "RAM too big, would overlap memory");
-		mram_end_addr = mram_start_addr + mram_size - 1;
-		assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
-		return *this;
-	}
-
-	std::string input_program;
 	std::string mram_image;
 	std::string flash_device;
 	std::string network_device;
@@ -77,87 +69,40 @@ struct Options {
 	addr_t display_start_addr = 0x72000000;
 	addr_t display_end_addr = display_start_addr + Display::addressRange;
 
-	bool use_debug_runner = false;
-	bool use_instr_dmi = false;
-	bool use_data_dmi = false;
-	bool trace_mode = false;
-	bool intercept_syscalls = false;
 	bool use_E_base_isa = false;
-	unsigned debug_port = 5005;
-
-	unsigned int tlm_global_quantum = 10;
 
 	OptionValue<unsigned long> entry_point;
 
-	void show() {
-		std::cout << "options {" << std::endl;
-		std::cout << "  use instr dmi = " << use_instr_dmi << std::endl;
-		std::cout << "  use data dmi = " << use_data_dmi << std::endl;
-		std::cout << "  tlm global quantum = " << tlm_global_quantum << std::endl;
-		std::cout << "}" << std::endl;
+	BasicOptions(void) {
+        	// clang-format off
+		add_options()
+			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
+			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
+			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
+			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
+			("mram-image", po::value<std::string>(&mram_image)->default_value(""),"MRAM image file for persistency")
+			("mram-image-size", po::value<unsigned int>(&mram_size), "MRAM image size")
+			("flash-device", po::value<std::string>(&flash_device)->default_value(""),"blockdevice for flash emulation")
+			("network-device", po::value<std::string>(&network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
+			("signature", po::value<std::string>(&test_signature)->default_value(""),"output filename for the test execution signature");
+        	// clang-format on
+	}
+
+	void parse(int argc, char **argv) override {
+		Options::parse(argc, argv);
+
+		entry_point.finalize(parse_ulong_option);
+		mem_end_addr = mem_start_addr + mem_size - 1;
+		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
+		       "RAM too big, would overlap memory");
+		mram_end_addr = mram_start_addr + mram_size - 1;
+		assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
 	}
 };
 
-Options parse_command_line_arguments(int argc, char **argv) {
-	// Note: first check for *help* argument then run *notify*, see:
-	// https://stackoverflow.com/questions/5395503/required-and-optional-arguments-using-boost-library-program-options
-	try {
-		Options opt;
-
-		namespace po = boost::program_options;
-
-		po::options_description desc("Options");
-
-        // clang-format off
-        desc.add_options()
-        ("help", "produce help message")
-        ("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
-        ("memory-size", po::value<unsigned int>(&opt.mem_size), "set memory size")
-        ("use-E-base-isa", po::bool_switch(&opt.use_E_base_isa), "use the E instead of the I integer base ISA")
-        ("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
-        ("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using GDB RSP interface)")
-        ("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
-        ("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
-        ("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum),"set global tlm quantum (in NS)")
-        ("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
-        ("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
-        ("use-dmi", po::bool_switch(), "use instr and data dmi")
-        ("input-file", po::value<std::string>(&opt.input_program)->required(),"input file to use for execution")
-        ("entry-point", po::value<std::string>(&opt.entry_point.option),"set entry point address (ISS program counter)")
-        ("mram-image", po::value<std::string>(&opt.mram_image)->default_value(""),"MRAM image file for persistency")
-        ("mram-image-size", po::value<unsigned int>(&opt.mram_size), "MRAM image size")
-        ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),"blockdevice for flash emulation")
-        ("network-device", po::value<std::string>(&opt.network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
-        ("signature", po::value<std::string>(&opt.test_signature)->default_value(""),"output filename for the test execution signature");
-        // clang-format on
-
-		po::positional_options_description pos;
-		pos.add("input-file", 1);
-
-		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
-
-		if (vm.count("help")) {
-			std::cout << desc << std::endl;
-			exit(0);
-		}
-
-		po::notify(vm);
-
-		if (vm["use-dmi"].as<bool>()) {
-			opt.use_data_dmi = true;
-			opt.use_instr_dmi = true;
-		}
-
-		return opt.check_and_post_process();
-	} catch (boost::program_options::error &e) {
-		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
-		exit(-1);
-	}
-}
-
 int sc_main(int argc, char **argv) {
-	Options opt = parse_command_line_arguments(argc, argv);
+	BasicOptions opt;
+	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 

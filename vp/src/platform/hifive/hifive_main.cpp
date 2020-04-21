@@ -18,6 +18,7 @@
 #include "spi.h"
 #include "uart.h"
 #include "oled.hpp"
+#include "platform/common/options.h"
 
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
@@ -42,15 +43,11 @@
 #define INT_PWM2_BASE 48
 
 using namespace rv32;
+namespace po = boost::program_options;
 
-struct Options {
+class HifiveOptions : public Options {
+public:
 	typedef unsigned int addr_t;
-
-	Options &check_and_post_process() {
-		return *this;
-	}
-
-	std::string input_program;
 
 	addr_t maskROM_start_addr = 0x00001000;
 	addr_t maskROM_end_addr = 0x00001FFF;
@@ -83,78 +80,19 @@ struct Options {
 	addr_t dram_start_addr = 0x80000000;
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
-	bool use_debug_runner = false;
-	bool use_instr_dmi = false;
-	bool use_data_dmi = false;
-	bool trace_mode = false;
-	bool intercept_syscalls = false;
-	unsigned int debug_port = 5005;
-
-	unsigned int tlm_global_quantum = 10;
-
-	void show() {
-		std::cout << "options {" << std::endl;
-		std::cout << "  use instr dmi = " << use_instr_dmi << std::endl;
-		std::cout << "  use data dmi = " << use_data_dmi << std::endl;
-		std::cout << "  tlm global quantum = " << tlm_global_quantum << std::endl;
-		std::cout << "}" << std::endl;
-	}
-
 	std::string tun_device = "tun0";
+
+	HifiveOptions(void) {
+        	// clang-format off
+		add_options()
+			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
+        	// clang-format on
+	}
 };
 
-Options parse_command_line_arguments(int argc, char **argv) {
-	// Note: first check for *help* argument then run *notify*, see:
-	// https://stackoverflow.com/questions/5395503/required-and-optional-arguments-using-boost-library-program-options
-	try {
-		Options opt;
-
-		namespace po = boost::program_options;
-
-		po::options_description desc("Options");
-
-        // clang-format off
-		desc.add_options()
-		("help", "produce help message")
-		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
-		("debug-mode", po::bool_switch(&opt.use_debug_runner),"start execution in debugger (using gdb rsp interface)")
-		("debug-port", po::value<unsigned int>(&opt.debug_port), "select port number to connect with GDB")
-		("trace-mode", po::bool_switch(&opt.trace_mode), "enable instruction tracing")
-		("tlm-global-quantum", po::value<unsigned int>(&opt.tlm_global_quantum), "set global tlm quantum (in NS)")
-		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
-		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
-		("use-dmi", po::bool_switch(), "use instr and data dmi")
-		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
-		("tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
-        // clang-format on
-
-		po::positional_options_description pos;
-		pos.add("input-file", 1);
-
-		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv).options(desc).positional(pos).run(), vm);
-
-		if (vm.count("help")) {
-			std::cout << desc << std::endl;
-			exit(0);
-		}
-
-		po::notify(vm);
-
-		if (vm["use-dmi"].as<bool>()) {
-			opt.use_data_dmi = true;
-			opt.use_instr_dmi = true;
-		}
-
-		return opt.check_and_post_process();
-	} catch (boost::program_options::error &e) {
-		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
-		exit(-1);
-	}
-}
-
 int sc_main(int argc, char **argv) {
-	Options opt = parse_command_line_arguments(argc, argv);
+	HifiveOptions opt;
+	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
