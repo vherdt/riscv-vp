@@ -339,7 +339,7 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 	}
 
 	if (!gdb_is_valid(pkt)) {
-		errno = EINVAL;
+		errno = EILSEQ;
 		return NULL;
 	}
 
