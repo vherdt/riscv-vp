@@ -333,6 +333,11 @@ gdb_parse_cmd(gdb_packet_t *pkt)
 	cmd = NULL;
 	par = gdb_parse_stage2();
 
+	if (pkt->kind != GDB_KIND_PACKET) {
+		errno = EINVAL;
+		return NULL;
+	}
+
 	if (!gdb_is_valid(pkt)) {
 		errno = EINVAL;
 		return NULL;
