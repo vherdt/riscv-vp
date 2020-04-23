@@ -4,6 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <systemc>
+#include <fcntl.h>
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>
