@@ -1,10 +1,20 @@
+#include <termios.h>
+#include <unistd.h>
+
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "core/common/clint.h"
+#include "debug.h"
+#include "debug_memory.h"
 #include "elf_loader.h"
 #include "fu540_plic.h"
-#include "debug_memory.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
@@ -13,19 +23,7 @@
 #include "platform/common/uart.h"
 #include "prci.h"
 #include "syscall.h"
-#include "debug.h"
 #include "util/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
-
-#include <termios.h>
-#include <unistd.h>
 
 enum {
 	NUM_CORES = 5,
@@ -116,7 +114,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-        // clang-format off
+		// clang-format off
 		desc.add_options()
 		("help", "produce help message")
 		("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
@@ -133,7 +131,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
 		("dtb-file", po::value<std::string>(&opt.dtb_file)->required(), "dtb file for boot loading")
 		("tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
-        // clang-format on
+		// clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -262,8 +260,8 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	std::vector<mmu_memory_if*> mmus;
-	std::vector<debug_target_if*> dharts;
+	std::vector<mmu_memory_if *> mmus;
+	std::vector<debug_target_if *> dharts;
 	if (opt.use_debug_runner) {
 		for (size_t i = 0; i < NUM_CORES; i++) {
 			dharts.push_back(&cores[i]->iss);

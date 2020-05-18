@@ -6,6 +6,7 @@
  */
 
 #include "display.hpp"
+
 #include <math.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>

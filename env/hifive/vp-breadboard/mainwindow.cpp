@@ -1,14 +1,16 @@
 #include "mainwindow.h"
+
 #include <qpainter.h>
-#include <QKeyEvent>
+#include <unistd.h>  //sleep
+
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
+#include <QKeyEvent>
 #include <cassert>
 #include <iostream>
-#include "ui_mainwindow.h"
 
-#include <unistd.h>  //sleep
+#include "ui_mainwindow.h"
 
 using namespace std;
 
@@ -71,75 +73,62 @@ void RGBLed::draw(QPainter& p) {
 	p.restore();
 }
 
-void OLED::draw(QPainter& p)
-{
-	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) * scale + margin.x()*2, ss1106::height * scale + margin.y()*2)), Qt::SolidPattern);
+void OLED::draw(QPainter& p) {
+	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) * scale + margin.x() * 2,
+	                             ss1106::height * scale + margin.y() * 2)),
+	           Qt::SolidPattern);
 
-	if(state->display_on && state->changed)
-	{
-		state->changed = 0;	//We ignore this small race-condition
+	if (state->display_on && state->changed) {
+		state->changed = 0;  // We ignore this small race-condition
 		uchar* map = image.bits();
-		for(unsigned page = 0; page < ss1106::height/8; page++)
-		{
-			for(unsigned column = 0; column < (ss1106::width - 2 * ss1106::padding_lr); column++)
-			{
-				for(unsigned page_pixel = 0; page_pixel < 8; page_pixel++)
-				{
-					map[((page * 8 + page_pixel) * (ss1106::width - 2 * ss1106::padding_lr)) + column] = state->frame[page][column+ss1106::padding_lr] & (1 << page_pixel) ? state->contrast : 0;
+		for (unsigned page = 0; page < ss1106::height / 8; page++) {
+			for (unsigned column = 0; column < (ss1106::width - 2 * ss1106::padding_lr); column++) {
+				for (unsigned page_pixel = 0; page_pixel < 8; page_pixel++) {
+					map[((page * 8 + page_pixel) * (ss1106::width - 2 * ss1106::padding_lr)) + column] =
+					    state->frame[page][column + ss1106::padding_lr] & (1 << page_pixel) ? state->contrast : 0;
 				}
 			}
 		}
-
-
 	}
-	if(state->display_on)
-		p.drawImage(offs + margin, image.scaled((ss1106::width - 2 * ss1106::padding_lr) * scale, ss1106::height * scale));
+	if (state->display_on)
+		p.drawImage(offs + margin,
+		            image.scaled((ss1106::width - 2 * ss1106::padding_lr) * scale, ss1106::height * scale));
 }
 
 VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent)
-    : QWidget(mparent),
-      host(host),
-      port(port),
-      sevensegment(nullptr),
-      rgbLed(nullptr),
-      oled(nullptr){
-
+    : QWidget(mparent), host(host), port(port), sevensegment(nullptr), rgbLed(nullptr), oled(nullptr) {
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
 	QFile confFile(configfile);
-    if (!confFile.open(QIODevice::ReadOnly)) {
-        std::cerr << "Could not open config file " << configfile << std::endl;
-        exit(-4);
-    }
+	if (!confFile.open(QIODevice::ReadOnly)) {
+		std::cerr << "Could not open config file " << configfile << std::endl;
+		exit(-4);
+	}
 
-    QByteArray  raw_file = confFile.readAll();
-    /*
-    for(unsigned i = 0; i < raw_file.size(); i++)
-    {
-    	cout << raw_file.data()[i];
-    }
-    cout << endl;
-    */
-    QJsonParseError error;
-    QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
-    if(json_doc.isNull())
-    {
-    	cerr << "Config seems to be invalid: ";
-    	cerr << error.errorString().toStdString() << endl;
-    	return;
-    }
-    QJsonObject config = json_doc.object();
+	QByteArray raw_file = confFile.readAll();
+	/*
+	for(unsigned i = 0; i < raw_file.size(); i++)
+	{
+	    cout << raw_file.data()[i];
+	}
+	cout << endl;
+	*/
+	QJsonParseError error;
+	QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
+	if (json_doc.isNull()) {
+		cerr << "Config seems to be invalid: ";
+		cerr << error.errorString().toStdString() << endl;
+		return;
+	}
+	QJsonObject config = json_doc.object();
 
 	QPixmap bkgnd(config["background"].toString(""));
-	if(bkgnd.isNull())
-	{
+	if (bkgnd.isNull()) {
 		cerr << "invalid background " << config["background"].toString().toStdString() << endl;
 		return;
 	}
 
-	QSize size(config["windowsize"].toArray().at(0).toInt(800),
-			   config["windowsize"].toArray().at(1).toInt(600));
-
+	QSize size(config["windowsize"].toArray().at(0).toInt(800), config["windowsize"].toArray().at(1).toInt(600));
 
 	bkgnd = bkgnd.scaled(size, Qt::IgnoreAspectRatio);
 	QPalette palette;
@@ -147,66 +136,46 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
 	this->setPalette(palette);
 	setFixedSize(size);
 
-	if(config.contains("sevensegment"))
-	{
+	if (config.contains("sevensegment")) {
 		QJsonObject obj = config["sevensegment"].toObject();
-		sevensegment = new Sevensegment(
-			QPoint(obj["offs"].toArray().at(0).toInt(312),
-			       obj["offs"].toArray().at(1).toInt(353)),
-			QPoint(obj["extent"].toArray().at(0).toInt(36),
-			       obj["extent"].toArray().at(1).toInt(50)),
-			obj["linewidth"].toInt(7)
-			);
+		sevensegment =
+		    new Sevensegment(QPoint(obj["offs"].toArray().at(0).toInt(312), obj["offs"].toArray().at(1).toInt(353)),
+		                     QPoint(obj["extent"].toArray().at(0).toInt(36), obj["extent"].toArray().at(1).toInt(50)),
+		                     obj["linewidth"].toInt(7));
 	}
-	if(config.contains("rgb"))
-	{
+	if (config.contains("rgb")) {
 		QJsonObject obj = config["rgb"].toObject();
-		rgbLed = new RGBLed(
-			QPoint(obj["offs"].toArray().at(0).toInt(89),
-			       obj["offs"].toArray().at(1).toInt(161)),
-			obj["linewidth"].toInt(15)
-			);
+		rgbLed = new RGBLed(QPoint(obj["offs"].toArray().at(0).toInt(89), obj["offs"].toArray().at(1).toInt(161)),
+		                    obj["linewidth"].toInt(15));
 	}
-	if(config.contains("oled"))
-	{
+	if (config.contains("oled")) {
 		QJsonObject obj = config["oled"].toObject();
-		oled = new OLED(
-			QPoint(obj["offs"].toArray().at(0).toInt(450),
-			       obj["offs"].toArray().at(1).toInt(343)),
-			obj["margin"].toInt(15),
-			obj["scale"].toDouble(1.));
+		oled = new OLED(QPoint(obj["offs"].toArray().at(0).toInt(450), obj["offs"].toArray().at(1).toInt(343)),
+		                obj["margin"].toInt(15), obj["scale"].toDouble(1.));
 	}
-	if(config.contains("buttons"))
-	{
+	if (config.contains("buttons")) {
 		QJsonArray butts = config["buttons"].toArray();
-		for(unsigned i = 0; i < butts.size() && i < max_num_buttons; i++)
-		{
+		for (unsigned i = 0; i < butts.size() && i < max_num_buttons; i++) {
 			QJsonObject butt = butts[i].toObject();
-			buttons[i] = new Button{
-				QRect{
-					QPoint{butt["pos"].toArray().at(0).toInt(), butt["pos"].toArray().at(1).toInt()},
-					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()}
-				},
-				static_cast<uint8_t>(butt["pin"].toInt()),
-				butt["key"].toString(QString("")),
-				butt["name"].toString(QString("undef"))
-			};
+			buttons[i] =
+			    new Button{QRect{QPoint{butt["pos"].toArray().at(0).toInt(), butt["pos"].toArray().at(1).toInt()},
+			                     QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()}},
+			               static_cast<uint8_t>(butt["pin"].toInt()), butt["key"].toString(QString("")),
+			               butt["name"].toString(QString("undef"))};
 		}
 	}
 }
 
-VPBreadboard::~VPBreadboard()
-{
-	if(sevensegment != nullptr)
+VPBreadboard::~VPBreadboard() {
+	if (sevensegment != nullptr)
 		delete sevensegment;
-	if(rgbLed != nullptr)
+	if (rgbLed != nullptr)
 		delete rgbLed;
-	if(oled != nullptr)
+	if (oled != nullptr)
 		delete oled;
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(buttons[i] != nullptr)
-		delete buttons[i];
+	for (unsigned i = 0; i < max_num_buttons; i++) {
+		if (buttons[i] != nullptr)
+			delete buttons[i];
 	}
 }
 
@@ -214,14 +183,11 @@ void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.save();
 	p.setBrush(QBrush(QColor("black")));
 	QRect sign;
-	if(this->size().width() > this->size().height())
-	{
-		sign = QRect (QPoint(this->size().width()/4, this->size().height()/4), this->size()/2);
-	}
-	else
-	{
-		sign = QRect (QPoint(this->size().width()/10, this->size().height()/4),
-				QSize(4*this->size().width()/5, this->size().height()/4));
+	if (this->size().width() > this->size().height()) {
+		sign = QRect(QPoint(this->size().width() / 4, this->size().height() / 4), this->size() / 2);
+	} else {
+		sign = QRect(QPoint(this->size().width() / 10, this->size().height() / 4),
+		             QSize(4 * this->size().width() / 5, this->size().height() / 4));
 	}
 	p.drawRect(sign);
 	p.setFont(QFont("Arial", 25, QFont::Bold));
@@ -254,12 +220,8 @@ uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg) {
 
 uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
 	uint8_t ret = 0;
-	static uint8_t pinMapping[8] =
-	{
-	  15, 16, 17, 18, 19, 7, 6, 5
-	};
-	for(unsigned i = 0; i < 8; i++)
-	{
+	static uint8_t pinMapping[8] = {15, 16, 17, 18, 19, 7, 6, 5};
+	for (unsigned i = 0; i < 8; i++) {
 		ret |= pinmap & (1 << pinMapping[i]) ? (1 << i) : 0;
 	}
 	return ret;
@@ -277,11 +239,11 @@ uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin) {
 	if (pin < 8) {
 		return pin + 16;  // PIN_0_OFFSET
 	}
-	if(pin >= 8 && pin < 14) {
+	if (pin >= 8 && pin < 14) {
 		return pin - 8;
 	}
-	//ignoring non-wired pin 14 <==> 8
-	if(pin > 14 && pin < 20){
+	// ignoring non-wired pin 14 <==> 8
+	if (pin > 14 && pin < 20) {
 		return pin - 6;
 	}
 
@@ -313,45 +275,40 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setRenderHint(QPainter::HighQualityAntialiasing);
 
-	if(oled)
+	if (oled)
 		oled->draw(painter);
 
-	if(sevensegment)
-	{
+	if (sevensegment) {
 		sevensegment->map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
 		sevensegment->draw(painter);
 	}
 
-	if(rgbLed)
-	{
+	if (rgbLed) {
 		rgbLed->map = translatePinNumberToRGBLed(translateGpioToExtPin(gpio.state));
 		rgbLed->draw(painter);
 	}
 
-	//buttons
+	// buttons
 	painter.save();
 	QColor dark("#101010");
 	dark.setAlphaF(0.5);
 	painter.setBrush(QBrush(dark));
-	if(debugmode)
-	{
+	if (debugmode) {
 		painter.setPen(QPen(QColor("red")));
 		painter.setFont(QFont("Arial", 12));
 	}
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(!buttons[i])
+	for (unsigned i = 0; i < max_num_buttons; i++) {
+		if (!buttons[i])
 			break;
-		if(buttons[i]->pressed || debugmode)
+		if (buttons[i]->pressed || debugmode)
 			painter.drawRect(buttons[i]->area);
-		if(debugmode)
+		if (debugmode)
 			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
 	}
 	painter.restore();
 
-
 	if (debugmode) {
-		if(sevensegment)
+		if (sevensegment)
 			painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
 	}
 	painter.end();
@@ -370,62 +327,59 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 	this->update();
 	// scout << "Yee, keypress" << endl;
 
-	if(debugmode)
-	{
-		switch(e->key())
-		{
-		case Qt::Key_Right:
-			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
-				moving_button = 0;
-			if(buttons[moving_button] == nullptr)
-			{
-				cout << "No Buttons available" << endl;
-			}
-			else
-			{
-				cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
-			}
-			break;
+	if (debugmode) {
+		switch (e->key()) {
+			case Qt::Key_Right:
+				if (buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
+					moving_button = 0;
+				if (buttons[moving_button] == nullptr) {
+					cout << "No Buttons available" << endl;
+				} else {
+					cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
+				}
+				break;
 
-		case Qt::Key_W:
-			if(buttons[moving_button] == nullptr)
+			case Qt::Key_W:
+				if (buttons[moving_button] == nullptr)
+					break;
+				buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
+				cout << buttons[moving_button]->name.toStdString() << " ";
+				cout << "X: " << buttons[moving_button]->area.topLeft().x()
+				     << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_A:
-			if(buttons[moving_button] == nullptr)
+			case Qt::Key_A:
+				if (buttons[moving_button] == nullptr)
+					break;
+				buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
+				cout << buttons[moving_button]->name.toStdString() << " ";
+				cout << "X: " << buttons[moving_button]->area.topLeft().x()
+				     << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_S:
-			if(buttons[moving_button] == nullptr)
+			case Qt::Key_S:
+				if (buttons[moving_button] == nullptr)
+					break;
+				buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
+				cout << buttons[moving_button]->name.toStdString() << " ";
+				cout << "X: " << buttons[moving_button]->area.topLeft().x()
+				     << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_D:
-			if(buttons[moving_button] == nullptr)
+			case Qt::Key_D:
+				if (buttons[moving_button] == nullptr)
+					break;
+				buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
+				cout << buttons[moving_button]->name.toStdString() << " ";
+				cout << "X: " << buttons[moving_button]->area.topLeft().x()
+				     << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
 				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_Space:
-			cout << "Debug mode off" << endl;
-			debugmode = 0;
-			break;
-		default:
-			break;
+			case Qt::Key_Space:
+				cout << "Debug mode off" << endl;
+				debugmode = 0;
+				break;
+			default:
+				break;
 		}
-	}
-	else
-	{
-		//normal mode
+	} else {
+		// normal mode
 		switch (e->key()) {
 			case Qt::Key_Escape:
 			case Qt::Key_Q:
@@ -449,13 +403,12 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 				debugmode = true;
 				break;
 			default:
-				for(unsigned i = 0; i < max_num_buttons; i++)
-				{
-					if(buttons[i] == nullptr)
-						break;	//this is sorted somewhat
+				for (unsigned i = 0; i < max_num_buttons; i++) {
+					if (buttons[i] == nullptr)
+						break;  // this is sorted somewhat
 
 					if (buttons[i]->keybinding == e->key()) {
-						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),0);
+						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 0);
 						buttons[i]->pressed = true;
 					}
 				}
@@ -464,15 +417,13 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 	}
 }
 
-void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
-{
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(buttons[i] == nullptr)
-			break;	//this is sorted somewhat
+void VPBreadboard::keyReleaseEvent(QKeyEvent* e) {
+	for (unsigned i = 0; i < max_num_buttons; i++) {
+		if (buttons[i] == nullptr)
+			break;  // this is sorted somewhat
 
 		if (buttons[i]->keybinding == e->key()) {
-			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),1);
+			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 1);
 			buttons[i]->pressed = false;
 		}
 	}
@@ -480,13 +431,12 @@ void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
 
 void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 	if (e->button() == Qt::LeftButton) {
-		for(unsigned i = 0; i < max_num_buttons; i++)
-		{
-			if(buttons[i] == nullptr)
-				break;	//this is sorted somewhat
+		for (unsigned i = 0; i < max_num_buttons; i++) {
+			if (buttons[i] == nullptr)
+				break;  // this is sorted somewhat
 
 			if (buttons[i]->area.contains(e->pos())) {
-				//cout << "button " << i << " click!" << endl;
+				// cout << "button " << i << " click!" << endl;
 				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 0);  // Active low
 				buttons[i]->pressed = true;
 			}
@@ -501,12 +451,11 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 
 void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 	if (e->button() == Qt::LeftButton) {
-		for(unsigned i = 0; i < max_num_buttons; i++)
-		{
-			if(buttons[i] == nullptr)
-				break;	//this is sorted somewhat
+		for (unsigned i = 0; i < max_num_buttons; i++) {
+			if (buttons[i] == nullptr)
+				break;  // this is sorted somewhat
 			if (buttons[i]->area.contains(e->pos())) {
-				//cout << "button " << i << " release!" << endl;
+				// cout << "button " << i << " release!" << endl;
 				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 1);
 				buttons[i]->pressed = false;
 			}

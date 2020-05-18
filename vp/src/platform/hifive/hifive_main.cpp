@@ -1,31 +1,29 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "aon.h"
 #include "can.h"
 #include "core/common/clint.h"
 #include "core/rv32/syscall.h"
+#include "debug_memory.h"
 #include "elf_loader.h"
 #include "fe310_plic.h"
-#include "debug_memory.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "gpio.h"
 #include "iss.h"
 #include "maskROM.h"
 #include "mem.h"
 #include "memory.h"
+#include "oled.hpp"
 #include "prci.h"
 #include "slip.h"
 #include "spi.h"
 #include "uart.h"
-#include "oled.hpp"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -113,7 +111,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-        // clang-format off
+		// clang-format off
 		desc.add_options()
 		("help", "produce help message")
 		("intercept-syscalls", po::bool_switch(&opt.intercept_syscalls),"directly intercept and handle syscalls in the ISS")
@@ -126,7 +124,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
 		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
 		("tun-device", po::value<std::string>(&opt.tun_device), "tun device used by SLIP");
-        // clang-format on
+		// clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -176,7 +174,7 @@ int sc_main(int argc, char **argv) {
 	SPI spi0("SPI0");
 	SPI spi1("SPI1");
 	CAN can;
-	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		//pin 16 is offset 10
+	SS1106 oled([&gpio0] { return gpio0.value & (1 << 10); });  // pin 16 is offset 10
 	spi1.connect(0, can);
 	spi1.connect(2, oled);
 	SPI spi2("SPI2");

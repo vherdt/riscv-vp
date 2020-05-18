@@ -91,7 +91,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 
 		if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(fd);
-			//perror("client: connect");
+			// perror("client: connect");
 			continue;
 		}
 
@@ -99,7 +99,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 	}
 
 	if (p == NULL) {
-		//fprintf(stderr, "client: failed to connect\n");
+		// fprintf(stderr, "client: failed to connect\n");
 		return false;
 	}
 
