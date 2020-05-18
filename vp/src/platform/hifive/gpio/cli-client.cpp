@@ -6,7 +6,6 @@
  */
 
 #include <unistd.h>
-
 #include <iostream>
 
 #include "gpio-client.hpp"

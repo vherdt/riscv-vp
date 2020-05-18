@@ -6,9 +6,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <stdexcept>
+
+#include <boost/lexical_cast.hpp>
 
 using namespace rv32;
 

@@ -6,7 +6,6 @@
  */
 
 #include <unistd.h>
-
 #include <csignal>
 #include <functional>
 #include <iostream>

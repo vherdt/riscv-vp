@@ -1,21 +1,15 @@
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
-#include <iomanip>
-#include <iostream>
 
 #include "basic_timer.h"
 #include "core/common/clint.h"
-#include "debug_memory.h"
 #include "display.hpp"
 #include "dma.h"
 #include "elf_loader.h"
 #include "ethernet.h"
 #include "fe310_plic.h"
 #include "flash.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
+#include "debug_memory.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
@@ -25,6 +19,14 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "util/options.h"
+
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
+#include <iomanip>
+#include <iostream>
 
 using namespace rv32;
 
@@ -106,7 +108,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		// clang-format off
+        // clang-format off
         desc.add_options()
         ("help", "produce help message")
         ("memory-start", po::value<unsigned int>(&opt.mem_start_addr),"set memory start address")
@@ -127,7 +129,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
         ("flash-device", po::value<std::string>(&opt.flash_device)->default_value(""),"blockdevice for flash emulation")
         ("network-device", po::value<std::string>(&opt.network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
         ("signature", po::value<std::string>(&opt.test_signature)->default_value(""),"output filename for the test execution signature");
-		// clang-format on
+        // clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);

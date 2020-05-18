@@ -28,17 +28,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
  */
 
-#include "rawmode.h"
+#include <system_error>
 
 #include <assert.h>
-#include <errno.h>
-#include <signal.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stddef.h>
 
-#include <system_error>
+#include "rawmode.h"
 
 static int rawfd = -1;
 static struct termios orig_termios;

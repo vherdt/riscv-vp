@@ -1,10 +1,9 @@
 #include "instr.h"
+#include "trap.h"
+#include "util/common.h"
 
 #include <cassert>
 #include <stdexcept>
-
-#include "trap.h"
-#include "util/common.h"
 
 constexpr uint32_t LUI_MASK = 0b00000000000000000000000001111111;
 constexpr uint32_t LUI_ENCODING = 0b00000000000000000000000000110111;
@@ -1136,7 +1135,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return UNDEF;
 
 		case C_Reserved:
-			return UNDEF;  // reserved instructions should raise an illegal instruction exception
+		    return UNDEF;   // reserved instructions should raise an illegal instruction exception
 
 		case C_NOP:
 			instr = InstructionFactory::ADD(0, 0, 0);
@@ -1223,8 +1222,8 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return JAL;
 
 		case C_ADDIW:
-			if (instr.c_rd() == 0)
-				return UNDEF;  // reserved
+            if (instr.c_rd() == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
 			return ADDIW;
 
@@ -1234,16 +1233,16 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 
 		case C_ADDI16SP: {
 			auto n = C_ADDI16SP_NZIMM(instr.data());
-			if (n == 0)
-				return UNDEF;  // reserved
+            if (n == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::ADDI(2, 2, n);
 			return ADDI;
 		}
 
 		case C_LUI: {
 			auto n = C_LUI_NZIMM(instr.data());
-			if (n == 0)
-				return UNDEF;  // reserved
+            if (n == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::LUI(instr.c_rd(), n);
 			return LUI;
 		}
@@ -1289,14 +1288,14 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return BNE;
 
 		case C_LWSP:
-			if (instr.c_rd() == 0)
-				return UNDEF;  // reserved
+            if (instr.c_rd() == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::LW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return LW;
 
 		case C_LDSP:
-			if (instr.c_rd() == 0)
-				return UNDEF;  // reserved
+            if (instr.c_rd() == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::LD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
 			return LD;
 
@@ -1329,8 +1328,8 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return EBREAK;
 
 		case C_JR:
-			if (instr.c_rd() == 0)
-				return UNDEF;  // reserved
+            if (instr.c_rd() == 0)
+                return UNDEF;	// reserved
 			instr = InstructionFactory::JALR(0, instr.c_rd(), 0);
 			return JALR;
 

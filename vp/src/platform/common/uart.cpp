@@ -1,15 +1,15 @@
 #include "uart.h"
+#include "core/common/rawmode.h"
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <unistd.h>
-
 #include <systemc>
 
-#include "core/common/rawmode.h"
+#include <sys/types.h>
 
-UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc) : AbstractUART(name, irqsrc) {
+UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
+		: AbstractUART(name, irqsrc) {
 	enableRawMode(STDIN_FILENO);
 	start_threads();
 }

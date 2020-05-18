@@ -1,18 +1,20 @@
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
-#include <iomanip>
-#include <iostream>
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "syscall.h"
+
+#include "gdb-mc/gdb_server.h"
+#include "gdb-mc/gdb_runner.h"
+
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
+#include <iomanip>
+#include <iostream>
 
 using namespace rv32;
 
@@ -56,7 +58,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 
 		po::options_description desc("Options");
 
-		// clang-format off
+        // clang-format off
 		desc.add_options()
 		("help", "produce help message")
 		("quiet", po::bool_switch(&opt.quiet), "do not output register values on exit")
@@ -70,7 +72,7 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
 		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
-		// clang-format on
+        // clang-format on
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);

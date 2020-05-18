@@ -4,7 +4,6 @@
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
-
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -35,13 +34,13 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 
 	router
 	    .add_register_bank({
-	        {TXDATA_REG_ADDR, &txdata},
-	        {RXDATA_REG_ADDR, &rxdata},
-	        {TXCTRL_REG_ADDR, &txctrl},
-	        {RXCTRL_REG_ADDR, &rxctrl},
-	        {IE_REG_ADDR, &ie},
-	        {IP_REG_ADDR, &ip},
-	        {DIV_REG_ADDR, &div},
+		{TXDATA_REG_ADDR, &txdata},
+		{RXDATA_REG_ADDR, &rxdata},
+		{TXCTRL_REG_ADDR, &txctrl},
+		{RXCTRL_REG_ADDR, &rxctrl},
+		{IE_REG_ADDR, &ie},
+		{IP_REG_ADDR, &ip},
+		{DIV_REG_ADDR, &div},
 	    })
 	    .register_handler(this, &AbstractUART::register_access_callback);
 

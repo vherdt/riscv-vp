@@ -1,20 +1,18 @@
 #include "debug_memory.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
-#include <byteswap.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <errno.h>
+
+#include <arpa/inet.h>
+#include <byteswap.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/lexical_cast.hpp>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -23,6 +21,10 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
 
 unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                                                    unsigned num_bytes) {
@@ -67,7 +69,7 @@ void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const s
 		char hex[3];
 
 		hex[0] = data.at(i);
-		hex[1] = data.at(i + 1);
+		hex[1] = data.at(i+1);
 		hex[2] = '\0';
 
 		errno = 0;
