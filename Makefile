@@ -1,6 +1,6 @@
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
-vps: vp/build/Makefile vp/dependencies/systemc-dist vp/dependencies/softfloat-dist
+vps: vp/src/core/common/gdb-mc/libgdb/mpc vp/dependencies/systemc-dist vp/dependencies/softfloat-dist vp/build/Makefile
 	make install -C vp/build -j$(NPROCS)
 
 vp/dependencies/systemc-dist:
@@ -8,6 +8,9 @@ vp/dependencies/systemc-dist:
 
 vp/dependencies/softfloat-dist:
 	cd vp/dependencies/ && ./build_softfloat.sh
+	
+vp/src/core/common/gdb-mc/libgdb/mpc:
+	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
 
 all: vps vp-display vp-breadboard
 

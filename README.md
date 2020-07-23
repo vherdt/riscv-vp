@@ -2,20 +2,19 @@
 
 ### Key features of our VP:
 
- - RV32IMAC core + machine mode CSRs
+ - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
  - Implemented in SystemC TLM-2.0
  - SW debug capabilities (GDB RSP interface) with Eclipse
  - FreeRTOS support
  - Generic and configurable bus
  - CLINT and PLIC-based interrupt controller + additional peripherals
  - Instruction-based timing model + annotated TLM 2.0 transaction delays
- - **New:** Peripherals, e.g. display, flash controller, preliminary ethernet
- - **New:** Example configuration for the SiFive HiFive1 board available
- - **New:** Zephyr operating system support
- - **New:** Support for simulation of multi-core platforms
- - **New:** Supervisor- and user-mode (including user traps) privilege levels
- - **New:** Floating-point extension (F) for the RV32 core
- - **New:** RV64GC core (i.e. RV64IMAFDC)
+ - Peripherals, e.g. display, flash controller, preliminary ethernet
+ - Example configuration for the SiFive HiFive1 board available
+ - Zephyr operating system support
+ - Support for simulation of multi-core platforms
+ - Machine-, Supervisor- and User-mode (including user traps) privilege levels and CSRs
+ - Virtual memory support (Sv32, Sv39, Sv48)
 
 For related information, e.g. verification, please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. 
 We accept pull requests and in general contributions are very welcome. 
