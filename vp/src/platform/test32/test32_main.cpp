@@ -123,7 +123,7 @@ int sc_main(int argc, char **argv) {
         core_mem_if.dmi_ranges.emplace_back(dmi);
     }
 
-    loader.load_executable_image(mem.data, mem.size, opt.mem_start_addr);
+    loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
     core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.mem_end_addr));
     sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
     sys.register_core(&core);

@@ -6,11 +6,12 @@
 #include <iostream>
 
 #include "bus.h"
+#include "load_if.h"
 
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
 
-struct SimpleMemory : public sc_core::sc_module {
+struct SimpleMemory : public sc_core::sc_module, public load_if {
 	tlm_utils::simple_target_socket<SimpleMemory> tsock;
 
 	uint8_t *data;
@@ -26,6 +27,16 @@ struct SimpleMemory : public sc_core::sc_module {
 
 	~SimpleMemory(void) {
 		delete data;
+	}
+
+	void load_data(const char *src, uint64_t dst_addr, size_t n) override {
+		assert(dst_addr + n <= size);
+		memcpy(&data[dst_addr], src, n);
+	}
+
+	void load_zero(uint64_t dst_addr, size_t n) override {
+		assert(dst_addr + n <= size);
+		memset(&data[dst_addr], 0, n);
 	}
 
 	void load_binary_file(const std::string &filename, unsigned addr) {
