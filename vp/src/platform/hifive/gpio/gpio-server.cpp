@@ -22,6 +22,9 @@
 #include <iostream>
 #include <thread>
 
+#define ENABLE_DEBUG (0)
+#include "debug.h"
+
 using namespace std;
 
 // get sockaddr, IPv4 or IPv6:
@@ -37,7 +40,7 @@ GpioServer::GpioServer() : fd(-1), stop(false), fun(nullptr) {}
 
 GpioServer::~GpioServer() {
 	if (fd >= 0) {
-		cout << "closing gpio-server socket " << fd << endl;
+		DEBUG("closing gpio-server socket: %d\n", fd);
 		close(fd);
 		fd = -1;
 	}
@@ -144,7 +147,7 @@ void GpioServer::startListening() {
 		}
 
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-		printf("gpio-server: got connection from %s\n", s);
+		DEBUG("gpio-server: got connection from %s\n", s);
 		handleConnection(new_fd);
 	}
 }
@@ -192,6 +195,7 @@ void GpioServer::handleConnection(int conn) {
 				return;
 		}
 	}
-	cout << "gpio-client disconnected. (" << bytes << ")" << endl;
+
+	DEBUG("gpio-client disconnected (%d)\n", bytes);
 	close(conn);
 }
