@@ -6,6 +6,7 @@
  */
 
 #include "gpio-server.hpp"
+#include "gpio-client.hpp"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -24,7 +25,7 @@
 using namespace std;
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa) {
+static void *get_in_addr(struct sockaddr *sa) {
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in *)sa)->sin_addr);
 	}
@@ -40,9 +41,17 @@ GpioServer::~GpioServer() {
 		close(fd);
 		fd = -1;
 	}
+
+	if (this->port)
+		free((void*)this->port);
 }
 
 bool GpioServer::setupConnection(const char *port) {
+	if (!(this->port = strdup(port))) {
+		perror("gpio-server: strdup");
+		return 1;
+	}
+
 	struct addrinfo hints, *servinfo, *p;
 	int yes = 1;
 	int rv;
@@ -89,7 +98,18 @@ bool GpioServer::setupConnection(const char *port) {
 }
 
 void GpioServer::quit() {
+	GpioClient client;
+
+	/* The startListening() loop only checks the stop member
+	 * variable after accept() returned. However, accept() is a
+	 * blocking system call and may not return unless a new
+	 * connection is established. For this reason, we set the stop
+	 * variable and afterwards connect() to the server socket to make
+	 * sure the receive loop terminates. */
 	stop = true;
+
+	if (port && !client.setupConnection(NULL, port))
+		std::cerr << "setupConnection failed" << std::endl;
 }
 
 bool GpioServer::isStopped() {
