@@ -56,7 +56,7 @@ struct GPIO : public sc_core::sc_module {
 
 	const unsigned int_gpio_base;
 	GpioServer server;
-	std::thread serverThread;
+	std::thread *serverThread;
 	AsyncEvent asyncEvent;
 
 	SC_HAS_PROCESS(GPIO);
