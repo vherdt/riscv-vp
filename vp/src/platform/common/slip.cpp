@@ -16,6 +16,10 @@
 
 #include "slip.h"
 
+#define stop_fd (stop_pipe[0])
+#define newpollfd(FD) \
+	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR};
+
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).
 #define SLIP_SNDBUF_STEP 1500
@@ -43,6 +47,9 @@ SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string net
 	rcvsiz = get_mtu(ifr.ifr_name);
 	if (!(rcvbuf = (uint8_t *)malloc(rcvsiz * sizeof(uint8_t))))
 		goto err2;
+
+	fds[0] = newpollfd(stop_fd);
+	fds[1] = newpollfd(tunfd);
 
 	start_threads();
 	return;
@@ -86,6 +93,29 @@ void SLIP::send_packet(void) {
 	sndsiz = 0;
 }
 
+void SLIP::handle_input(int fd) {
+	ssize_t ret = read(fd, rcvbuf, rcvsiz);
+	if (ret == -1)
+		throw std::system_error(errno, std::generic_category());
+
+	for (size_t i = 0; i < (size_t)ret; i++) {
+		switch (rcvbuf[i]) {
+			case SLIP_END:
+				rxpush(SLIP_ESC);
+				rxpush(SLIP_ESC_END);
+				break;
+			case SLIP_ESC:
+				rxpush(SLIP_ESC);
+				rxpush(SLIP_ESC_ESC);
+				break;
+			default:
+				rxpush(rcvbuf[i]);
+				break;
+		}
+	}
+	rxpush(SLIP_END);
+}
+
 void SLIP::write_data(uint8_t data) {
 	if (data == SLIP_END) {
 		if (sndsiz > 0)
@@ -113,24 +143,19 @@ void SLIP::write_data(uint8_t data) {
 }
 
 void SLIP::read_data(void) {
-	ssize_t ret = read(tunfd, rcvbuf, rcvsiz);
-	if (ret == -1)
+	if (poll(fds, (nfds_t)NFDS, -1) == -1)
 		throw std::system_error(errno, std::generic_category());
 
-	for (size_t i = 0; i < (size_t)ret; i++) {
-		switch (rcvbuf[i]) {
-			case SLIP_END:
-				rxpush(SLIP_ESC);
-				rxpush(SLIP_ESC_END);
-				break;
-			case SLIP_ESC:
-				rxpush(SLIP_ESC);
-				rxpush(SLIP_ESC_ESC);
-				break;
-			default:
-				rxpush(rcvbuf[i]);
-				break;
-		}
+	/* stop_fd is checked first as it is fds[0] */
+	for (size_t i = 0; i < NFDS; i++) {
+		int fd = fds[i].fd;
+		short ev = fds[i].revents;
+
+		if (fd == stop_fd)
+			break;
+		else if (ev & POLLERR)
+			throw std::runtime_error("received unexpected POLLERR");
+		else
+			handle_input(fd);
 	}
-	rxpush(SLIP_END);
 }

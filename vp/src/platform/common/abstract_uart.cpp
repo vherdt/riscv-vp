@@ -71,11 +71,14 @@ AbstractUART::~AbstractUART(void) {
 
 	if (rcvthr) {
 		uint8_t byte = 0;
-		if (write(stop_pipe[1], &byte, sizeof(byte))) // unblock receive thread
+		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
 			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
 		rcvthr->join();
 		delete rcvthr;
 	}
+
+	close(stop_pipe[0]);
+	close(stop_pipe[1]);
 }
 
 void AbstractUART::start_threads(void) {
@@ -167,7 +170,7 @@ void AbstractUART::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &
 void AbstractUART::transmit(void) {
 	uint8_t data;
 
-	for (;;) {
+	while (!stop) {
 		swait(&txfull);
 		if (stop) break;
 
@@ -182,7 +185,7 @@ void AbstractUART::transmit(void) {
 }
 
 void AbstractUART::receive(void) {
-	for (;;) {
+	while (!stop) {
 		read_data();
 	}
 }
