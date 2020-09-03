@@ -1,9 +1,11 @@
 #include "abstract_uart.h"
 
+#include <err.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -44,6 +46,10 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	    })
 	    .register_handler(this, &AbstractUART::register_access_callback);
 
+	stop = false;
+	if (pipe(stop_pipe) == -1)
+		throw std::system_error(errno, std::generic_category());
+
 	if (sem_init(&txfull, 0, 0))
 		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
@@ -55,16 +61,26 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 }
 
 AbstractUART::~AbstractUART(void) {
-	// TODO: kill threads
-	// TODO: destroy semaphore
+	stop = true;
+
+	if (txthr) {
+		spost(&txfull); // unblock transmit thread
+		txthr->join();
+		delete txthr;
+	}
+
+	if (rcvthr) {
+		uint8_t byte = 0;
+		if (write(stop_pipe[1], &byte, sizeof(byte))) // unblock receive thread
+			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		rcvthr->join();
+		delete rcvthr;
+	}
 }
 
 void AbstractUART::start_threads(void) {
-	rcvthr = std::thread(&AbstractUART::receive, this);
-	rcvthr.detach();
-
-	txthr = std::thread(&AbstractUART::transmit, this);
-	txthr.detach();
+	rcvthr = new std::thread(&AbstractUART::receive, this);
+	txthr = new std::thread(&AbstractUART::transmit, this);
 }
 
 void AbstractUART::rxpush(uint8_t data) {
@@ -153,6 +169,8 @@ void AbstractUART::transmit(void) {
 
 	for (;;) {
 		swait(&txfull);
+		if (stop) break;
+
 		txmtx.lock();
 		data = tx_fifo.front();
 		tx_fifo.pop();

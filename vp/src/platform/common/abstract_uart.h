@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <semaphore.h>
+#include <stdbool.h>
 
 #include <systemc>
 #include <tlm_utils/simple_target_socket.h>
@@ -26,6 +27,9 @@ public:
 	SC_HAS_PROCESS(AbstractUART);
 
 protected:
+	bool stop;
+	int stop_pipe[2];
+
 	void start_threads(void);
 	void rxpush(uint8_t);
 
@@ -53,7 +57,7 @@ private:
 	uint32_t ip = 0;
 	uint32_t div = 0;
 
-	std::thread rcvthr, txthr;
+	std::thread *rcvthr, *txthr;
 	std::mutex rcvmtx, txmtx;
 	AsyncEvent asyncEvent;
 
