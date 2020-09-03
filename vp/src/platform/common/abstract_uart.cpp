@@ -1,12 +1,19 @@
 #include "abstract_uart.h"
 
+#include <err.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <mutex>
 #include <queue>
 #include <thread>
+
+#define stop_fd (stop_pipe[0])
+#define newpollfd(FD) \
+	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR};
 
 #define UART_TXWM (1 << 0)
 #define UART_RXWM (1 << 1)
@@ -44,6 +51,9 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	    })
 	    .register_handler(this, &AbstractUART::register_access_callback);
 
+	stop = false;
+	if (pipe(stop_pipe) == -1)
+		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&txfull, 0, 0))
 		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
@@ -55,16 +65,35 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 }
 
 AbstractUART::~AbstractUART(void) {
-	// TODO: kill threads
-	// TODO: destroy semaphore
+	stop = true;
+
+	if (txthr) {
+		spost(&txfull); // unblock transmit thread
+		txthr->join();
+		delete txthr;
+	}
+
+	if (rcvthr) {
+		uint8_t byte = 0;
+		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
+			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		rcvthr->join();
+		delete rcvthr;
+	}
+
+	close(stop_pipe[0]);
+	close(stop_pipe[1]);
+
+	sem_destroy(&txfull);
+	sem_destroy(&rxempty);
 }
 
-void AbstractUART::start_threads(void) {
-	rcvthr = std::thread(&AbstractUART::receive, this);
-	rcvthr.detach();
+void AbstractUART::start_threads(int fd) {
+	fds[0] = newpollfd(stop_fd);
+	fds[1] = newpollfd(fd);
 
-	txthr = std::thread(&AbstractUART::transmit, this);
-	txthr.detach();
+	rcvthr = new std::thread(&AbstractUART::receive, this);
+	txthr = new std::thread(&AbstractUART::transmit, this);
 }
 
 void AbstractUART::rxpush(uint8_t data) {
@@ -151,8 +180,10 @@ void AbstractUART::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &
 void AbstractUART::transmit(void) {
 	uint8_t data;
 
-	for (;;) {
+	while (!stop) {
 		swait(&txfull);
+		if (stop) break;
+
 		txmtx.lock();
 		data = tx_fifo.front();
 		tx_fifo.pop();
@@ -164,8 +195,24 @@ void AbstractUART::transmit(void) {
 }
 
 void AbstractUART::receive(void) {
-	for (;;) {
-		read_data();
+	while (!stop) {
+		if (poll(fds, (nfds_t)NFDS, -1) == -1)
+			throw std::system_error(errno, std::generic_category());
+
+		/* stop_fd is checked first as it is fds[0] */
+		for (size_t i = 0; i < NFDS; i++) {
+			int fd = fds[i].fd;
+			short ev = fds[i].revents;
+
+			if (ev & POLLERR) {
+				throw std::runtime_error("received unexpected POLLERR");
+			} else if (ev & POLLIN) {
+				if (fd == stop_fd)
+					break;
+				else
+					handle_input(fd);
+			}
+		}
 	}
 }
 

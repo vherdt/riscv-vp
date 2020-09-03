@@ -11,8 +11,8 @@ public:
 	~UART(void);
 
 private:
-	void write_data(uint8_t);
-	void read_data(void);
+	void handle_input(int fd) override;
+	void write_data(uint8_t) override;
 };
 
 #endif  // RISCV_VP_UART_H
