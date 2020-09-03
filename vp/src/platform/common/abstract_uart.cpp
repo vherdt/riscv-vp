@@ -204,12 +204,14 @@ void AbstractUART::receive(void) {
 			int fd = fds[i].fd;
 			short ev = fds[i].revents;
 
-			if (fd == stop_fd)
-				break;
-			else if (ev & POLLERR)
+			if (ev & POLLERR) {
 				throw std::runtime_error("received unexpected POLLERR");
-			else
-				handle_input(fd);
+			} else if (ev & POLLIN) {
+				if (fd == stop_fd)
+					break;
+				else
+					handle_input(fd);
+			}
 		}
 	}
 }
