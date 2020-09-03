@@ -20,10 +20,13 @@
 
 #include <iostream>
 
+#define ENABLE_DEBUG (0)
+#include "debug.h"
+
 using namespace std;
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa) {
+static void *get_in_addr(struct sockaddr *sa) {
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in *)sa)->sin_addr);
 	}
@@ -104,7 +107,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-	printf("client: connecting to %s\n", s);
+	DEBUG("client: connecting to %s\n", s);
 
 	freeaddrinfo(servinfo);  // all done with this structure
 

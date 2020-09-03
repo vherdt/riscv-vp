@@ -12,6 +12,7 @@
 
 class GpioServer : public GpioCommon {
 	int fd;
+	const char *port;
 	volatile bool stop;
 	std::function<void(uint8_t bit, Tristate val)> fun;
 	void handleConnection(int conn);

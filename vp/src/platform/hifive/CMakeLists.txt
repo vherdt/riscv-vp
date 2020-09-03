@@ -5,6 +5,7 @@ add_executable(hifive-vp
         gpio.cpp
         gpio/gpiocommon.cpp
         gpio/gpio-server.cpp
+        gpio/gpio-client.cpp
         ../../util/elegantEnums.cpp #sorry :(
         oled/common.cpp
         ${HEADERS})
