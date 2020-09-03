@@ -24,6 +24,10 @@ struct SimpleMemory : public sc_core::sc_module {
 		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);
 	}
 
+	~SimpleMemory(void) {
+		delete data;
+	}
+
 	void load_binary_file(const std::string &filename, unsigned addr) {
 		boost::iostreams::mapped_file_source f(filename);
 		assert(f.is_open());
