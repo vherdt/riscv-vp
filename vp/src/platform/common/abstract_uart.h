@@ -2,6 +2,7 @@
 #define RISCV_VP_ABSTRACT_UART_H
 
 #include <stdint.h>
+#include <poll.h>
 #include <semaphore.h>
 #include <stdbool.h>
 
@@ -27,15 +28,12 @@ public:
 	SC_HAS_PROCESS(AbstractUART);
 
 protected:
-	bool stop;
-	int stop_pipe[2];
-
-	void start_threads(void);
+	void start_threads(int fd);
 	void rxpush(uint8_t);
 
 private:
 	virtual void write_data(uint8_t) = 0;
-	virtual void read_data(void) = 0;
+	virtual void handle_input(int fd) = 0;
 
 	void register_access_callback(const vp::map::register_access_t &);
 	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
@@ -60,6 +58,14 @@ private:
 	std::thread *rcvthr, *txthr;
 	std::mutex rcvmtx, txmtx;
 	AsyncEvent asyncEvent;
+
+	bool stop;
+	int stop_pipe[2];
+
+	enum {
+		NFDS = 2,
+	};
+	struct pollfd fds[NFDS];
 
 	std::queue<uint8_t> tx_fifo;
 	sem_t txfull;

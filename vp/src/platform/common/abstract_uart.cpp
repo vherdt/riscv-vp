@@ -2,6 +2,7 @@
 
 #include <err.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,6 +10,10 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+
+#define stop_fd (stop_pipe[0])
+#define newpollfd(FD) \
+	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR};
 
 #define UART_TXWM (1 << 0)
 #define UART_RXWM (1 << 1)
@@ -49,7 +54,6 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	stop = false;
 	if (pipe(stop_pipe) == -1)
 		throw std::system_error(errno, std::generic_category());
-
 	if (sem_init(&txfull, 0, 0))
 		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
@@ -81,7 +85,10 @@ AbstractUART::~AbstractUART(void) {
 	close(stop_pipe[1]);
 }
 
-void AbstractUART::start_threads(void) {
+void AbstractUART::start_threads(int fd) {
+	fds[0] = newpollfd(stop_fd);
+	fds[1] = newpollfd(fd);
+
 	rcvthr = new std::thread(&AbstractUART::receive, this);
 	txthr = new std::thread(&AbstractUART::transmit, this);
 }
@@ -186,7 +193,21 @@ void AbstractUART::transmit(void) {
 
 void AbstractUART::receive(void) {
 	while (!stop) {
-		read_data();
+		if (poll(fds, (nfds_t)NFDS, -1) == -1)
+			throw std::system_error(errno, std::generic_category());
+
+		/* stop_fd is checked first as it is fds[0] */
+		for (size_t i = 0; i < NFDS; i++) {
+			int fd = fds[i].fd;
+			short ev = fds[i].revents;
+
+			if (fd == stop_fd)
+				break;
+			else if (ev & POLLERR)
+				throw std::runtime_error("received unexpected POLLERR");
+			else
+				handle_input(fd);
+		}
 	}
 }
 

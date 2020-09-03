@@ -48,10 +48,7 @@ SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string net
 	if (!(rcvbuf = (uint8_t *)malloc(rcvsiz * sizeof(uint8_t))))
 		goto err2;
 
-	fds[0] = newpollfd(stop_fd);
-	fds[1] = newpollfd(tunfd);
-
-	start_threads();
+	start_threads(tunfd);
 	return;
 err2:
 	free(sndbuf);
@@ -140,22 +137,4 @@ void SLIP::write_data(uint8_t data) {
 			throw std::system_error(errno, std::generic_category());
 	}
 	sndbuf[sndsiz++] = data;
-}
-
-void SLIP::read_data(void) {
-	if (poll(fds, (nfds_t)NFDS, -1) == -1)
-		throw std::system_error(errno, std::generic_category());
-
-	/* stop_fd is checked first as it is fds[0] */
-	for (size_t i = 0; i < NFDS; i++) {
-		int fd = fds[i].fd;
-		short ev = fds[i].revents;
-
-		if (fd == stop_fd)
-			break;
-		else if (ev & POLLERR)
-			throw std::runtime_error("received unexpected POLLERR");
-		else
-			handle_input(fd);
-	}
 }

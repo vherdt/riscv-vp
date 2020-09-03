@@ -2,7 +2,6 @@
 #define RISCV_VP_SLIP_H
 
 #include <stdint.h>
-#include <poll.h>
 #include <systemc>
 #include "abstract_uart.h"
 
@@ -10,16 +9,10 @@ class SLIP : public AbstractUART {
 public:
 	SLIP(const sc_core::sc_module_name &, uint32_t, std::string);
 private:
-	enum {
-		NFDS = 2,
-	};
-	struct pollfd fds[NFDS];
-
 	int get_mtu(const char *);
 	void send_packet(void);
-	void write_data(uint8_t);
-	void read_data(void);
-	void handle_input(int fd);
+	void write_data(uint8_t) override;
+	void handle_input(int fd) override;
 
 	int tunfd;
 
