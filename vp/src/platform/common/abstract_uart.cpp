@@ -83,6 +83,9 @@ AbstractUART::~AbstractUART(void) {
 
 	close(stop_pipe[0]);
 	close(stop_pipe[1]);
+
+	sem_destroy(&txfull);
+	sem_destroy(&rxempty);
 }
 
 void AbstractUART::start_threads(int fd) {
