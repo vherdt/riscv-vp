@@ -63,6 +63,7 @@ SLIP::~SLIP(void) {
 		free(sndbuf);
 	if (rcvbuf)
 		free(rcvbuf);
+	close(tunfd);
 }
 
 int SLIP::get_mtu(const char *dev) {
