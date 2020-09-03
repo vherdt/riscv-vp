@@ -40,6 +40,10 @@ struct PRCI : public sc_core::sc_module {
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
+		/* Pretend that the crystal oscillator output is always ready. */
+		if (r.read && r.vptr == &hfxosccfg)
+			hfxosccfg = 1 << 31;
+
 		r.fn();
 
 		if ((r.vptr == &hfrosccfg) && r.nv)
