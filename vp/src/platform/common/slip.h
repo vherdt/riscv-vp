@@ -8,6 +8,8 @@
 class SLIP : public AbstractUART {
 public:
 	SLIP(const sc_core::sc_module_name &, uint32_t, std::string);
+	~SLIP(void);
+
 private:
 	int get_mtu(const char *);
 	void send_packet(void);

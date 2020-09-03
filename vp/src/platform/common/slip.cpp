@@ -58,6 +58,13 @@ err0:
 	std::system_error(errno, std::generic_category());
 }
 
+SLIP::~SLIP(void) {
+	if (sndbuf)
+		free(sndbuf);
+	if (rcvbuf)
+		free(rcvbuf);
+}
+
 int SLIP::get_mtu(const char *dev) {
 	struct ifreq ifr;
 
