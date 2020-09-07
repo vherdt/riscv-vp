@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label "fedora-28 || ubuntu-18.04 || debian-9"
+        label "fedora-28 || ubuntu-18.04 || debian-latest"
     }
     environment {
         DEVELOPERS = "ppieper@informatik.uni-bremen.de vherdt@informatik.uni-bremen.de  nbruns@informatik.uni-bremen.de tempel@informatik.uni-bremen.de"
