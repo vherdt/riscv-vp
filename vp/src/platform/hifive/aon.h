@@ -11,6 +11,12 @@
 struct AON : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<AON> tsock;
 
+	uint32_t wdogcfg = 0;
+	uint32_t wdogcount = 0;
+	uint32_t wdogfeed = 0;
+	uint32_t wdogkey = 0;
+	uint32_t wdogcmp0 = 0;
+
 	uint32_t lfrosccfg = 0;
 	uint32_t pmucause = 1 << 8;
 
@@ -54,6 +60,12 @@ struct AON : public sc_core::sc_module {
 	uint32_t backup31 = 0;
 
 	enum {
+		WDOG_CFG_REG_ADDR = 0x000,
+		WDOG_CNT_REG_ADDR = 0x010,
+		WDOG_FEED_REG_ADDR = 0x018,
+		WDOG_KEY_REG_ADDR = 0x01C,
+		WDOG_CMP0_REG_ADDR = 0x020,
+
 		RTC_CFG_REG_ADDR = 0x040,
 		RTC_COUNT_LO_REG_ADDR = 0x048,
 		RTC_COUNT_HI_REG_ADDR = 0x04C,
@@ -105,6 +117,12 @@ struct AON : public sc_core::sc_module {
 
 		router
 		    .add_register_bank({
+			{WDOG_CFG_REG_ADDR, &wdogcfg},
+			{WDOG_CNT_REG_ADDR, &wdogcount},
+			{WDOG_FEED_REG_ADDR, &wdogfeed},
+			{WDOG_KEY_REG_ADDR, &wdogkey},
+			{WDOG_CMP0_REG_ADDR, &wdogcmp0},
+
 		        {RTC_CFG_REG_ADDR, &rtccfg},
 		        {RTC_COUNT_LO_REG_ADDR, &rtccountlo},
 			{RTC_COUNT_HI_REG_ADDR, &rtccounthi},
