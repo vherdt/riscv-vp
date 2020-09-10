@@ -18,7 +18,7 @@ private:
 
 	int tunfd;
 
-	uint8_t *sndbuf, *rcvbuf;
+	uint8_t *sndbuf = NULL, *rcvbuf = NULL;
 	size_t sndsiz, rcvsiz;
 
 };

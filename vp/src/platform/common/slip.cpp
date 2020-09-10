@@ -52,6 +52,7 @@ SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string net
 	return;
 err2:
 	free(sndbuf);
+	sndbuf = NULL;
 err1:
 	close(tunfd);
 err0:
@@ -59,10 +60,14 @@ err0:
 }
 
 SLIP::~SLIP(void) {
-	if (sndbuf)
+	if (sndbuf) {
 		free(sndbuf);
-	if (rcvbuf)
+		sndbuf = NULL;
+	}
+	if (rcvbuf) {
 		free(rcvbuf);
+		rcvbuf = NULL;
+	}
 	close(tunfd);
 }
 
