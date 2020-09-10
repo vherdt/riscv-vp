@@ -63,7 +63,6 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 
 		regs_mtimecmp.alignment = 4;
 		regs_msip.alignment = 4;
-		regs_mtime.readonly = true;
 		regs_mtime.alignment = 4;
 
 		regs_mtime.pre_read_callback = std::bind(&CLINT::pre_read_mtime, this, std::placeholders::_1);
