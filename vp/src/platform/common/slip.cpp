@@ -16,10 +16,6 @@
 
 #include "slip.h"
 
-#define stop_fd (stop_pipe[0])
-#define newpollfd(FD) \
-	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR};
-
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).
 #define SLIP_SNDBUF_STEP 1500
