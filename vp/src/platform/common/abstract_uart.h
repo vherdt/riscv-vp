@@ -55,7 +55,7 @@ private:
 	uint32_t ip = 0;
 	uint32_t div = 0;
 
-	std::thread *rcvthr, *txthr;
+	std::thread *rcvthr = NULL, *txthr = NULL;
 	std::mutex rcvmtx, txmtx;
 	AsyncEvent asyncEvent;
 
