@@ -15,7 +15,7 @@ extern "C" {
 #define LIBGDB_ADDR_TYPE uint64_t
 #endif
 #ifndef LIBGDB_ADDR_FORMAT
-#define LIBGDB_ADDR_FORMAT PRIx64
+#define LIBGDB_ADDR_FORMAT SCNx64
 #endif
 
 typedef LIBGDB_ADDR_TYPE gdb_addr_t;
