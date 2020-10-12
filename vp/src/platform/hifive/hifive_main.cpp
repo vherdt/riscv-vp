@@ -27,6 +27,7 @@
 #include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -80,11 +81,13 @@ public:
 	addr_t dram_start_addr = 0x80000000;
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
+	bool enable_can = false;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
         	// clang-format off
 		add_options()
+			("enable-can", po::bool_switch(&enable_can), "enable support for CAN peripheral")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
         	// clang-format on
 	}
@@ -113,9 +116,12 @@ int sc_main(int argc, char **argv) {
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	SPI spi0("SPI0");
 	SPI spi1("SPI1");
-	CAN can;
+	std::unique_ptr<CAN> can = nullptr;
+	if (opt.enable_can) {
+		can = std::make_unique<CAN>();
+		spi1.connect(0, *can);
+	}
 	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		//pin 16 is offset 10
-	spi1.connect(0, can);
 	spi1.connect(2, oled);
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);
