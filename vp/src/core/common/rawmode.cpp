@@ -70,6 +70,10 @@ static void sethandler(void) {
 void enableRawMode(int fd) {
 	struct termios raw;
 
+	// Check if rawm ode was already activated
+	if (rawfd >= 0)
+		return;
+
 	if (!isatty(STDIN_FILENO)) {
 		errno = ENOTTY;
 		goto fatal;
