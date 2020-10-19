@@ -30,7 +30,6 @@
 
 #include <system_error>
 
-#include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <termios.h>
@@ -45,9 +44,11 @@ static struct termios orig_termios;
 
 static void sighandler(int num) {
 	(void)num;
-	assert(rawfd >= 0);
 
-	disableRawMode(rawfd);
+	// Signal might arrive before enableRawMode()
+	if (rawfd >= 0)
+		disableRawMode(rawfd);
+
 	exit(EXIT_FAILURE);
 }
 
