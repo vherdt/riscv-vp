@@ -5,6 +5,7 @@
 #include <system_error>
 
 #include <pthread.h>
+#include <stdbool.h>
 
 class Timer {
 public:
@@ -19,14 +20,18 @@ public:
 			: duration(_duration), fn(_fn), arg(_arg) {};
 	};
 
-	Timer(std::chrono::nanoseconds ns, Callback fn, void *arg);
+	Timer(Callback fn, void *arg);
 	~Timer(void);
 
-	void stop(void);
+	void pause(void);
+	void start(std::chrono::nanoseconds ns);
 
 private:
 	Context ctx;
 	pthread_t thread;
+	bool running;
+
+	void stop_thread(void);
 };
 
 #endif
