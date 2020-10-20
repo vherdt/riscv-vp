@@ -8,6 +8,12 @@
 /* As defined in nanosleep(3) */
 #define NS_MAX 999999999
 
+static void
+xnanosleep(const struct timespec *timespec) {
+	if (nanosleep(timespec, NULL)) /* no SA_RESTART */
+		err(EXIT_FAILURE, "nanosleep failed");
+}
+
 static void *
 callback(void *arg)
 {
@@ -15,14 +21,14 @@ callback(void *arg)
 	Timer::Context *ctx = (Timer::Context*)arg;
 
 	auto count = ctx->duration.count();
-	while (count > 0) {
-		if (count > NS_MAX)
-			count -= NS_MAX;
-
-		timespec.tv_nsec = count;
-		if (nanosleep(&timespec, NULL)) /* no SA_RESTART */
-			err(EXIT_FAILURE, "nanosleep failed");
+	while (count > NS_MAX) {
+		timespec.tv_nsec = NS_MAX;
+		xnanosleep(&timespec);
+		count -= NS_MAX;
 	}
+
+	timespec.tv_nsec = count;
+	xnanosleep(&timespec);
 
 	ctx->fn(ctx->arg);
 	return NULL;
