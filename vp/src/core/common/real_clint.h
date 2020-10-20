@@ -28,6 +28,8 @@ public:
 
 	tlm_utils::simple_target_socket<RealCLINT> tsock;
 	uint64_t update_and_get_mtime(void) override;
+
+	SC_HAS_PROCESS(RealCLINT);
 public:
 	typedef std::chrono::high_resolution_clock::time_point time_point;
 	using usecs = std::chrono::microseconds;
@@ -55,6 +57,7 @@ public:
 	uint64_t usec_to_ticks(usecs usec);
 	usecs ticks_to_usec(uint64_t ticks);
 
+	void interrupt(void);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 };
 

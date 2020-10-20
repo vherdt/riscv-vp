@@ -58,6 +58,11 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 
 	last_mtime = std::chrono::high_resolution_clock::now();
 	tsock.register_b_transport(this, &RealCLINT::transport);
+
+	SC_METHOD(interrupt);
+	for (auto event : events)
+		sensitive << *event;
+	dont_initialize();
 }
 
 RealCLINT::~RealCLINT(void) {
@@ -124,6 +129,16 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
 	return; /* TODO */
+}
+
+void RealCLINT::interrupt(void) {
+	update_and_get_mtime();
+
+	for (size_t i = 0; i < harts.size(); i++) {
+		auto cmp = mtimecmp.at(i);
+		if (mtime >= cmp)
+			harts.at(i)->trigger_timer_interrupt(true);
+	}
 }
 
 void RealCLINT::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
