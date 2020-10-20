@@ -1,6 +1,7 @@
 file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
 add_library(core-common
+		real_clint.cpp
 		instr.cpp
 		debug_memory.cpp
 		rawmode.cpp
