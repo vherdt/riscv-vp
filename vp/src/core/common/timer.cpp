@@ -30,6 +30,9 @@ callback(void *arg)
 	timespec.tv_nsec = count;
 	xnanosleep(&timespec);
 
+	/* Add explicit cancelation point before callback invocation */
+	pthread_testcancel();
+
 	ctx->fn(ctx->arg);
 	return NULL;
 }
@@ -45,6 +48,13 @@ Timer::~Timer(void) {
 }
 
 void Timer::stop(void) {
-	if ((errno = pthread_kill(thread, SIGTERM)))
-		throw std::system_error(errno, std::generic_category());
+	/* We don't kill the thread directly, instead we cancel it which
+	 * probably causes a sleeping thread to continue execution until
+	 * a cancelation point is reached, however, a sleeping thread
+	 * shouldn't consume much resources thus this should be ok for now. */
+
+	if (!pthread_cancel(thread)) {
+		if ((errno = pthread_join(thread, NULL)))
+			throw std::system_error(errno, std::generic_category());
+	}
 }
