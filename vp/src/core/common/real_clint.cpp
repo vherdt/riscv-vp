@@ -36,6 +36,7 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	register_ranges.push_back(&regs_msip);
 	register_ranges.push_back(&regs_mtime);
 
+	regs_mtimecmp.post_write_callback = std::bind(&RealCLINT::post_write_mtimecmp, this, std::placeholders::_1);
 	regs_msip.post_write_callback = std::bind(&RealCLINT::post_write_msip, this, std::placeholders::_1);
 
 	tsock.register_b_transport(this, &RealCLINT::transport);
@@ -53,12 +54,20 @@ uint64_t RealCLINT::ticks_to_usec(uint64_t ticks) {
 	return ticks; /* TODO */
 }
 
+void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
+	return; /* TODO */
+}
+
 void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	assert(info.addr % 4 == 0);
 	unsigned hart = info.addr / 4;
 
 	msip.at(hart) &= MSIP_MASK;
 	harts.at(hart).trigger_timer_interrupt(msip.at(hart) != 0);
+}
+
+void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
+	return; /* TODO */
 }
 
 void RealCLINT::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {

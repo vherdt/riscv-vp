@@ -32,7 +32,9 @@ private:
 	std::vector<RegisterRange*> register_ranges;
 	std::vector<clint_interrupt_target> &harts;
 
+	void post_write_mtimecmp(RegisterRange::WriteInfo info);
 	void post_write_msip(RegisterRange::WriteInfo info);
+	void post_write_mtime(RegisterRange::WriteInfo info);
 
 	uint64_t ticks_to_usec(uint64_t ticks);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
