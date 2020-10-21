@@ -19,7 +19,7 @@ enum {
 };
 
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
-#define DIVIDEND (15625UL/512UL)
+#define DIVIDEND (uint64_t(15625)/uint64_t(512))
 
 RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target> &_harts)
 	: regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
