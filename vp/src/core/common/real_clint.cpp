@@ -25,8 +25,11 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, size_t numharts) {
 }
 
 RealCLINT::~RealCLINT(void) {
-	// TODO: free register ranges
-	// TODO: free hartconfs
+	for (auto pair : hartconfs)
+		delete pair.second;
+
+	for (auto range : register_ranges)
+		delete range;
 }
 
 uint64_t RealCLINT::update_and_get_mtime(void) {
