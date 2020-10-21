@@ -21,18 +21,13 @@ public:
 	uint64_t ticks_to_usec(uint64_t ticks);
 
 private:
-	class HartConfig {
-	public:
-		IntegerView<uint32_t> msip;
-		IntegerView<uint64_t> mtimecmp;
+	RegisterRange regs_msip;
+	RegisterRange regs_mtimecmp;
+	RegisterRange regs_mtime;
 
-		HartConfig(RegisterRange &_msip, RegisterRange &_mtimecmp)
-			: msip(_msip), mtimecmp(_mtimecmp) {};
-	};
-
-	/* Memory-mapped registers */
-	RegisterRange *mtime;
-	std::map<unsigned int, HartConfig*> hartconfs;
+	ArrayView<uint32_t> msip;
+	ArrayView<uint64_t> mtimecmp;
+	IntegerView<uint64_t> mtime;
 
 	AsyncEvent asyncEvent;
 	std::vector<RegisterRange*> register_ranges;
