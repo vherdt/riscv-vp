@@ -22,7 +22,7 @@
 // CLINT is based on "real time" instead of SystemC simulation time.
 class RealCLINT : public clint_if, public sc_core::sc_module {
 public:
-	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target>&);
+	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target*>&);
 	~RealCLINT(void);
 
 	tlm_utils::simple_target_socket<RealCLINT> tsock;
@@ -41,7 +41,7 @@ private:
 
 	AsyncEvent asyncEvent;
 	std::vector<RegisterRange*> register_ranges;
-	std::vector<clint_interrupt_target> &harts;
+	std::vector<clint_interrupt_target*> &harts;
 
 	time_point last_mtime;
 

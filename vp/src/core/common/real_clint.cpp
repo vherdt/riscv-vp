@@ -21,7 +21,7 @@ enum {
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
 #define DIVIDEND (uint64_t(15625)/uint64_t(512))
 
-RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target> &_harts)
+RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target*> &_harts)
 	: regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
 	  regs_mtimecmp(MTIMECMP_BASE, MTIMECMP_SIZE * _harts.size()),
 	  regs_mtime(MTIME_BASE, MTIME_SIZE),
@@ -82,7 +82,7 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	unsigned hart = info.addr / 4;
 
 	msip.at(hart) &= MSIP_MASK;
-	harts.at(hart).trigger_software_interrupt(msip.at(hart) != 0);
+	harts.at(hart)->trigger_software_interrupt(msip.at(hart) != 0);
 }
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
