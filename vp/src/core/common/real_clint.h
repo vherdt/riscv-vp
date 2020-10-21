@@ -14,11 +14,10 @@
 
 class RealCLINT : public clint_if, public sc_core::sc_module {
 public:
-	RealCLINT(sc_core::sc_module_name, size_t numharts);
+	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target>&);
 	~RealCLINT(void);
 
 	tlm_utils::simple_target_socket<RealCLINT> tsock;
-
 	uint64_t update_and_get_mtime(void) override;
 private:
 	RegisterRange regs_msip;
@@ -31,6 +30,9 @@ private:
 
 	AsyncEvent asyncEvent;
 	std::vector<RegisterRange*> register_ranges;
+	std::vector<clint_interrupt_target> &harts;
+
+	void post_write_msip(RegisterRange::WriteInfo info);
 
 	uint64_t ticks_to_usec(uint64_t ticks);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
