@@ -54,6 +54,7 @@ uint64_t RealCLINT::update_and_get_mtime(void) {
 	time_point now = std::chrono::high_resolution_clock::now();
 	usecs duration = std::chrono::duration_cast<usecs>(now - last_mtime);
 
+	last_mtime = now;
 	return usec_to_ticks(duration);
 }
 
