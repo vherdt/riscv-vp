@@ -19,7 +19,11 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, size_t numharts)
 	  msip(regs_msip),
 	  mtimecmp(regs_mtimecmp),
 	  mtime(regs_mtime) {
-	return;
+	regs_mtimecmp.alignment = 4;
+	regs_msip.alignment = 4;
+	regs_mtime.alignment = 4;
+
+	tsock.register_b_transport(this, &RealCLINT::transport);
 }
 
 RealCLINT::~RealCLINT(void) {

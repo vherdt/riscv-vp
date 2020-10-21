@@ -17,9 +17,9 @@ public:
 	RealCLINT(sc_core::sc_module_name, size_t numharts);
 	~RealCLINT(void);
 
-	uint64_t update_and_get_mtime(void) override;
-	uint64_t ticks_to_usec(uint64_t ticks);
+	tlm_utils::simple_target_socket<RealCLINT> tsock;
 
+	uint64_t update_and_get_mtime(void) override;
 private:
 	RegisterRange regs_msip;
 	RegisterRange regs_mtimecmp;
@@ -32,6 +32,7 @@ private:
 	AsyncEvent asyncEvent;
 	std::vector<RegisterRange*> register_ranges;
 
+	uint64_t ticks_to_usec(uint64_t ticks);
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 };
 
