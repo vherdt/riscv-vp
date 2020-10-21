@@ -49,6 +49,10 @@ uint64_t RealCLINT::update_and_get_mtime(void) {
 	return 0; /* TODO */
 }
 
+uint64_t RealCLINT::ticks_to_usec(uint64_t ticks) {
+	return ticks; /* TODO */
+}
+
 void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	assert(info.addr % 4 == 0);
 	unsigned hart = info.addr / 4;
