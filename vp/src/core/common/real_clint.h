@@ -13,6 +13,13 @@
 #include "clint_if.h"
 #include "irq_if.h"
 
+// This class implements a CLINT as specified in the FE310-G000 manual
+// and the RISC-V Privileged Specification. As per the FE310-G000
+// manual, this CLINT uses an input clock which runs at a frequency of
+// 32.768 kHz. Currently, this frequency cannot be configured.
+//
+// Contrary to the CLINT class, also provided in this directory, this
+// CLINT is based on "real time" instead of SystemC simulation time.
 class RealCLINT : public clint_if, public sc_core::sc_module {
 public:
 	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target>&);
