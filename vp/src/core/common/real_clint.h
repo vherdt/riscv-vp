@@ -49,8 +49,8 @@ private:
 	void post_write_msip(RegisterRange::WriteInfo info);
 	void post_write_mtime(RegisterRange::WriteInfo info);
 
-	uint64_t usec_to_ticks(uint64_t usec);
-	uint64_t ticks_to_usec(uint64_t ticks);
+	uint64_t usec_to_ticks(usecs usec);
+	usecs ticks_to_usec(uint64_t ticks);
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 };

@@ -18,6 +18,9 @@ enum {
 	MSIP_MASK = 0x1, // The upper MSIP bits are tied to zero
 };
 
+/* This is used to quantize a 1MHz value to the closest 32768Hz value */
+#define DIVIDEND (15625UL/512UL)
+
 RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target> &_harts)
 	: regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
 	  regs_mtimecmp(MTIMECMP_BASE, MTIMECMP_SIZE * _harts.size()),
@@ -51,18 +54,23 @@ uint64_t RealCLINT::update_and_get_mtime(void) {
 	time_point now = std::chrono::high_resolution_clock::now();
 	usecs duration = std::chrono::duration_cast<usecs>(now - last_mtime);
 
-	auto mtime_usec = duration.count();
-
-	// XXX: Handle mtime_usec overflow?
-	return usec_to_ticks((uint64_t)mtime_usec);
+	return usec_to_ticks(duration);
 }
 
-uint64_t RealCLINT::usec_to_ticks(uint64_t usec) {
-	return usec; /* TODO */
+uint64_t RealCLINT::usec_to_ticks(usecs usec) {
+	// This algorithm is inspired by the implementation provided by RIOT-OS.
+	// https://github.com/RIOT-OS/RIOT/blob/d382bd656569599691c1a3e1c9b1662e07cf1a42/sys/include/xtimer/tick_conversion.h#L100-L106
+
+	// XXX: Handle 64-Bit overflow?
+	auto count = usec.count();
+	uint64_t microseconds = (uint64_t)count;
+
+	return microseconds / DIVIDEND;
 }
 
-uint64_t RealCLINT::ticks_to_usec(uint64_t ticks) {
-	return ticks; /* TODO */
+std::chrono::microseconds RealCLINT::ticks_to_usec(uint64_t ticks) {
+	// See comment in RealCLINT::usec_to_ticks
+	return usecs(ticks * DIVIDEND);
 }
 
 void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
