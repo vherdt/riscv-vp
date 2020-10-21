@@ -38,10 +38,7 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 
 	  harts(_harts) {
 	for (size_t i = 0; i < harts.size(); i++) {
-		AsyncEvent *event = new AsyncEvent();
-		events.push_back(event);
-
-		Timer *timer = new Timer(timercb, event);
+		Timer *timer = new Timer(timercb, &event);
 		timers.push_back(timer);
 	}
 
@@ -59,16 +56,13 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	tsock.register_b_transport(this, &RealCLINT::transport);
 
 	SC_METHOD(interrupt);
-	for (auto event : events)
-		sensitive << *event;
+	sensitive << event;
 	dont_initialize();
 }
 
 RealCLINT::~RealCLINT(void) {
 	for (auto timer : timers)
 		delete timer;
-	for (auto event : events)
-		delete event;
 }
 
 uint64_t RealCLINT::update_and_get_mtime(void) {

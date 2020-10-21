@@ -45,8 +45,8 @@ public:
 	std::vector<RegisterRange*> register_ranges;
 	std::vector<clint_interrupt_target*> &harts;
 
+	AsyncEvent event;
 	std::vector<Timer*> timers;
-	std::vector<AsyncEvent*> events;
 
 	time_point last_mtime;
 
