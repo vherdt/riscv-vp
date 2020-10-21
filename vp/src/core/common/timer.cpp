@@ -1,22 +1,35 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
+#include <err.h>
 
 #include "timer.h"
+
+/* As defined in nanosleep(3) */
+#define NS_MAX 999999999
 
 static void *
 callback(void *arg)
 {
+	struct timespec timespec;
 	Timer::Context *ctx = (Timer::Context*)arg;
 
-	// TODO: sleep
+	auto count = ctx->duration.count();
+	while (count > 0) {
+		if (count > NS_MAX)
+			count -= NS_MAX;
+
+		timespec.tv_nsec = count;
+		if (nanosleep(&timespec, NULL)) /* no SA_RESTART */
+			err(EXIT_FAILURE, "nanosleep failed");
+	}
 
 	ctx->fn(ctx->arg);
 	return NULL;
 }
 
-Timer::Timer(std::chrono::microseconds usecs, Callback fn, void *arg)
-  : ctx(usecs, fn, arg) {
+Timer::Timer(std::chrono::nanoseconds ns, Callback fn, void *arg)
+  : ctx(ns, fn, arg) {
 	if ((errno = pthread_create(&thread, NULL, callback, &ctx)))
 		throw std::system_error(errno, std::generic_category());
 }

@@ -11,15 +11,15 @@ public:
 	typedef void (*Callback) (void*);
 	class Context {
 	public:
-		std::chrono::microseconds duration;
+		std::chrono::nanoseconds duration;
 		Callback fn;
 		void *arg;
 
-		Context(std::chrono::microseconds _duration, Callback _fn, void *_arg)
+		Context(std::chrono::nanoseconds _duration, Callback _fn, void *_arg)
 			: duration(_duration), fn(_fn), arg(_arg) {};
 	};
 
-	Timer(std::chrono::microseconds usecs, Callback fn, void *arg);
+	Timer(std::chrono::nanoseconds ns, Callback fn, void *arg);
 	~Timer(void);
 
 	void stop(void);
