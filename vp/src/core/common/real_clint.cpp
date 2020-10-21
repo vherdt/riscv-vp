@@ -22,6 +22,10 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, size_t numharts) {
 
 	mtime = new RegisterRange(MTIME_BASE, MTIME_SIZE);
 	register_ranges.push_back(mtime);
+
+	// On reset, each msip register is reset to zero
+	for (auto pair : hartconfs)
+		pair.second->msip = 0;
 }
 
 RealCLINT::~RealCLINT(void) {
