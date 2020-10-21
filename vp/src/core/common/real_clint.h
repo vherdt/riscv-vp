@@ -23,8 +23,8 @@ public:
 private:
 	class HartConfig {
 	public:
-		ArrayView<uint32_t> msip;
-		ArrayView<uint64_t> mtimecmp;
+		IntegerView<uint32_t> msip;
+		IntegerView<uint64_t> mtimecmp;
 
 		HartConfig(RegisterRange &_msip, RegisterRange &_mtimecmp)
 			: msip(_msip), mtimecmp(_mtimecmp) {};
