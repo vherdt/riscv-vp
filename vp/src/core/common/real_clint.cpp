@@ -63,7 +63,7 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	unsigned hart = info.addr / 4;
 
 	msip.at(hart) &= MSIP_MASK;
-	harts.at(hart).trigger_timer_interrupt(msip.at(hart) != 0);
+	harts.at(hart).trigger_software_interrupt(msip.at(hart) != 0);
 }
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
