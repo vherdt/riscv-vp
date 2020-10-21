@@ -32,6 +32,10 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	regs_msip.alignment = 4;
 	regs_mtime.alignment = 4;
 
+	register_ranges.push_back(&regs_mtimecmp);
+	register_ranges.push_back(&regs_msip);
+	register_ranges.push_back(&regs_mtime);
+
 	regs_msip.post_write_callback = std::bind(&RealCLINT::post_write_msip, this, std::placeholders::_1);
 
 	tsock.register_b_transport(this, &RealCLINT::transport);
