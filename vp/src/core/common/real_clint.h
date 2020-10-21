@@ -12,6 +12,7 @@
 #include "util/memory_map.h"
 #include "clint_if.h"
 #include "irq_if.h"
+#include "timer.h"
 
 // This class implements a CLINT as specified in the FE310-G000 manual
 // and the RISC-V Privileged Specification. As per the FE310-G000
@@ -27,7 +28,7 @@ public:
 
 	tlm_utils::simple_target_socket<RealCLINT> tsock;
 	uint64_t update_and_get_mtime(void) override;
-private:
+public:
 	typedef std::chrono::high_resolution_clock::time_point time_point;
 	using usecs = std::chrono::microseconds;
 
@@ -39,9 +40,11 @@ private:
 	ArrayView<uint64_t> mtimecmp;
 	IntegerView<uint64_t> mtime;
 
-	AsyncEvent asyncEvent;
 	std::vector<RegisterRange*> register_ranges;
 	std::vector<clint_interrupt_target*> &harts;
+
+	std::vector<Timer*> timers;
+	std::vector<AsyncEvent*> events;
 
 	time_point last_mtime;
 

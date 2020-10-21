@@ -21,6 +21,12 @@ enum {
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
 #define DIVIDEND (uint64_t(15625)/uint64_t(512))
 
+static void
+timercb(void *arg) {
+	AsyncEvent *event = (AsyncEvent *)arg;
+	event->notify();
+}
+
 RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target*> &_harts)
 	: regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
 	  regs_mtimecmp(MTIMECMP_BASE, MTIMECMP_SIZE * _harts.size()),
@@ -31,6 +37,14 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	  mtime(regs_mtime),
 
 	  harts(_harts) {
+	for (size_t i = 0; i < harts.size(); i++) {
+		AsyncEvent *event = new AsyncEvent();
+		events.push_back(event);
+
+		Timer *timer = new Timer(timercb, event);
+		timers.push_back(timer);
+	}
+
 	regs_mtimecmp.alignment = 4;
 	regs_msip.alignment = 4;
 	regs_mtime.alignment = 4;
@@ -47,7 +61,10 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 }
 
 RealCLINT::~RealCLINT(void) {
-	return;
+	for (auto timer : timers)
+		delete timer;
+	for (auto event : events)
+		delete event;
 }
 
 uint64_t RealCLINT::update_and_get_mtime(void) {
@@ -75,7 +92,26 @@ std::chrono::microseconds RealCLINT::ticks_to_usec(uint64_t ticks) {
 }
 
 void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
-	return; /* TODO */
+	assert(info.addr % 4 == 0);
+	unsigned hart = info.addr / 4;
+
+	uint64_t cmp = mtimecmp[hart];
+	uint64_t time = update_and_get_mtime();
+
+	Timer *timer = timers.at(hart);
+	timer->pause();
+
+	if (time >= cmp) {
+		harts.at(hart)->trigger_timer_interrupt(true);
+		return;
+	}
+	harts.at(hart)->trigger_timer_interrupt(false);
+
+	uint64_t goal_ticks = cmp - time;
+	usecs duration = ticks_to_usec(goal_ticks);
+
+	using ns = std::chrono::nanoseconds;
+	timer->start(std::chrono::duration_cast<ns>(duration));
 }
 
 void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
