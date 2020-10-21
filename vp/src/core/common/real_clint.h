@@ -53,6 +53,7 @@ public:
 	void post_write_mtimecmp(RegisterRange::WriteInfo info);
 	void post_write_msip(RegisterRange::WriteInfo info);
 	void post_write_mtime(RegisterRange::WriteInfo info);
+	bool pre_read_mtime(RegisterRange::ReadInfo info);
 
 	uint64_t usec_to_ticks(usecs usec);
 	usecs ticks_to_usec(uint64_t ticks);
