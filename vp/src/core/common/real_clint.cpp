@@ -39,6 +39,7 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	regs_mtimecmp.post_write_callback = std::bind(&RealCLINT::post_write_mtimecmp, this, std::placeholders::_1);
 	regs_msip.post_write_callback = std::bind(&RealCLINT::post_write_msip, this, std::placeholders::_1);
 
+	last_mtime = std::chrono::high_resolution_clock::now();
 	tsock.register_b_transport(this, &RealCLINT::transport);
 }
 
@@ -47,7 +48,17 @@ RealCLINT::~RealCLINT(void) {
 }
 
 uint64_t RealCLINT::update_and_get_mtime(void) {
-	return 0; /* TODO */
+	time_point now = std::chrono::high_resolution_clock::now();
+	usecs duration = std::chrono::duration_cast<usecs>(now - last_mtime);
+
+	auto mtime_usec = duration.count();
+
+	// XXX: Handle mtime_usec overflow?
+	return usec_to_ticks((uint64_t)mtime_usec);
+}
+
+uint64_t RealCLINT::usec_to_ticks(uint64_t usec) {
+	return usec; /* TODO */
 }
 
 uint64_t RealCLINT::ticks_to_usec(uint64_t ticks) {
