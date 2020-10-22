@@ -21,6 +21,9 @@ enum {
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
 #define DIVIDEND (uint64_t(15625)/uint64_t(512))
 
+/* TODO: Explicitly handle overflows of mtime and internal usecs */
+/* TODO: Implement proper support for writting mtime register */
+
 static void
 timercb(void *arg) {
 	AsyncEvent *event = (AsyncEvent *)arg;
