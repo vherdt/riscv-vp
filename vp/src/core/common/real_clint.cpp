@@ -94,9 +94,9 @@ std::chrono::microseconds RealCLINT::ticks_to_usec(uint64_t ticks) {
 
 void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
 	assert(info.addr % 4 == 0);
-	unsigned hart = info.addr / 4;
+	unsigned hart = info.addr / MTIMECMP_SIZE;
 
-	uint64_t cmp = mtimecmp[hart];
+	uint64_t cmp = mtimecmp.at(hart);
 	uint64_t time = update_and_get_mtime();
 
 	Timer *timer = timers.at(hart);
@@ -117,7 +117,7 @@ void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
 
 void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	assert(info.addr % 4 == 0);
-	unsigned hart = info.addr / 4;
+	unsigned hart = info.addr / MSIP_SIZE;
 
 	msip.at(hart) &= MSIP_MASK;
 	harts.at(hart)->trigger_software_interrupt(msip.at(hart) != 0);
