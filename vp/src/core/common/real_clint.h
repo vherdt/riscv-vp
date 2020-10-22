@@ -48,7 +48,7 @@ public:
 	AsyncEvent event;
 	std::vector<Timer*> timers;
 
-	time_point last_mtime;
+	time_point first_mtime;
 
 	void post_write_mtimecmp(RegisterRange::WriteInfo info);
 	void post_write_msip(RegisterRange::WriteInfo info);

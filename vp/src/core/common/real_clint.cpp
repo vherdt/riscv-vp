@@ -55,7 +55,7 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 	regs_mtime.pre_read_callback = std::bind(&RealCLINT::pre_read_mtime, this, std::placeholders::_1);
 	regs_mtime.post_write_callback = std::bind(&RealCLINT::post_write_mtime, this, std::placeholders::_1);
 
-	last_mtime = std::chrono::high_resolution_clock::now();
+	first_mtime = std::chrono::high_resolution_clock::now();
 	tsock.register_b_transport(this, &RealCLINT::transport);
 
 	SC_METHOD(interrupt);
@@ -70,7 +70,7 @@ RealCLINT::~RealCLINT(void) {
 
 uint64_t RealCLINT::update_and_get_mtime(void) {
 	time_point now = std::chrono::high_resolution_clock::now();
-	usecs duration = std::chrono::duration_cast<usecs>(now - last_mtime);
+	usecs duration = std::chrono::duration_cast<usecs>(now - first_mtime);
 
 	mtime = usec_to_ticks(duration);
 	return mtime;
@@ -124,7 +124,7 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 }
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
-	// TODO: update last_mtime and notify events
+	// TODO: update first_mtime and notify events
 }
 
 bool RealCLINT::pre_read_mtime(RegisterRange::ReadInfo info) {
