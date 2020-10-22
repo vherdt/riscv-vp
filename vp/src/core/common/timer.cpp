@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
@@ -7,7 +8,8 @@
 #include "timer.h"
 
 /* As defined in nanosleep(3) */
-#define NS_MAX 999999999
+#define NS_MAX 999999999UL
+#define US_MAX (NS_MAX / 1000)
 
 /* Signal used to unblock nanosleep in thread */
 #define SIGNUM SIGUSR1
@@ -30,14 +32,19 @@ callback(void *arg)
 	Timer::Context *ctx = (Timer::Context*)arg;
 
 	auto count = ctx->duration.count();
-	while (count > NS_MAX) {
+	while (count > US_MAX) {
 		timespec.tv_nsec = NS_MAX;
 		if (xnanosleep(&timespec))
 			return NULL; /* pthread_kill */
-		count -= NS_MAX;
+		count -= US_MAX;
 	}
 
-	timespec.tv_nsec = count;
+	// Convert remaining us → ns with overflow check
+	uint64_t ns = count * 1000;
+	assert(ns > count);
+
+	assert(ns <= LONG_MAX); // tv_nsec is a long
+	timespec.tv_nsec = ns;
 	if (xnanosleep(&timespec))
 		return NULL; /* pthread_kill */
 
@@ -46,7 +53,7 @@ callback(void *arg)
 }
 
 Timer::Timer(Callback fn, void *arg)
-  : ctx(std::chrono::nanoseconds(0), fn, arg) {
+  : ctx(usecs(0), fn, arg) {
 	running = false;
 }
 
@@ -54,12 +61,12 @@ Timer::~Timer(void) {
 	pause();
 }
 
-void Timer::start(std::chrono::nanoseconds ns) {
+void Timer::start(usecs duration) {
 	if (running && (errno = pthread_join(thread, NULL)))
 		throw std::system_error(errno, std::generic_category());
 
 	/* Update duration for new callback */
-	ctx.duration = ns;
+	ctx.duration = duration;
 
 	if ((errno = pthread_create(&thread, NULL, callback, &ctx)))
 		throw std::system_error(errno, std::generic_category());

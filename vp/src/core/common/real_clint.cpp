@@ -111,8 +111,7 @@ void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
 	uint64_t goal_ticks = cmp - time;
 	usecs duration = ticks_to_usec(goal_ticks);
 
-	using ns = std::chrono::nanoseconds;
-	timer->start(std::chrono::duration_cast<ns>(duration));
+	timer->start(duration);
 }
 
 void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {

@@ -4,19 +4,22 @@
 #include <chrono>
 #include <system_error>
 
+#include <stdint.h>
 #include <pthread.h>
 #include <stdbool.h>
 
 class Timer {
 public:
+	typedef std::chrono::duration<uint64_t, std::micro> usecs;
+
 	typedef void (*Callback) (void*);
 	class Context {
 	public:
-		std::chrono::nanoseconds duration;
+		Timer::usecs duration;
 		Callback fn;
 		void *arg;
 
-		Context(std::chrono::nanoseconds _duration, Callback _fn, void *_arg)
+		Context(usecs _duration, Callback _fn, void *_arg)
 			: duration(_duration), fn(_fn), arg(_arg) {};
 	};
 
@@ -24,7 +27,7 @@ public:
 	~Timer(void);
 
 	void pause(void);
-	void start(std::chrono::nanoseconds ns);
+	void start(usecs duration);
 
 private:
 	Context ctx;

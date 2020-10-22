@@ -32,7 +32,7 @@ public:
 	SC_HAS_PROCESS(RealCLINT);
 public:
 	typedef std::chrono::high_resolution_clock::time_point time_point;
-	typedef std::chrono::duration<uint64_t, std::micro> usecs;
+	typedef Timer::usecs usecs;
 
 	RegisterRange regs_msip;
 	RegisterRange regs_mtimecmp;
