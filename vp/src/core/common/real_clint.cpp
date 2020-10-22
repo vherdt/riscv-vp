@@ -80,10 +80,7 @@ uint64_t RealCLINT::usec_to_ticks(usecs usec) {
 	// This algorithm is inspired by the implementation provided by RIOT-OS.
 	// https://github.com/RIOT-OS/RIOT/blob/d382bd656569599691c1a3e1c9b1662e07cf1a42/sys/include/xtimer/tick_conversion.h#L100-L106
 
-	// XXX: Handle 64-Bit overflow?
-	auto count = usec.count();
-	uint64_t microseconds = (uint64_t)count;
-
+	uint64_t microseconds = usec.count();
 	return microseconds / DIVIDEND;
 }
 
