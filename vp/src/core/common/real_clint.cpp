@@ -87,7 +87,7 @@ uint64_t RealCLINT::usec_to_ticks(usecs usec) {
 	return microseconds / DIVIDEND;
 }
 
-std::chrono::microseconds RealCLINT::ticks_to_usec(uint64_t ticks) {
+RealCLINT::usecs RealCLINT::ticks_to_usec(uint64_t ticks) {
 	// See comment in RealCLINT::usec_to_ticks
 	return usecs(ticks * DIVIDEND);
 }
