@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
@@ -68,6 +69,9 @@ void Timer::start(std::chrono::nanoseconds ns) {
 void Timer::pause(void) {
 	struct sigaction sa;
 
+	if (!running)
+		return;
+
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = SA_RESTART;
 	if (sigemptyset(&sa.sa_mask) == -1)
@@ -92,7 +96,9 @@ void Timer::stop_thread(void) {
 	 * blocked in nanosleep the signal should interrupt the
 	 * nanosleep system call and cause thread termination. */
 
+	assert(running);
 	pthread_cancel(thread);
+
 	if ((errno = pthread_kill(thread, SIGNUM)))
 		throw std::system_error(errno, std::generic_category());
 	if ((errno = pthread_join(thread, NULL)))
