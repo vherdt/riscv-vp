@@ -7,6 +7,6 @@ LDFLAGS = -nostartfiles -Wl,--no-relax
 all: main
 main: main.o bootstrap.o
 sim: main
-	time -p tiny32-vp --intercept-syscalls $<
+	tiny32-vp --intercept-syscalls $<
 
 .PHONY: all sim
