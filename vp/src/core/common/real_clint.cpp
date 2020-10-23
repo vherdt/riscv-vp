@@ -21,9 +21,6 @@ enum {
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
 #define DIVIDEND (uint64_t(15625)/uint64_t(512))
 
-/* TODO: Explicitly handle overflows of mtime and internal usecs */
-/* TODO: Implement proper support for writting mtime register */
-
 static void
 timercb(void *arg) {
 	AsyncEvent *event = (AsyncEvent *)arg;
@@ -120,7 +117,10 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 }
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
-	// TODO: update first_mtime and notify events
+	/* TODO:
+	 *  1. Adjust first_mtime to reflect new mtime register value.
+	 *  2. Notify asyncEvent to check if a timmer intr must be raised.
+	 *     Potentially requires stopping existing timers. */
 }
 
 bool RealCLINT::pre_read_mtime(RegisterRange::ReadInfo info) {
