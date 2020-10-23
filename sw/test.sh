@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export SYSTEMC_DISABLE_COPYRIGHT_MESSAGE=1
+
 handle_exit() {
 	[ $# -eq 1 ] || exit 1
 
@@ -21,6 +23,6 @@ for test in *; do
 	handle_exit $?
 
 	printf "Running sw '%s': " "${name}"
-	make -C "${test}" sim >/dev/null 2>&1
+	make -C "${test}" sim >/dev/null
 	handle_exit $?
 done

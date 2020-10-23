@@ -171,6 +171,13 @@ struct ArrayView {
 		ptr = reinterpret_cast<T *>(r.mem.data());
 	}
 
+	T &at(size_t idx) {
+		if (idx >= size)
+			throw std::out_of_range("ArrayView index out-of-range");
+		else
+			return ptr[idx];
+	}
+
 	T &operator[](unsigned idx) {
 		assert(idx < size);
 		return ptr[idx];
