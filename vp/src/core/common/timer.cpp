@@ -104,10 +104,12 @@ void Timer::stop_thread(void) {
 	 * nanosleep system call and cause thread termination. */
 
 	assert(running);
-	pthread_cancel(thread);
 
-	if ((errno = pthread_kill(thread, SIGNUM)))
-		throw std::system_error(errno, std::generic_category());
+	// Either pthread_cancel or pthread_kill will stop the thread, in
+	// which case the other one will error out thus the error is ignored.
+	pthread_cancel(thread);
+	pthread_kill(thread, SIGNUM);
+
 	if ((errno = pthread_join(thread, NULL)))
 		throw std::system_error(errno, std::generic_category());
 	running = false;
