@@ -30,7 +30,6 @@
 
 #include <system_error>
 
-#include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <termios.h>
@@ -45,9 +44,11 @@ static struct termios orig_termios;
 
 static void sighandler(int num) {
 	(void)num;
-	assert(rawfd >= 0);
 
-	disableRawMode(rawfd);
+	// Signal might arrive before enableRawMode()
+	if (rawfd >= 0)
+		disableRawMode(rawfd);
+
 	exit(EXIT_FAILURE);
 }
 
@@ -58,7 +59,7 @@ static void sethandler(void) {
 
 	act.sa_flags = 0;
 	act.sa_handler = sighandler;
-	if (sigemptyset(&act.sa_mask) == -1)
+	if (sigfillset(&act.sa_mask) == -1)
 		throw std::system_error(errno, std::generic_category());
 
 	for (i = 0; i < (sizeof(signals) / sizeof(signals[0])); i++) {
@@ -69,6 +70,10 @@ static void sethandler(void) {
 
 void enableRawMode(int fd) {
 	struct termios raw;
+
+	// Check if rawm ode was already activated
+	if (rawfd >= 0)
+		return;
 
 	if (!isatty(STDIN_FILENO)) {
 		errno = ENOTTY;
