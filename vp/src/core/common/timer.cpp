@@ -31,6 +31,9 @@ callback(void *arg)
 	struct timespec timespec;
 	Timer::Context *ctx = (Timer::Context*)arg;
 
+	/* Initialize the seconds field, we use nanoseconds though */
+	timespec.tv_sec = 0;
+
 	auto count = ctx->duration.count();
 	while (count > US_MAX) {
 		timespec.tv_nsec = NS_MAX;
