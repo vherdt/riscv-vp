@@ -7,6 +7,7 @@ Possible todos:
  - Add PWM domain
  - Add more hardware
   - Switch
+  - rotate encoder
   - Stepper driver
   - oscilloscope (export waveforms?)
   - HD44780 
