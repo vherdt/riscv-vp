@@ -26,7 +26,7 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 	}
 
 	~SimpleMemory(void) {
-		delete data;
+		delete[] data;
 	}
 
 	void load_data(const char *src, uint64_t dst_addr, size_t n) override {
