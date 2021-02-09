@@ -30,6 +30,7 @@ class SS1106 : public SpiInterface  {
 		second_arg
 	} mode = Mode::normal;
 
+	void *sharedSegment = nullptr;
 	ss1106::State* state;
 
 	Command last_cmd = Command{ss1106::Operator::NOP, 0};

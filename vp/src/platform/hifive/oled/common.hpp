@@ -35,7 +35,7 @@ struct State
 	uint8_t frame[(height / 8)][width];
 };
 
-State* getSharedState();
+void* getSharedState();
 
 DECLARE_ENUM(Operator,
 	COL_LOW,
