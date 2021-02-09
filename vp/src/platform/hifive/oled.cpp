@@ -8,8 +8,10 @@
 
 #include "oled.hpp"
 
-//#include <bits/stdint-uintn.h>
 #include <cstdio>
+
+#include <sys/types.h>
+#include <sys/shm.h>
 
 using namespace ss1106;
 
@@ -88,10 +90,18 @@ SS1106::Command SS1106::match(uint8_t cmd)
 
 SS1106::SS1106(std::function<bool()> getDCPin) : getDCPin(getDCPin)
 {
-	state = ss1106::getSharedState();
+	sharedSegment = ss1106::getSharedState();
+	if (sharedSegment == nullptr) {
+		assert(0); // TODO: Proper error handling
+	}
+
+	state = reinterpret_cast<State*>(sharedSegment);
 	memset(state, 0, sizeof(State));
 };
-SS1106::~SS1106(){};
+SS1106::~SS1106(){
+	if (sharedSegment && shmdt(sharedSegment))
+		perror("shmdt");
+};
 
 
 uint8_t SS1106::write(uint8_t byte)

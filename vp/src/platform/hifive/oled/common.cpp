@@ -15,7 +15,7 @@ namespace ss1106
 
 IMPL_ENUM(Operator);
 
-State* getSharedState()
+void* getSharedState()
 {
 	int shmid;
 	for(unsigned i = 0; i < 2; i++)
@@ -36,11 +36,13 @@ State* getSharedState()
 		}
 	}
 
-	State* ret = reinterpret_cast<State*>(shmat(shmid, nullptr, 0));
-	if (ret == nullptr) {
+	void *addr = shmat(shmid, nullptr, 0);
+	if (addr == nullptr) {
 		perror("shmat");
+		return nullptr;
 	}
-	return ret;
+
+	return addr;
 }
 
 
