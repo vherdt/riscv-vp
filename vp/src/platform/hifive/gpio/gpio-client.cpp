@@ -103,6 +103,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 
 	if (p == NULL) {
 		//fprintf(stderr, "client: failed to connect\n");
+		freeaddrinfo(servinfo);
 		return false;
 	}
 
