@@ -81,7 +81,7 @@ bool GpioServer::setupConnection(const char *port) {
 			return false;
 		}
 
-		if (bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
+		if (::bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(fd);
 			perror("gpio-server: bind");
 			continue;
