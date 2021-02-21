@@ -7,6 +7,7 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include <unordered_map>
+#include <array>
 
 struct SimpleDMA : public sc_core::sc_module {
 	tlm_utils::simple_initiator_socket<SimpleDMA> isock;
