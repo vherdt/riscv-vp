@@ -107,6 +107,19 @@ make
 
 This will also copy the VP binaries into the *vp/build/bin* folder.
 
+#### FAQ
+
+**Q:** How do I exit the VP?
+
+**A:** All VPs use the input TTY in raw mode and forward all control
+characters to the guest. For this reason, one cannot use Ctrl-c to exit
+the VP. Instead, press Ctrl-a to enter command mode and press Ctrl-x to
+exit the VP.
+
+**Q:** How do I emit a Ctrl-a control character?
+
+**A:** Enter control mode using Ctrl-a and press Ctrl-a again to send a
+literal Ctrl-a control character to the guest.
 
 #### Acknowledgements:
 
