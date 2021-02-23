@@ -44,7 +44,7 @@ void UART::handle_input(int fd) {
 	}
 
 	/* update state of input state machine for next run */
-	if (buf == KEY_ESC) {
+	if (buf == KEY_ESC && state != STATE_COMMAND) {
 		state = STATE_COMMAND;
 	} else {
 		state = STATE_NORMAL;
