@@ -42,13 +42,17 @@
 static int rawfd = -1;
 static struct termios orig_termios;
 
+static void reset_term(void) {
+	// Signal might arrive before enableRawMode()
+	if (rawfd < 0)
+		return;
+
+	disableRawMode(rawfd);
+}
+
 static void sighandler(int num) {
 	(void)num;
-
-	// Signal might arrive before enableRawMode()
-	if (rawfd >= 0)
-		disableRawMode(rawfd);
-
+	reset_term();
 	exit(EXIT_FAILURE);
 }
 
@@ -66,6 +70,10 @@ static void sethandler(void) {
 		if (sigaction(signals[i], &act, NULL))
 			throw std::system_error(errno, std::generic_category());
 	}
+
+	/* also make sure we cleanup on exit(3) */
+	if (atexit(reset_term))
+		throw std::system_error(errno, std::generic_category());
 }
 
 void enableRawMode(int fd) {
