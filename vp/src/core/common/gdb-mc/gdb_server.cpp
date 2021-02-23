@@ -63,25 +63,21 @@ void GDBServer::set_run_event(debug_target_if *hart, sc_core::sc_event *event) {
 }
 
 void GDBServer::create_sock(uint16_t port) {
-	struct sockaddr_in6 addr;
-	int reuse, ip6only;
+	struct sockaddr_in addr;
+	int reuse;
 
-	sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
 		throw std::system_error(errno, std::generic_category());
-
-	ip6only = 0;
-	if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &ip6only, sizeof(ip6only)) == -1)
-		goto err;
 
 	reuse = 1;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) == -1)
 		goto err;
 
 	memset(&addr, 0, sizeof(addr));
-	addr.sin6_family = AF_INET6;
-	addr.sin6_addr = in6addr_loopback;
-	addr.sin6_port = htons(port);
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_port = htons(port);
 
 	if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
 		goto err;
