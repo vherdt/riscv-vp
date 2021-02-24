@@ -121,9 +121,12 @@ void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
 	 *  1. Adjust first_mtime to reflect new mtime register value.
 	 *  2. Notify asyncEvent to check if a timmer intr must be raised.
 	 *     Potentially requires stopping existing timers. */
+	(void)info;
 }
 
 bool RealCLINT::pre_read_mtime(RegisterRange::ReadInfo info) {
+	(void)info;
+
 	update_and_get_mtime();
 	return true;
 }

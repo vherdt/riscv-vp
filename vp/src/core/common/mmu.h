@@ -242,12 +242,15 @@ struct GenericMMU {
         switch (type) {
             case FETCH:
                 raise_trap(EXC_INSTR_PAGE_FAULT, vaddr);
+                break;
             case LOAD:
                 raise_trap(EXC_LOAD_PAGE_FAULT, vaddr);
+                break;
             case STORE:
                 raise_trap(EXC_STORE_AMO_PAGE_FAULT, vaddr);
-            default:
-                throw std::runtime_error("[mmu] unknown access type " + std::to_string(type));
+                break;
         }
+
+        throw std::runtime_error("[mmu] unknown access type " + std::to_string(type));
     }
 };

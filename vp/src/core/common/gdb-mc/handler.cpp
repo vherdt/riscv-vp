@@ -33,6 +33,8 @@ std::map<std::string, GDBServer::packet_handler> handlers {
 };
 
 void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	// If n is a recognized stop reason […]. The aa should be
 	// ‘05’, the trap signal. At most one stop reason should be
 	// present.
@@ -42,6 +44,8 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	auto formatter = new RegisterFormater(arch);
 	auto fn = [formatter] (debug_target_if *hart) {
 		for (uint64_t v : hart->get_registers())
@@ -63,6 +67,9 @@ void GDBServer::setThread(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::killServer(int conn, gdb_command_t *cmd) {
+	(void)conn;
+	(void)cmd;
+
 	// TODO: Stop the System C simulation instead of
 	// terminating the program. This would require interacting
 	// with the GDBServerRunner directly to make it exit.
@@ -154,6 +161,8 @@ ret:
 }
 
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	std::string thrlist = "m";
 
 	/* TODO: refactor this to make it always output hex digits,
@@ -172,6 +181,8 @@ void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::threadInfoEnd(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	// GDB will respond to each reply with a request for more thread
 	// ids (using the ‘qs’ form of the query), until the target
 	// responds with ‘l’ (lower-case ell, for last).
@@ -182,11 +193,15 @@ void GDBServer::threadInfoEnd(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	// 0 process started, 1 attached to process
 	send_packet(conn, "0");
 }
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	send_packet(conn, ("vContSupported+;PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
 }
 
@@ -285,6 +300,8 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
 	// We need to support both c and C otherwise GDB doesn't use vCont
 	// This is documented in the remote_vcont_probe function in the GDB source.
 	send_packet(conn, "vCont;c;C");

@@ -225,7 +225,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
     void insert_breakpoint(uint64_t) override;
     void remove_breakpoint(uint64_t) override;
 
-	uint64_t get_hart_id();
+	uint64_t get_hart_id() override;
 
 
 	void release_lr_sc_reservation() {
@@ -317,9 +317,9 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void performance_and_sync_update(Opcode::Mapping executed_op);
 
-	void run_step();
+	void run_step() override;
 
-	void run();
+	void run() override;
 
 	void show();
 };
