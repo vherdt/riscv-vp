@@ -217,7 +217,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		bool single = false;
 		if (vcont->action == 's')
 			single = true;
-		else if (vcont->action == 'S')
+		else if (vcont->action != 'c')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
 		std::vector<debug_target_if *> selected_harts;
