@@ -137,9 +137,11 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 		fn(thread);
 }
 
-std::vector<debug_target_if *> GDBServer::run_threads(int id, bool single) {
+std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_if *> hartsrun, bool single) {
+	if (hartsrun.empty()) {
+		return hartsrun;
+	}
 	this->single_run = single;
-	std::vector<debug_target_if *> hartsrun = get_threads(id);
 
 	/* invoke all selected harts */
 	sc_core::sc_event_or_list allharts;

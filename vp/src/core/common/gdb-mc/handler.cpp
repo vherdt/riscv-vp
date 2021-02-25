@@ -222,7 +222,8 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 
 		std::vector<debug_target_if *> selected_harts;
 		try {
-			selected_harts = run_threads(vcont->thread.tid, single);
+			auto run = get_threads(vcont->thread.tid);
+			selected_harts = run_threads(run, single);
 		} catch (const std::out_of_range&) {
 			send_packet(conn, "E01");
 			return;
