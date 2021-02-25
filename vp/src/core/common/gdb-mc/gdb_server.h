@@ -87,7 +87,7 @@ private:
 	std::vector<debug_target_if *> get_threads(int);
 	uint64_t translate_addr(debug_target_if *, uint64_t, MemoryAccessType type);
 	void exec_thread(thread_func, char = 'g');
-	std::vector<debug_target_if *> run_threads(int, bool = false);
+	std::vector<debug_target_if *> run_threads(std::vector<debug_target_if *>, bool = false);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);
