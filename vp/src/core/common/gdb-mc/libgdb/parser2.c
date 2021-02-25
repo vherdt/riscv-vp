@@ -223,7 +223,7 @@ gdbf_vcont(int n, mpc_val_t **xs)
 		vcont->next = (gdb_vcont_t *)xs[i];
 	vcont->next = NULL;
 
-	return vcont;
+	return (gdb_vcont_t *)xs[0];
 }
 
 gdbf_fold(vcont, GDB_ARG_VCONT, GDBF_ARG_VCONT)
