@@ -24,6 +24,8 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
                      DebugMemoryInterface *mm,
                      uint16_t port,
                      std::vector<mmu_memory_if*> mmus) {
+        (void)name;
+
 	if (targets.size() <= 0)
 		throw std::invalid_argument("no harts specified");
 	if (mmus.size() > 0 && mmus.size() != targets.size())

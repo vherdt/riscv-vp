@@ -13,7 +13,7 @@
 
 #define stop_fd (stop_pipe[0])
 #define newpollfd(FD) \
-	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR};
+	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR, .revents = 0};
 
 #define UART_TXWM (1 << 0)
 #define UART_RXWM (1 << 1)

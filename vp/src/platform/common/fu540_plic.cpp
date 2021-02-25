@@ -168,7 +168,7 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 
 void FU540_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
 	size_t idx = t.addr / sizeof(uint32_t);
-	assert(idx >= 0 && idx <= FU540_PLIC_NUMIRQ);
+	assert(idx <= FU540_PLIC_NUMIRQ);
 
 	auto &elem = interrupt_priorities[idx];
 	elem = std::min(elem, (uint32_t)FU540_PLIC_MAX_PRIO);

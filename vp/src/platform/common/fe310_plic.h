@@ -95,8 +95,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 	void clear_pending_interrupt(unsigned irq_id) {
-		assert(irq_id >= 0 &&
-		       irq_id < NumberInterrupts);  // NOTE: ignore clear of zero interrupt (zero is not available)
+		assert(irq_id < NumberInterrupts);  // NOTE: ignore clear of zero interrupt (zero is not available)
 		// std::cout << "[vp::plic] clear pending interrupt " << irq_id << std::endl;
 
 		unsigned idx = irq_id / 32;

@@ -45,7 +45,7 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU &mmu)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {}
 
-	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) {
+	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {
 		return mmu.translate_virtual_to_physical_addr(vaddr, type);
 	}
 
