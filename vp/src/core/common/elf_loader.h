@@ -39,6 +39,10 @@ struct GenericElfLoader {
 			if ((p->p_filesz == 0) && (p->p_memsz == 0))
 				continue;
 
+			//If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
+			if (p->p_memsz > p->p_filesz)
+				continue;
+
 			sections.push_back(p);
 		}
 
@@ -51,7 +55,11 @@ struct GenericElfLoader {
 			if (use_vaddr)
 				addr = p->p_vaddr;
 
-			assert ((addr >= offset) && (addr + p->p_memsz < offset + size));
+			assert ((addr >= offset) &&
+					"Offset overlaps into section");
+
+			assert ((addr + p->p_memsz < offset + size) &&
+					"Section does not fit in target memory");
 
 			auto idx = addr - offset;
 			const char *src = elf.data() + p->p_offset;
