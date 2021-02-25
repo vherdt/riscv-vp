@@ -208,6 +208,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
 	int stopped_thread = -1;
 	const char *stop_reason = NULL;
+	std::map<debug_target_if *, bool> matched;
 
 	/* This handler attempts to implement the all-stop mode.
 	 * See: https://sourceware.org/gdb/onlinedocs/gdb/All_002dStop-Mode.html */
@@ -223,6 +224,14 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		std::vector<debug_target_if *> selected_harts;
 		try {
 			auto run = get_threads(vcont->thread.tid);
+			for (auto i = run.begin(); i != run.end();) {
+				debug_target_if *hart = *i;
+				if (matched.count(hart))
+					i = run.erase(i); /* already matched */
+				else
+					i++;
+			}
+
 			selected_harts = run_threads(run, single);
 		} catch (const std::out_of_range&) {
 			send_packet(conn, "E01");
@@ -246,6 +255,16 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			case CoreExecStatus::Runnable:
 				continue;
 			}
+		}
+
+		/* The vCont specification mandates that only the leftmost action with
+		 * a matching thread-id is applied. Unfourtunatly, the specification
+		 * is a bit unclear in regards to handling two actions with no thread
+		 * id (i.e. GDB_THREAD_ALL). */
+		if (vcont->thread.tid > 0) {
+			auto threads = get_threads(vcont->thread.tid);
+			assert(threads.size() == 1);
+			matched[threads.front()] = true;
 		}
 	}
 
