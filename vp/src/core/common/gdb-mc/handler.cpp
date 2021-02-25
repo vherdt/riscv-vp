@@ -258,7 +258,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		}
 
 		/* The vCont specification mandates that only the leftmost action with
-		 * a matching thread-id is applied. Unfourtunatly, the specification
+		 * a matching thread-id is applied. Unfortunately, the specification
 		 * is a bit unclear in regards to handling two actions with no thread
 		 * id (i.e. GDB_THREAD_ALL). */
 		if (vcont->thread.tid > 0) {
