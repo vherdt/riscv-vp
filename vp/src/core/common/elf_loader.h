@@ -40,8 +40,9 @@ struct GenericElfLoader {
 				continue;
 
 			//If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
-			if (p->p_memsz > p->p_filesz)
-				continue;
+			// -> still, the memory needs to be zero initialized in this case!
+//			if (p->p_memsz > p->p_filesz)
+//				continue;
 
 			sections.push_back(p);
 		}
