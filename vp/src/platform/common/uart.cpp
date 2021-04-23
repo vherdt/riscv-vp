@@ -11,8 +11,9 @@
 /* character → control key */
 #define CTRL(c) ((c) & 0x1f)
 
-#define KEY_ESC  CTRL('a') /* Ctrl-a (character to enter command mode) */
-#define KEY_EXIT CTRL('x') /* Ctrl-x (character to exit in command mode) */
+#define KEY_ESC  CTRL('a')  /* Ctrl-a (character to enter command mode) */
+#define KEY_EXIT 'x'        /* x (character to exit in command mode) */
+#define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
 UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
 		: AbstractUART(name, irqsrc) {
@@ -57,6 +58,7 @@ void UART::handle_cmd(uint8_t cmd) {
 		rxpush(cmd);
 		break;
 	case KEY_EXIT:
+	case KEY_CEXIT:
 		exit(EXIT_SUCCESS);
 		break;
 	default:
