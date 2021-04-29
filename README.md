@@ -54,6 +54,7 @@ make -j$(nproc)
 ```
 
 For additional configurations and options for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain.
+
 If wanted, move the `riscv-gnu-toolchain-dist-rv32imac-ilp32` folder to your `/opt/` folder and add it to your path in your `~/.bashrc`
 (e.g. `PATH=$PATH:/opt/riscv-gnu-toolchain-dist-rv32imac-ilp32/bin`)
 
@@ -83,8 +84,6 @@ In the root folder, type `make`. This script does the following for you:
 >cmake ..
 >make install
 >```
-
->The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
 
 #### 3) Compile and run some Software:
 
