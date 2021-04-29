@@ -45,44 +45,46 @@ sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzi
 For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain. With the packages installed, the toolchain can be build as follows:
 
 ```bash
+# in some source folder
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
-git submodule update --init --recursive
-
+git submodule update --init --recursive # this may take a while
 ./configure --prefix=$(pwd)/../riscv-gnu-toolchain-dist-rv32imac-ilp32 --with-arch=rv32imac --with-abi=ilp32
-
-make
+make -j$(nproc)
 ```
 
 For additional configurations and options for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain.
-
+If wanted, move the `riscv-gnu-toolchain-dist-rv32imac-ilp32` folder to your `/opt/` folder and add it to your path in your `~/.bashrc`
+(e.g. `PATH=$PATH:/opt/riscv-gnu-toolchain-dist-rv32imac-ilp32/bin`)
 
 #### 2) Build this RISC-V Virtual Prototype:
 
-i) Checkout required git submodules:
+In the root folder, type `make`. This script does the following for you:
 
-```bash
-git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
-```
+> i) Checkout required git submodules:
+>
+>```bash
+>git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
+>```
+>
+>ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
+>
+>```bash
+>./build_systemc_233.sh
+>./build_softfloat.sh
+>```
+>
+>
+>iii) in *vp* folder (requires the *boost* C++ library):
+> 
+>```bash
+>mkdir build
+>cd build
+>cmake ..
+>make install
+>```
 
-ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
-
-```bash
-./build_systemc_233.sh
-./build_softfloat.sh
-```
-
-
-iii) in *vp* folder (requires the *boost* C++ library):
- 
-```bash
-mkdir build
-cd build
-cmake ..
-make install
-```
-
-The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
+>The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
 
 #### 3) Compile and run some Software:
 
