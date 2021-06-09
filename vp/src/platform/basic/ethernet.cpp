@@ -300,7 +300,7 @@ bool EthernetDevice::isPacketForUs(uint8_t *packet, ssize_t) {
 		}
 
 		udphdr *udp = reinterpret_cast<udphdr *>(packet + sizeof(ether_header) + sizeof(iphdr));
-		if (ntohs(udp->uh_dport) != 67 && ntohs(udp->uh_dport) != 68) {  // not DHCP
+		if (ntohs(udp->dest) != 67 && ntohs(udp->dest) != 68) {  // not DHCP
 			// cout << " dumped non-DHCP ";
 			return false;
 		}
