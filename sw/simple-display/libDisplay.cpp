@@ -30,10 +30,10 @@ void drawLine(Framebuffer::Type frame, PointF from, PointF to, Color color) {
 
 void drawRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color) {
 	if (ol.x > ur.x) {
-		swap(ol.x, ur.x);
+		std::swap(ol.x, ur.x);
 	}
 	if (ol.y > ur.y) {
-		swap(ol.y, ur.y);
+		std::swap(ol.y, ur.y);
 	}
 	drawLine(frame, ol, PointF(ur.x, ol.y), color);
 	drawLine(frame, PointF(ur.x, ol.y), ur, color);
@@ -46,10 +46,10 @@ void fillRect(Framebuffer::Type frame, PointF ol, PointF ur, Color color) {
 		return;
 	}
 	if (ol.x > ur.x) {
-		swap(ol.x, ur.x);
+		std::swap(ol.x, ur.x);
 	}
 	if (ol.y > ur.y) {
-		swap(ol.y, ur.y);
+		std::swap(ol.y, ur.y);
 	}
 	if (ur.x - ol.x > ur.y - ol.y) {
 		// Horizontal
