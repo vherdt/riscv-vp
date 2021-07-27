@@ -4,40 +4,32 @@
 #include <cstring>
 
 #define SHMKEY 1338
-static constexpr uint16_t screenWidth = 800;
-static constexpr uint16_t screenHeight = 600;
-
-typedef uint16_t Color;
-
-namespace frame
-{
-
-struct Point {
-	uint32_t x;
-	uint32_t y;
-	inline Point() : x(0), y(0){};
-	inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
-};
-
-struct PointF {
-	float x;
-	float y;
-	inline PointF() : x(0), y(0){};
-	inline PointF(float x, float y) : x(x), y(y){};
-	inline PointF(Point p) : x(p.x), y(p.y){};
-};
-
-};
-
-inline frame::PointF operator+(const frame::PointF l, frame::PointF const r) {
-	return frame::PointF(l.x + r.x, l.y + r.y);
-}
-
-struct Frame {
-	Color raw[screenHeight][screenWidth];  // Notice: Screen is on side
-};
 
 struct Framebuffer {
+	static constexpr uint16_t screenWidth = 800;
+	static constexpr uint16_t screenHeight = 600;
+
+	typedef uint16_t Color;
+
+	struct Point {
+		uint32_t x;
+		uint32_t y;
+		inline Point() : x(0), y(0){};
+		inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
+	};
+
+	struct PointF {
+		float x;
+		float y;
+		inline PointF() : x(0), y(0){};
+		inline PointF(float x, float y) : x(x), y(y){};
+		inline PointF(Point p) : x(p.x), y(p.y){};
+	};
+
+	struct Frame {
+		Color raw[screenHeight][screenWidth];  // Notice: Screen is on side
+	};
+
 	enum class Type : uint8_t { foreground, background };
 	uint8_t activeFrame;
 	enum class Command : uint8_t {
@@ -56,8 +48,8 @@ struct Framebuffer {
 		struct {
 			//drawLine
 			Type frame;
-			frame::PointF from;
-			frame::PointF to;
+			PointF from;
+			PointF to;
 			Color color;
 		} line;
 		inline Parameter(){};
@@ -86,3 +78,8 @@ struct Framebuffer {
 		return background;
 	}
 };
+
+
+inline Framebuffer::PointF operator+(const Framebuffer::PointF l, Framebuffer::PointF const r) {
+	return Framebuffer::PointF(l.x + r.x, l.y + r.y);
+}
