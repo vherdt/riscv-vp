@@ -31,6 +31,6 @@ struct Display : public sc_core::sc_module {
 	void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
 
 	// graphics acceleration functions
-	void fillFrame(Framebuffer::Type frame, Color color);
-	void drawLine(Framebuffer::Type frame, frame::PointF from, frame::PointF to, Color color);
+	void fillFrame(Framebuffer::Type frame, Framebuffer::Color color);
+	void drawLine(Framebuffer::Type frame, Framebuffer::PointF from, Framebuffer::PointF to, Framebuffer::Color color);
 };

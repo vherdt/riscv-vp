@@ -11,7 +11,11 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
-using namespace frame;
+typedef Framebuffer::Point Point;
+typedef Framebuffer::PointF PointF;
+typedef Framebuffer::Color Color;
+typedef Framebuffer::Frame Frame;
+
 
 Display::Display(sc_module_name) {
 	tsock.register_b_transport(this, &Display::transport);
