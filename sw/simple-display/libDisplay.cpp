@@ -9,9 +9,13 @@
 #include <math.h>
 #include <algorithm>
 
-using namespace std;
+typedef Framebuffer::Point Point;
+typedef Framebuffer::PointF PointF;
+typedef Framebuffer::Color Color;
+
 
 namespace display {
+
 void setPixel(Framebuffer::Type frame, Point pixel, Color color) {
 	framebuffer->getFrame(frame).raw[pixel.y][pixel.x] = color;
 }

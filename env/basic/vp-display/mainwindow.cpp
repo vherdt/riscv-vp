@@ -6,9 +6,9 @@
 
 VPDisplay::VPDisplay(QWidget* mparent) : QWidget(mparent) {
 	framebuffer = server.createSM();
-	frame = new QImage(screenWidth, screenHeight,
+	frame = new QImage(Framebuffer::screenWidth, Framebuffer::screenHeight,
 	                   QImage::Format_RGB444);  // two bytes per pixel
-	resize(800, 600);
+	resize(Framebuffer::screenWidth, Framebuffer::screenHeight);
 	setFixedSize(size());
 	server.startListening(std::bind(&VPDisplay::notifyChange, this, std::placeholders::_1));
 }
@@ -18,8 +18,8 @@ VPDisplay::~VPDisplay() {
 }
 
 void VPDisplay::drawMainPage(QImage* mem) {
-	Frame activeFrame = framebuffer->getActiveFrame();
-	Frame background = framebuffer->getBackground();
+	Framebuffer::Frame activeFrame = framebuffer->getActiveFrame();
+	Framebuffer::Frame background = framebuffer->getBackground();
 	for (int row = 0; row < mem->height(); row++) {
 		uint16_t* line = reinterpret_cast<uint16_t*>(mem->scanLine(row));  // Two bytes per pixel
 		for (int x = 0; x < mem->width(); x++) {
