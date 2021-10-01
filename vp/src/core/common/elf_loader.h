@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/iostreams/device/mapped_file.hpp>
-
+#include <exception>
 #include <cstdint>
 #include <vector>
 
@@ -19,6 +19,12 @@ struct GenericElfLoader {
 	const char *filename;
 	boost::iostreams::mapped_file_source elf;
 	const Elf_Ehdr *hdr;
+
+	struct load_executable_exception : public std::exception {
+		const char * what () const throw () {
+			return "Tried loading invalid elf layout";
+		}
+	};
 
 	GenericElfLoader(const char *filename) : filename(filename), elf(filename) {
 		assert(elf.is_open() && "file not open");
@@ -75,7 +81,7 @@ struct GenericElfLoader {
 				std::cerr << "Offset overlaps into section:" << std::endl;
 				std::cerr << "\t0x" << std::hex << +addr << " < " << +offset << std::endl;
 				print_phdr(std::cerr, *p, 2);
-				continue;
+				throw load_executable_exception();
 			}
 
 			if (addr + p->p_memsz >= offset + size) {
@@ -84,7 +90,7 @@ struct GenericElfLoader {
 				std::cerr << "\t0x" << std::hex << +addr << " + size 0x" << +p->p_memsz;
 				std::cerr << " would overflow offset 0x" << +offset << " + size 0x" << +size << std::endl;
 				print_phdr(std::cerr, *p, 2);
-				continue;
+				throw load_executable_exception();
 			}
 
 			auto idx = addr - offset;
